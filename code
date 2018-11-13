@@ -1,0 +1,205 @@
+ var req = {
+        method: "GET",
+        url: getpath() + "Content/Sources/City/IntCity.js?v=1.0",
+        dataType: "json",
+        contentType: "application/json; charset=utf-8;html"
+    }
+    $http(req).success(function (citys) {
+        $scope.IntcityList = citys;
+
+    });
+    
+     function getpath() {
+        try {
+            var pathArray = window.location.href.split('/');
+            var protocol = pathArray[0];
+            var host = pathArray[2];
+            var path = protocol + '//' + host + "/";
+            if (host.indexOf(":") == -1) {
+                path += pathArray[3] + "/";
+            }
+            return path;
+        }
+           [HttpPost]
+        public JsonResult SendMobileLoadPassword()
+        {}
+         public string SetStatus(string PstrStatusCode, string PstrStatusDese, string PstrData)
+        {
+            return "[{\"Status\":\"" + PstrStatusCode + "\" , \"StatusDesc\" :\"" + PstrStatusDese + "\" , \"Data\":" + PstrData + "}]";
+        }
+          return Json(JSONresult, JsonRequestBehavior.AllowGet);
+           window.location = getpath() + "#dresult";
+        
+        
+        
+         $scope.Quickview = function (index) {
+        var Fliteroption = {
+            code: index
+        }
+        var FliterCountry = [];
+        FliterCountry = $scope.BannerImgs.filter(function (item) {
+            var Isvalicountry = true;
+
+            if (item.BannerURL !== index.BannerURL) {
+                Isvalicountry = false;
+            }
+            if (Isvalicountry) { return true; }
+            else { return false; }
+        });
+        console.log('FliterCountry', FliterCountry)
+        if (FliterCountry.length > 0) {
+            $scope.BigImage = FliterCountry[0].BannerURL
+            console.log($scope.BigImage, ' $scope.BigImage ');
+            $scope.Imageview = true;
+
+            $mdDialog.show({
+                templateUrl: 'QuickView.tmpl.html',
+                // parent: angular.element(document.body),
+                clickOutsideToClose: false,
+                locals: $scope,
+                preserveScope: true,
+                bindToController: true,
+                controller: ViewCtrl,
+                controllerAs: 'Ctrl'
+            });
+            function ViewCtrl($scope, $mdDialog) {
+                $scope.dgcancel = function () {
+                    $mdDialog.hide();
+                }
+            }
+            ViewCtrl.$inject = ["$scope", "$mdDialog"]
+        }
+
+    }
+    
+     $http(req).success(function (data, status, header, config) {
+            //$http.FetchData(req).success(function (data, status, headers, config) {
+
+            var Ressponse = JSON.parse(data)[0];
+            ResCount++;
+            if (Ressponse["Status"] == "1") {
+                $scope.Intrair = {};
+                $scope.Intrair.Flights = Ressponse["Data"]["Flights"];
+                if (Ressponse["Data"].length > 1) {
+                    $scope.Intrair.RtnFlights = Ressponse["Data"][1]["Flights"];
+                }
+                else {
+                    $scope.Intrair.RtnFlights = "";
+                }
+                $scope.Intrair.Search = $scope.Search;
+                Searchresult.setResult($scope.Intrair);
+                window.location = getpath() + "#intrresult";
+            } else if (Ressponse["Status"] == "0") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent("Search result not found")
+                              .ariaLabel('')
+                              .ok('Close')
+                $mdDialog.show(confirm);
+            }
+    
+    
+      $interval(function () { $scope.Time = new Date(); }, 1000);
+    
+    
+     .factory('RemoteService', ["$http", function ($http) {
+        var _FetchData = function (arg) {
+            return $http(arg)
+        };
+        return {
+            FetchData: _FetchData
+        };
+    }])
+    
+    .service("Searchresult", function () {
+        var Result = {};
+        return {
+            getResult: function () {
+                return Result;
+            },
+            setResult: function (value) {
+
+                Result = value;
+            }
+        };
+    })
+    
+     .directive('loading', ["$http", function ($http) {
+        return {
+            restrict: 'A',
+            link: function (scope, elm, attrs) {
+                scope.isLoading = function () {
+                    return $http.pendingRequests.length > 0;
+                }
+                scope.$watch(scope.isLoading, function (v) {
+                    if (v) {
+                        elm.show();
+                    }
+                    else {
+                        elm.hide();
+                    }
+                })
+            }
+        }
+        
+          .config(['$routeProvider', '$controllerProvider', '$locationProvider', function AppConfig($routeProvider, $controllerProvider, $locationProvider) {
+        app.controller = $controllerProvider.register;
+        $routeProvider.caseInsensitiveMatch = true;
+        $routeProvider
+                .when('/home', {
+                    templateUrl: 'Home/index',
+                    controller: "HomeCtrl"
+                }).when('/login', {
+                    templateUrl: 'authentication/index',
+                    controller: "LoginCtrl"
+                })
+                
+                
+                  var deferred = $q.defer();
+        var req = {
+            method: "POST",
+            url: getpath() + "International/GetIntAirlinelist",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8;html",
+            data: { "Airlinename": query }
+
+        }
+        $http(req).success(function (data, status, headers, config) {
+
+            var Ressponse = JSON.parse(data)[0];
+            //console.log("Ressponse", Ressponse);
+            if (Ressponse["Status"] == "1") {
+                deferred.resolve(Ressponse["Data"]["AirlineList"]);
+                return deferred.promise;
+            } else if (Ressponse["Status"] == "0") {
+            }
+            else if (Ressponse["Status"] == "2") {
+                window.location = getpath();
+            }
+        }).error(function (data, status, headers, config) {
+
+        });
+        //console.log("returned");
+        return deferred.promise;
+    };
+    
+    
+     var xhttpss = new XMLHttpRequest();
+    xhttpss.open("GET", getpath() + "Content/Sources/xml/InternationalAirlines.xml", false);
+    xhttpss.send();
+    var airxml = xhttpss.responseXML;
+    
+    
+    
+     angular.forEach($scope.AirlineList, function (item, key) {
+
+            if (Flight == key) {
+                $scope.AirlineList[key] = true;
+            } else {
+                $scope.AirlineList[key] = false;
+            }
+        });
+        
+         $timeout(function () {
+                    $scope.showlist = 'ng-enter-active-His';
+                }, 500);
