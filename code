@@ -88,6 +88,9 @@
 
     }
     
+     $mdDialog.show($mdDialog.alert().textContent(Response["StatusDesc"]).title('Alert').ok('OK'));
+    
+    
      $http(req).success(function (data, status, header, config) {
             //$http.FetchData(req).success(function (data, status, headers, config) {
 
