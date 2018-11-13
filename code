@@ -8,7 +8,23 @@
         $scope.IntcityList = citys;
 
     });
+    Gotomenu('accountstatement')
     
+    $scope.Gotomenu = function (arg) {
+        console.log('arg', arg)
+        //  console.log('Loggedin', $scope.IsLoggedIn);
+
+
+        if ($scope.IsLoggedIn) {
+            window.location = getpath() + "#" + arg.toLowerCase();
+            $scope.openSideMenu();
+        }
+        else {
+            window.location = getpath() + "#/login/";
+        }
+
+
+    }
      function getpath() {
         try {
             var pathArray = window.location.href.split('/');
