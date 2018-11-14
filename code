@@ -25,6 +25,23 @@
 
 
     }
+   $scope.loadGallery = function () {
+        var slider = $('#lightSlider').lightSlider({
+            gallery: true,
+            item: 1,
+            loop: true,
+            slideMargin: 0,
+            thumbItem: 5
+        });
+        //slider.destroy();
+    }
+    setTimeout(function () {
+        $scope.loadGallery();
+    }, 500);
+    
+    
+    
+    
      function getpath() {
         try {
             var pathArray = window.location.href.split('/');
