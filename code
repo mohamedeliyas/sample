@@ -39,7 +39,12 @@
         $scope.loadGallery();
     }, 500);
     
-    
+     $scope.scroolToDest = function (id) {
+        $timeout(function () {
+            $location.hash(id);
+            $anchorScroll();
+        });
+    }
     
     
      function getpath() {
