@@ -1,0 +1,2628 @@
+var lobjDT = [];
+var lobjDR;
+var ThreadCount = 0;
+var ThreadId = 0;
+var TotalThread = 0;
+var xhttpss;
+var xml;
+var airxml;
+var MarkupIdValue;
+var calendarEvents = {};
+var setChepestFares = [];
+var AirlineId = "";
+var SearchedFare = 0;
+var onGoingFare = 0;
+var RtGoingFare = 0;
+var triptypr;
+function setDesign() {
+    try {
+        var nomonth = 3;
+        if (($(window).width() < 700) && ($(window).width() >= 400))
+            nomonth = 2;
+        else if ($(window).width() < 400)
+            nomonth = 1;
+        var arrjsReturn;
+        $('#ddate').datepicker({
+            numberOfMonths: 1,
+            minDate: 0,
+            maxDate: "+1Y",
+            dateFormat: "dd/mm/yy",
+            showButtonPanel: true,
+            beforeShowDay: function (date) {
+                var date2 = $.datepicker.formatDate('dd/mm/yy', date);
+                var specificPrice = "";
+                for (x in calendarEvents) {
+                    if (calendarEvents[x] != null) {
+                        var EventDate = calendarEvents[x].date;
+                        if (EventDate == date2) {
+                            specificPrice = calendarEvents[x].fare;
+                        }
+                    }
+                }
+                return [true, "", specificPrice];
+            },
+            beforeShow: function (elem, inst) {
+
+                getEvents($('#ddate').val().split('/')[1], $('#ddate').val().split('/')[2], "ddate");
+
+            },
+            onChangeMonthYear: function (year, month, inst) {
+
+                getEvents(month, year, "ddate");
+
+            },
+            onSelect: function (dateText, inst) {
+                arrjsReturn = $("#ddate").val().split("/");
+                $("#rdate").datepicker("option", "minDate", new Date(arrjsReturn[2], arrjsReturn[1] - 1, arrjsReturn[0]));
+            }
+        });
+        if ($("#ddate").val() != null) {
+            arrjsReturn = $("#ddate").val().split("/");
+            $('#rdate').datepicker({
+                numberOfMonths: 1,
+                minDate: new Date(arrjsReturn[2], arrjsReturn[1] - 1, arrjsReturn[0]),
+                maxDate: "+1Y",
+                dateFormat: "dd/mm/yy",
+                beforeShowDay: function (date) {
+                    var date2 = $.datepicker.formatDate('dd/mm/yy', date);
+                    var specificPrice = "";
+                    for (x in calendarEvents) {
+                        if (calendarEvents[x] != null) {
+                            var EventDate = calendarEvents[x].date;
+                            if (EventDate == date2) {
+                                specificPrice = calendarEvents[x].fare;
+                            }
+                        }
+                    }
+                    return [true, "", specificPrice];
+                },
+                beforeShow: function (elem, inst) {
+                    getEvents($('#rdate').val().split('/')[1], $('#rdate').val().split('/')[2], "rdate");
+
+                },
+                onChangeMonthYear: function (year, month, inst) {
+                    getEvents(month, year, "rdate");
+
+                },
+                showButtonPanel: true
+            });
+        }
+        $(document).ajaxStart(function () {
+            Hideloader();
+            Showloader();
+        });
+        $(document).ajaxComplete(function () {
+            Hideloader();
+        });
+        localStorage.clear();
+        $(".btnTax").click(function (event) {
+            event.preventDefault();
+        });
+        $(".hasDatepicker").on('focus', function (event) {
+            event.preventDefault();
+            event.stopPropagation();
+            return false;
+        });
+    }
+    catch (e) {
+        console.log('Error in setDesign() - ' + e.toString());
+    }
+
+}
+function getEvents(month, year, id) {
+
+    try {
+        if (month && year && month.toString().length >= 1 && year.toString().length == 4) {
+            $(document).ajaxStart(function () {
+                Hideloader();
+            });
+            console.log("month.toString().length", month.toString(), month.toString().length);
+            if (month.toString().length == 1) {
+                month = "0" + month;
+            }
+            var input = {};
+            input.Orgin = $("#ddlfrom option:selected").val();
+            input.Dest = $("#ddlto option:selected").val();
+            input.TDate = "01/" + month + "/" + year;
+            $.ajax({
+                type: "POST",
+                url: getPath() + "WCF/wsLowfare.svc/GetLowFare",
+                contentType: "application/json; charset=utf-8",
+                data: JSON.stringify(input),
+                dataType: 'json',
+                processdata: false,
+                success: function (data) {
+                    calendarEvents = JSON.parse(data.d);
+                },
+                error: function (xhr, ajaxOptions, thrownError) {
+                    $("#" + id).datepicker("hide");
+                },
+                complete: function (x, y) {
+                    $("#" + id).datepicker("refresh");
+
+                    $('table.ui-datepicker-calendar tbody td').each(function () {
+                        var calendarPrice = $(this).attr('title');
+                        if (calendarPrice != undefined) {
+                            $(this).find('a').parent().append('<span style="font-size: 10px;font-weight:bold; margin-top: -15px; float: left;color:' + $(this).find('a').css("color") + ' ">&#8369; ' + calendarPrice.replace(".00", "") + '</span>');
+                        }
+
+                    });
+                    $(".ui-state-default").css({ "min-height": "30px", "min-width": "30px" });
+
+                }
+
+            });
+        }
+    }
+    catch (e) {
+        alert('getEvents-' + e);
+    }
+}
+function getNextPrevFare(arg) {
+    $(document).ajaxStart(function () {
+        Hideloader();
+    });
+    var input = {};
+    input.Orgin = $("#ddlfrom option:selected").val();
+    input.Dest = $("#ddlto option:selected").val();
+    if (arg == 'O')
+        input.TDate = $("#ddate").val();
+    if (arg == 'R')
+        input.TDate = $("#rdate").val();
+    input.TID = $("#ctl00_lblTerminalID").html();
+    $.ajax({
+        type: "post",
+        url: getPath() + "WCF/wsLowfare.svc/GetOtherMonthLowFare",
+        contentType: "application/json; charset=utf-8",
+        data: JSON.stringify(input),
+        dataType: 'json',
+        processdata: false,
+        success: function (data) {
+            var PrevNextFare = JSON.parse(data.d);
+            var Result = "<div class='row'>";
+
+            $.each(PrevNextFare, function (key, data) {
+                Result += "<div style='width:14.28%;float:left;text-align:center;font-weight:bold;border-right:1px solid #eaeaea;padding:5px;'>";
+                Result += "<span style='font-size:12px;' class='text-info'>" + new Date(data.date).format("dd MMM yyyy") + "</span><br>";
+                Result += "<span style='font-size:14px;' class='text-primary'>&#8369;&nbsp</span><span style='font-size:16px;' class='cartFare'>" + data.fare + "</span>";
+                Result += "</div>";
+            });
+            Result += "</div>";
+            $("#DivOtherMonthFare").removeClass("hidden");
+            $("#DivOtherMonthFare").html(Result);
+        },
+        error: function (xhr, ajaxOptions, thrownError) {
+
+        }
+
+    });
+
+}
+function BuildDataTable(pstrInput, threadid) {
+    try {
+        var instring = buildSearchStr();
+        var DblMarkupAmountNew = 0;
+        var DblMarkupAmountOld = 0;
+        var lobjrow;
+        var lstrflightDetails;
+        var lintflightcnt;
+        var lintcnt;
+        var lintripcnt;
+        var llstrcrsid;
+        var Usertrackid;
+        var strInputMain = pstrInput.split("^");
+        var AirMarkup = {
+            'A1': '0,0',
+            'A6': '0,0',
+            'A9': '0,0',
+            'A10': '0,0',
+            'A620': '0,0',
+            'A869': '0,0',
+            'A892': '0,0'
+        }
+        for (lintripcnt = 0; lintripcnt < strInputMain.length - 1; lintripcnt++) {
+            if ((strInputMain[lintripcnt] != "") && (strInputMain[lintripcnt].indexOf("ERR-00") < 0)) {
+                var strInputSub = strInputMain[lintripcnt].split("#");
+                var strexairid = "";
+                DblMarkupAmountNew = 0;
+                DblMarkupAmountOld = 0;
+                for (lintflightcnt = 0; lintflightcnt < strInputSub.length - 1; lintflightcnt++) {
+                    var lstrcmdargmt = "";
+                    var lstr = "";
+                    if (strInputSub[lintflightcnt].split('&').length == 3) {
+
+                        var j = 0;
+                        for (var i = 0; i < MarkupIdValue.length; i++) {
+                            for (var j = 0; j < strInputSub[lintflightcnt].split('&')[0].split('-')[1].split(',').length; j++) {
+                                if (strInputSub[lintflightcnt].split('&')[0].split('-')[1].split(',')[j] == MarkupIdValue[i].Key) {
+                                    var lstrAir = 'A' + MarkupIdValue[i].Key;
+                                    AirMarkup[lstrAir] = parseFloat(MarkupIdValue[i].Value) + ',' + strInputSub[lintflightcnt].split('&')[0].split('-')[0].split(',')[j];
+                                }
+                            }
+                        }
+                        $("#hdnUsertTrack").val(strInputSub[lintflightcnt].split('&')[1]);
+                        strInputSub[lintflightcnt] = strInputSub[lintflightcnt].split('&')[2];
+                    }
+                    var strInputSubsub = strInputSub[lintflightcnt].split("@");
+                    var StrCRS = strInputSubsub[strInputSubsub.length - 1].split("*")[0];
+                    lstrcmdargmt += '' + lintripcnt + "~" + $("#hdnUsertTrack").val();
+                    var strconnectionFareRule = "";
+                    var strDetailTbl = "";
+                    var strMaintbl = "";
+                    var iupper = strInputSubsub.length - 1;
+                    var strConnection = "D";
+                    var strtblstring = "";
+                    var strtblstringR = "";
+                    for (lintcnt = 0; lintcnt < iupper; lintcnt++) {
+                        if (strexairid != strInputSubsub[lintcnt].split("|")[1]) {
+                            strexairid = strInputSubsub[lintcnt].split("|")[1];
+                            var airi = 'A' + strexairid;
+                            var tempid = AirMarkup[airi];
+                            DblMarkupAmountOld = parseFloat(tempid.split(',')[1]);
+                            DblMarkupAmountNew = parseFloat(tempid.split(',')[0]);
+                            if (isNaN(parseFloat(DblMarkupAmountOld))) {
+                                DblMarkupAmountOld = 0;
+                            }
+                            if (isNaN(parseFloat(DblMarkupAmountNew))) {
+                                DblMarkupAmountNew = 0;
+                            }
+                        }
+                        var strDetails = strInputSubsub[lintcnt].split("|");
+                        console.log(strDetails);
+                        var strOrg;
+                        var strDest;
+                        $(xml).find('Station').each(function () {
+                            if ($(this).attr('Station_ID') == strDetails[6].slice(0, 3)) {// strDetails[6].replace(",", "")
+                                strOrg = $(this).attr('Station_Name') + " (" + strDetails[6].slice(0, 3) + ")"; //+ " (" + strDetails[6].replace(",", "") + ")"
+                                
+                            }
+                            if ($(this).attr('Station_ID') == strDetails[7].slice(0, 3)) {
+                                strDest = $(this).attr('Station_Name') + " (" + strDetails[7].slice(0, 3) + ")"; //replace(",", "")
+
+                            }
+                        });
+                        var DTerminal = ""; // DepartTerminal[0][strDetails[6].replace(",", "")];
+                        var ATerminal = ""; // ArrivalTerminal[0][strDetails[7].replace(",", "")];
+                        if (DTerminal != null) {
+                            DTerminal = "<br/><span>" + DTerminal + "</span>";
+                        }
+                        if (ATerminal != null) {
+                            ATerminal = "<br/><span>" + ATerminal + "</span>";
+                        }
+                        var strDepature = strOrg + "$" + strDetails[8].replace(" ", "$");
+                        var arival = strDest + "$" + strDetails[9].replace(" ", "$");
+                        var strid = threadid + "" + lintripcnt + "" + (lintflightcnt + 1);
+
+                        //'----------------Griview Columns Start-------------------
+
+                        var lstrDep = changedt(strDetails[8]);
+                        var lstrarr = changedt(strDetails[9]);
+                        var strimgname = strDetails[3];
+                        if (("|OPERATED BY -2P-| |OPERATED BY PAL EXPRESS|").indexOf("|" + strDetails[12].toUpperCase() + "|") >= 0) {
+                            strimgname = "2P";
+                        }
+                        var Meals = "<span data-toggle='tooltip' title='Meals not available' class='glyphicon glyphicon-cutlery text-default'></span>";
+                        var Baggage = "<span data-toggle='tooltip' title='Baggage not available' class='glyphicon glyphicon-briefcase text-default'></span>";
+                        if (strimgname == "PR") {
+                            Meals = "<span data-toggle='tooltip' title='Meals not available' class='glyphicon glyphicon-cutlery text-default'></span>";
+                            Baggage = "<span data-toggle='tooltip' title='Baggage available' class='glyphicon glyphicon-briefcase text-primary'></span>";
+                        }
+                        var AirIDSegID = "";
+
+                        if (strDetails[5] != "") {
+                            AirIDSegID = "[" + strDetails[5] + "]";
+                        }
+                        var strImgcls = getImage(strimgname);
+                        var strAirlineName = getAirlineName(strimgname);
+                        if (strImgcls == "0") {
+                            $(airxml).find('airlines').each(function () {
+                                if ($(this).attr('IATACode') == strimgname) {
+
+                                    // var path1 = window.location
+                                    strImgcls = "<img class='airlogowidth Airimg' src='" + getPath() + "/images/logos/A" + $(this).attr("AirlinesId") + ".bmp' alt='" + $(this).attr("AirlinesName") + "'/>";
+                                }
+                            });
+                        }
+                        var col1 = "<div class='col-md-2 col-sm-2 col-xs-12'>";
+                        var col2 = "<div class='col-md-4 col-sm-4 col-xs-12'>";
+                        var col3 = "<div class='col-md-3 col-sm-3 col-xs-12'>";
+                        var col4 = "<div class='col-md-3 col-sm-3 col-xs-12'>";
+                        var col5 = "";
+                        var te = '';
+                        col1 += strImgcls + "</div>";
+                        col2 += "<span><b>" + strAirlineName + "</b></span><br/>";
+                        col2 += "<span>" + strDetails[3] + "-" + strDetails[4] + AirIDSegID + "</span><br/>";
+
+                        col3 += "<hr class='visible-xs-block'><span><b>" + strOrg + "</b><br/>" + lstrDep + "<br/>" + strDetails[8].split(" ")[1] + "</span>" + DTerminal + "</div>";
+                        col4 += "<hr class='visible-xs-block'><span><b>" + strDest + "</b><br/>" + lstrarr + "<br/> " + strDetails[9].split(" ")[1] + "</span>" + ATerminal + "</div>";
+
+                        var strDur = strDetails[10];
+                        var SeateCount = "";
+                        if (strDetails[15].split("$")[0].split("*").length > 12) {
+                            if (strDetails[15].split("$")[0].split("*")[12] != "") {
+                                var NoofSeat = strDetails[15].split("$")[0].split("*")[12];
+                                if (parseInt(NoofSeat) !== 0) {
+                                    SeateCount += "<img src='images/Seat.png' /> &nbsp Available Seat(s) :" + NoofSeat;
+                                    if (parseInt(NoofSeat) <= 5) {
+                                        SeateCount += "<span id='animated-example' class='animated flash text-primary'><b>&nbsp&nbsp Hurry Up</b></span>";
+                                    }
+                                }
+                            }
+                        }
+                        var strstop = "";
+                        if ((strDetails[11] != "") || (strDetails[12] != "")) {
+                            strstop = "Stop over " + strDetails[11] + "<br/> ";
+
+                        }
+                        col2 += strstop + strDur;
+                        if (lintcnt == 0) {
+                            if (strInputSubsub.length == 2) {
+                                llstrcrsid = strInputSubsub[1].split("*")[0];
+                            }
+                            else {
+                                llstrcrsid = "";
+                            }
+
+                            lstrflightDetails += strInputSubsub[lintcnt] + "@" + llstrcrsid;
+                        }
+                        else {
+                            lstrflightDetails += strInputSubsub[lintcnt] + "@"
+                        }
+                        var FareType = "";
+                        if (strDetails[15].split("$")[0].split("*")[4] != "") {
+                            FareType = "-" + strDetails[15].split("$")[0].split("*")[4].replace("NonRefundable", "<br/>Non Refundable") + "<br/>";
+                        }
+                        col2 += strDetails[15].split("*")[0] + FareType + (strDetails[12].replace(",", " ") == "" ? "" : strDetails[12].replace(",", " ") + "<br/>") + "</div>";
+
+                        // '------- Command Arg and text----
+
+
+                        var ldblTotalCost = 0;
+                        ldblTotalCost = buildCost(strDetails[3] + "~" + "~" + strInputSubsub.length + "~" + strDetails[15]);
+                        //DblMarkupamount = DblMarkupamount + DblMarkupamountold;
+
+                        var ldblbasefare = 0;
+                        var ldblgrossfare = 0;
+                        var ldbldiscountamt = 0;
+                        var ldbltaxes = 0;
+
+                        if (strDetails[15].split("$")[0].split("*")[3] != "") {
+                            ldblbasefare += parseFloat(strDetails[15].split("$")[0].split("*")[3].replace(",", ""));
+                        }
+
+                        if (strDetails[15].split("*").length == 9) {
+                            if ((strDetails[15].split("*")[3] == "") || (strDetails[15].split("*")[3] == "$")) {
+                                trmp = 0;
+                            }
+                            else {
+                                temp = strDetails[15].split("*")[3].replace("$", "");
+                            }
+
+                            ldblgrossfare += temp;
+                        }
+                        else {
+                            if ((strDetails[15].split("*")[10] == "") || (strDetails[15].split("*")[10] == "$")) {
+                                temp = 0;
+                            }
+                            else {
+                                temp = strDetails[15].split("*")[10].replace("$", "");
+                            }
+
+                            ldblgrossfare += temp;
+                        }
+                        ldbltaxes = parseFloat(ldblgrossfare) - parseFloat(ldblbasefare);
+                        lstr += strDepature + "~" + arival + "~";
+                        if (lintcnt == 0) {
+                            lstrcmdargmt += "~" + strDetails[3] + "~";
+                        }
+                        lstrcmdargmt += strDetails[0] + "$" + strDetails[15].split("*")[0] + "$" + strDetails[0] + "$" + strDetails[15].split("*")[3] + "$" + strDetails[8] + "$" + strDetails[9] + "$" + strDetails[4] + "~";
+
+                        //                        '------- Command Arg and text----
+                        //                        '------- Fare Rule----
+                        var strFrule = "";
+                        if (strInputSubsub.length - 1 > 1) {
+                            strConnection = "C";
+                            if (lintcnt == strInputSubsub.length - 2) {
+                                if (strconnectionFareRule != "") {
+                                    strFrule = $("#hdnUsertTrack").val() + "$" + strconnectionFareRule + strDetails[2] + "#" + strDetails[3] + "#" + strDetails[0] + "#" + strDetails[15].split("$")[0].split("*")[0] + "~$" + $("#ddlto").val() + "$" + StrCRS;
+                                }
+                                else {
+                                    strFrule = $("#hdnUsertTrack").val() + "$" + strDetails[2] + "#" + strDetails[3] + "#" + strDetails[0] + "#" + strDetails[15].split("$")[0].split("*")[0] + "~$" + $("#ddlto").val() + "$" + StrCRS;
+                                }
+                            }
+                            else {
+                                var strDetailsNxt = strInputSubsub[lintcnt].split("|")
+                                if (strDetails[15].split("$")[0].split("*")[4] == strDetailsNxt[15].split("$")[0].split("*")[4]) {
+                                    strconnectionFareRule += strDetails[2] + "#" + strDetails[3] + "#" + strDetails[0] + "#" + strDetails[15].split("$")[0].split("*")[0] + "~";
+                                }
+                                else {
+                                    if (strconnectionFareRule != "") {
+                                        strFrule = $("#hdnUsertTrack").val() + "$" + strconnectionFareRule + strDetails[2] + "#" + strDetails[3] + "#" + strDetails[0] + "#" + strDetails[15].split("$")[0].split("*")[0] + "~$" + $("#ddlto").val() + "$" + StrCRS;
+                                    }
+                                    else {
+                                        strFrule = $("#hdnUsertTrack").val() + "$" + strDetails[2] + "#" + strDetails[3] + "#" + strDetails[0] + "#" + strDetails[15].split("$")[0].split("*")[0] + "~$" + $("#ddlto").val() + "$" + StrCRS;
+                                    }
+                                }
+
+                            }
+
+                        }
+
+                        else {
+                            strFrule = $("#hdnUsertTrack").val() + "$" + strDetails[2] + "#" + strDetails[3] + "#" + strDetails[0] + "#" + strDetails[15].split("$")[0].split("*")[0] + "~$" + $("#ddlto").val() + "$" + StrCRS;
+                        }
+                        var Farerule = "";
+                        if (strFrule != "") {
+                            temp = '"' + strFrule.replace("#", "*") + '"';
+                            Farerule = "<a href='javascript:void(0)' onclick='getFareRul(" + temp + ");'> Fare Rule! </a> &nbsp&nbsp";
+                        }
+
+                        lobjDR = {
+                            'Flight': "",
+                            'FlightID': "",
+                            'Departure': "",
+                            'Arrival': "",
+                            'GrossAmount': "",
+                            'Bpay': "",
+                            'FareString': "",
+                            'CmdArg': "",
+                            'CmdTxt': "",
+                            'TblContent': "",
+                            'RowInd': "",
+                            'CRSID': "",
+                            'ConFlight': "",
+                            'AMTTyp': "",
+                            'FLAG': "",
+                            'ConIndx': "",
+                            'via': "",
+                            'Duration': "",
+                            'CuurClass': "",
+                            'Refund': "",
+                            'Markup': "",
+                            'detailview': "",
+                            'Ongoingstr': '',
+                            'Returnstr': '',
+                            'Airimg': ''
+                        };
+                        var gross = 0;
+                        if (lintcnt == iupper - 1) {
+                            lobjDR.Airimg = strImgcls;
+                            lobjDR.FLAG = lintripcnt;
+                            ldblTotalCost = parseFloat(ldblTotalCost) - parseFloat(DblMarkupAmountOld);
+                            ldblTotalCost = parseFloat(ldblTotalCost) + parseFloat(DblMarkupAmountNew);
+
+                            lobjDR.Bpay = "<span>" + parseFloat(ldblTotalCost) + "</span>";
+                            ldblgrossfare = parseFloat(ldblgrossfare) - parseFloat(DblMarkupAmountOld);
+                            ldblgrossfare = parseFloat(ldblgrossfare) + parseFloat(DblMarkupAmountNew);
+                            lobjDR.FareString = $("#ddladult").val() + "~" + ldblbasefare + "~" + ldbltaxes + "~" + ldblgrossfare + "~" + ldbldiscountamt;
+                            lobjDR.ConFlight = strConnection;
+                            lobjDR.CRSID = StrCRS;
+                            lobjDR.AMTTyp = strDetails[13];
+                            lobjDR.RowInd = strid;
+                            lobjDR.TblContent = strMaintbl;
+                            lobjDR.detailview = strDetailTbl;
+                            var lbltotcost = 0;
+
+                            if (strDetails[15].split("*").length == 9) {
+                                if ((strDetails[15].split("*")[3] == "") || (strDetails[15].split("*")[3] == "$")) {
+                                    gross = 0;
+                                }
+                                else {
+                                    gross = strDetails[15].split("*")[3].replace("$", "");
+                                }
+                                lbltotcost = (parseInt(gross) * parseInt($("#ddlinfant").val()));
+                            }
+                            else {
+                                if ((strDetails[15].split("*")[10] == "") || (strDetails[15].split("*")[10] == "$")) {
+                                    gross = 0;
+                                }
+                                else {
+                                    gross = strDetails[15].split("*")[10].replace("$", "");
+                                }
+                            }
+                            lbltotcost = (gross * parseInt($("#ddlinfant").val()));
+                        }
+
+                        gross = parseFloat(gross) - parseFloat(DblMarkupAmountOld);
+                        gross = parseFloat(gross) + parseFloat(DblMarkupAmountNew);
+                        lobjDR.GrossAmount = gross;
+                        lobjDR.Cmdtxt = lstr + "~" + parseFloat(ldbldiscountamt) + "~" + parseFloat(lbltotcost) + "~" + StrCRS;
+                        lobjDR.CmdArg = lstrcmdargmt;
+                        lobjDR.Flight = strDetails[3];
+                        lobjDR.FlightID = strDetails[1];
+                        lobjDR.Departure = strInputSubsub[0].split("|")[8].split("/")[1] + "/" + strInputSubsub[0].split("|")[8].split("/")[0] + "/" + strInputSubsub[0].split("|")[8].split("/")[2];
+                        var arrdttim = strInputSubsub[strInputSubsub.length - 2].split("|")[9];
+                        lobjDR.Arrival = arrdttim.split("/")[1] + "/" + arrdttim.split("/")[0] + "/" + arrdttim.split("/")[2];
+
+
+
+                        if (lintcnt == iupper - 1) {
+                            var temptaxstr = "";
+                            if (lintripcnt == 0) {
+                                temptaxstr = 'this,"' + lobjDR.RowInd + '~O~' + lobjDR.GrossAmount + '"';
+                                col5 += "<b><span class='text-primary' style='font-size:16px;'>PHP&nbsp </span></b><span data-toggle='popover' data-placement='bottom' title='Fare Summary' class='SpanFareDesc faresummarypop cartFare' id='SpnShowFareSummary" + lobjDR.RowInd + "' title='Fare Summary' data-toggle='popover' data-trigger='hover' data-content='" + ShowFareSummary(lobjDR.FareString) + " '>" + lobjDR.Bpay + "</span><hr />";
+                                col5 += "<label class='span right' for='chkMail" + lobjDR.RowInd + "'><div class='lblalign '></div><div class='CheckBox Checkdiv left'><input type='checkbox' class='mycheck Checkboxdiv OngoingChkmail' tabindex='10'  name='chkMail" + lobjDR.RowInd + "' id='chkMail" + lobjDR.RowInd + "' onclick='OngoMailChk();' /></div></label>";
+                                col5 += "<div style='margin:0;'><input type='button'   id='btnselect" + lobjDR.RowInd + "' class='btn btn-sm btn-danger btnTax' value='Select' onclick='CalTax(" + temptaxstr + ");return false;' /></div>";
+
+                            }
+                            if (lintripcnt == 1) {
+                                temptaxstr = 'this,"' + lobjDR.RowInd + '~R~' + lobjDR.GrossAmount + '"';
+                                col5 += "<b><span class='text-primary' style='font-size:16px;'>PHP&nbsp </span></b><span data-toggle='popover' data-placement='bottom' title='Fare Summary' class='SpanFareDesc faresummarypop cartFare' id='SpnShowFareSummary" + lobjDR.RowInd + "' title='Fare Summary' data-toggle='popover' data-trigger='hover' data-content='" + ShowFareSummary(lobjDR.FareString) + " '>" + lobjDR.Bpay + "</span><hr />";
+                                col5 += "<label class='span right' for='chkMail" + lobjDR.RowInd + "'><div class='lblalign '></div><div class='CheckBox Checkdiv left'><input type='checkbox' class='mycheck Checkboxdiv ReturnChkmail' tabindex='10'  name='chkMail" + lobjDR.RowInd + "' id='chkMail" + lobjDR.RowInd + "' onclick='ReturnChkmail();' /></div></label>";
+                                col5 += "<div style='margin:0;'><input type='button'  id='btnselect" + lobjDR.RowInd + "' class='btn btn-sm btn-danger btnTax' value='Select' onclick='CalTax(" + temptaxstr + ");return false;' /></div>";
+                            }
+                        }
+
+                        strtblstring += "<div class='row'><div class='col-md-10'><div class='row' style='padding-top: 15px'>" + col1 + col2 + col3 + col4 + "</div><div class='row' style='padding: 15px 15px 0 0;'><div class='col-md-12 col-xs-12' style='border-top:1px solid #f5f5f5; margin-top:-5px;'></div><div class='col-md-5 col-xs-12'><span class='glyphicon glyphicon-briefcase text-primary'></span><span>&nbsp&nbsp Hand baggage 7kg.</span></div><div class='col-md-5 col-xs-12'><span>" + SeateCount + "</span></div><div class='col-md-2 col-xs-12'><span class='right'>" + Farerule + "&nbsp&nbsp" + Baggage + "&nbsp&nbsp" + Meals + "</span></div></div>" + (col5 == "" ? "<hr style='opacity: 0.4; margin: 0px;'>" : "") + "</div><div class='col-md-2 text-center " + (col5 == "" ? "hidden-xs hidden-sm" : "") + "'><div style='margin: 0px -2px; background-color: #f0f0f0; padding: 10px 0px; min-height: 125px;'>" + col5 + "</div></div></div>";
+
+                        if (lintcnt == iupper - 1) {
+                            if (lintripcnt == 0) {
+                                lobjDR.Ongoingstr = "<div id='DivLeg" + lobjDR.RowInd + "'  style='margin: 5px 0px; border: 6px solid #f0f0f0;'>" + strtblstring + "</div></div>";
+                            }
+                            if (lintripcnt == 1) {
+                                lobjDR.Returnstr = "<div id='DivLeg" + lobjDR.RowInd + "'  style='margin: 5px 0px; border: 6px solid #f0f0f0;'>" + strtblstring + "</div></div>";
+                            }
+                        }
+                    }
+                    lobjDT.push(lobjDR);
+                }
+            }
+        }
+        var lstrOngoing = '', lstrReturn = '', tempairid = '';
+        var Lobjarray = SortingObj(lobjDT, 'GrossAmount', 1);
+        $("#Divinnercheapestfare").html('');
+        setChepestFares = [];
+        $.each(Lobjarray, function (idx, obj) {
+            if ((tempairid.indexOf(obj.Flight + ',') <= -1) && (obj.FLAG == 0)) {
+                tempairid += obj.Flight + ', ';
+                var lobjCF = {
+                    'Airimg': obj.Airimg,
+                    'GrossAmount': obj.GrossAmount,
+                    'Flight': obj.Flight
+                }
+
+                setChepestFares.push(lobjCF);
+
+            }
+            lstrOngoing = lstrOngoing + obj.Ongoingstr;
+            lstrReturn = lstrReturn + obj.Returnstr;
+            // console.log('lstrReturn', lstrReturn)
+        });
+        $("#OngoingRes").html(lstrOngoing);
+        $("#ReturnRes").html(lstrReturn);
+        console.log(lstrReturn)
+        $("#divmailicon").removeClass("Dnone");
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in BuildDataTable() - ' + e.toString());
+    }
+}
+function SetDesignloc() {
+    $('.SpanFareDesc').popover({
+        html: true
+    });
+    buildChkButton();
+    if ($('#DivOtherMonthFare').css('display') != 'none') {
+        $(".ItemOutCel").each(function () {
+            $(this).css("height", $(this).parent().css("height"));
+
+        });
+    }
+    $('[data-toggle="tooltip"]').tooltip();
+    //if ($("#RbtReturnval").is(':checked'))
+    //$(".Hidden-rd").css("display", "none");
+}
+function SetCheapestFare(Arg) {
+    try {
+        var htmlstr = "";
+        var count = 0;
+        var MaxLength = 6;
+        var showclass = "col-xs-3";
+        if (($(window).width() < 800) && ($(window).width() >= 700)) {
+            MaxLength = 4;
+        }
+        if (($(window).width() < 700) && ($(window).width() >= 400)) {
+            MaxLength = 3;
+            showclass = "col-xs-4";
+        }
+        else if ($(window).width() < 400) {
+            MaxLength = 1;
+            showclass = "col-xs-8";
+        }
+
+        $.each(Arg, function (key, data) {
+            if (count == 0) {
+                htmlstr += '<div class="item ' + (key == 0 ? 'active' : '') + '"> <div class="row">';
+            }
+            var onclick = "sortbyairlineid('" + data.Flight + "')";
+            htmlstr += '<div class="col-md-2 ' + showclass + '"><div style="margin-bottom:0px;cursor: pointer;text-align:center;" class="thumbnail">';
+            htmlstr += "<div onclick=" + onclick + ">" + data.Airimg;
+            htmlstr += "<br /><span class='text-primary' style='font-size:16px'>&#8369;&nbsp </span><span class='cartFare'>";
+            htmlstr += data.GrossAmount + "</span> </div>";
+            htmlstr += "</div></div>";
+            count++;
+            if (count == MaxLength) {
+                count = 0;
+                htmlstr += '</div> </div>';
+            }
+
+
+        })
+
+        $("#Divcheapestfare").removeClass('Dnone');
+        $("#Divinnercheapestfare").html(htmlstr);
+        return true;
+        var airid = '"' + airlineid + '"';
+        var strcontent = "<div class='dcon formove left TAlignC' onclick='sortbyairlineid(" + airid + ")'>" + airimage;  //  + "<span class='badge'>30</span><br />";
+        strcontent += "<br><span class='text-primary' style='font-size:16px'>₱ </span><span class='cartFare'>";
+        strcontent += GAmount + "</span> </div>";
+        $("#Divinnercheapestfare").html($("#Divinnercheapestfare").html() + strcontent);
+        var t = parseInt($("#Divinnercheapestfare").css('width').replace('px', ''))
+        t = t + 180;
+
+        $("#Divinnercheapestfare").css('width', t + 'px');
+
+    }
+    catch (e) {
+        console.log('Error in SetCheapestFare() - ' + e.toString());
+    }
+}
+function Directflight(me, flg) {
+    try {
+        var Dflag = 0;
+        if ($(me).is(':checked')) {
+            Dflag = 1;
+        }
+        var lstrOngoing = '', lstrReturn = '';
+        var Lobjarray = SortingObj(lobjDT, 'GrossAmount', 1);
+        $.each(Lobjarray, function (idx, obj) {
+
+            if (Dflag == 0) {
+                if (flg == 0)
+                    lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                else if (flg == 1)
+                    lstrReturn = lstrReturn + obj.Returnstr;
+            }
+            else if (Dflag == 1) {
+                if (obj.ConFlight == 'D') {
+                    if (flg == 0)
+                        lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                    else if (flg == 1)
+                        lstrReturn = lstrReturn + obj.Returnstr;
+                }
+            }
+
+
+        });
+        if (flg == 0)
+            $("#OngoingRes").html(lstrOngoing);
+        else
+            $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in Directflightfilter() - ' + e.toString());
+    }
+
+
+}
+function Directflightfilter() {
+    try {
+        var Dflag = 0;
+        var Cflag = 0;
+        if ($("#ChkDflight").is(':checked')) {
+            Dflag = 1;
+        }
+        if ($("#ChkConFlight").is(':checked')) {
+            Cflag = 1;
+        }
+        var lstrOngoing = '', lstrReturn = '';
+        var Lobjarray = SortingObj(lobjDT, 'GrossAmount', 1);
+        $.each(Lobjarray, function (idx, obj) {
+            if ((Dflag == 1) && (Cflag == 1)) {
+                lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                lstrReturn = lstrReturn + obj.Returnstr;
+            }
+            else if (Dflag == 1) {
+                if (obj.ConFlight == 'D') {
+                    lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                    lstrReturn = lstrReturn + obj.Returnstr;
+                }
+            }
+            else if (Cflag == 1) {
+                if (obj.ConFlight == 'C') {
+                    lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                    lstrReturn = lstrReturn + obj.Returnstr;
+                }
+            }
+
+        });
+        $("#OngoingRes").html(lstrOngoing);
+        $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in Directflightfilter() - ' + e.toString());
+    }
+
+
+}
+function Arrrangefilter(Fromtime, Totime) {
+    try {
+        if (parseInt(Totime) != 0) {
+            Totime = parseInt(Totime) - 1;
+        }
+        Fromtime = parseInt(Fromtime + '' + '00');
+        Totime = parseInt(Totime + '' + '59');
+        var lstrOngoing = "", lstrReturn = "";
+        var Lobjarray = SortingObj(lobjDT, 'Arrival', 1);
+        $.each(Lobjarray, function (idx, obj) {
+            var tempdep = parseInt(obj.Arrival.split(' ')[1].split(':')[0] + obj.Arrival.split(' ')[1].split(':')[1]);
+            if ((tempdep >= Fromtime) && (tempdep <= Totime)) {
+                lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                lstrReturn = lstrReturn + obj.Returnstr;
+            }
+
+        });
+        $("#OngoingRes").html(lstrOngoing);
+        //   $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in Arrrangefilter() - ' + e.toString());
+    }
+
+}
+function ReturnArrrangefilter(Fromtime, Totime) {
+    try {
+        if (parseInt(Totime) != 0) {
+            Totime = parseInt(Totime) - 1;
+        }
+        Fromtime = parseInt(Fromtime + '' + '00');
+        Totime = parseInt(Totime + '' + '59');
+        var lstrOngoing = "", lstrReturn = "";
+        var Lobjarray = SortingObj(lobjDT, 'Arrival', 1);
+        $.each(Lobjarray, function (idx, obj) {
+            var tempdep = parseInt(obj.Arrival.split(' ')[1].split(':')[0] + obj.Arrival.split(' ')[1].split(':')[1]);
+            if ((tempdep >= Fromtime) && (tempdep <= Totime)) {
+                lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                lstrReturn = lstrReturn + obj.Returnstr;
+            }
+
+        });
+
+        // $("#OngoingRes").html(lstrOngoing);
+        $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in Arrrangefilter() - ' + e.toString());
+    }
+
+}
+
+function ReturnDeparturefilter(Fromtime, Totime) {
+    try {
+        if (parseInt(Totime) != 0) {
+            Totime = parseInt(Totime) - 1;
+        }
+        Fromtime = parseInt(Fromtime + '' + '00');
+        Totime = parseInt(Totime + '' + '59');
+        var lstrOngoing = "", lstrReturn = "";
+        var Lobjarray = SortingObj(lobjDT, 'Arrival', 1);
+        $.each(Lobjarray, function (idx, obj) {
+            var tempdep = parseInt(obj.Departure.split(' ')[1].split(':')[0] + obj.Departure.split(' ')[1].split(':')[1]);
+            if ((tempdep >= Fromtime) && (tempdep <= Totime)) {
+                lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                lstrReturn = lstrReturn + obj.Returnstr;
+            }
+
+        });
+        // $("#OngoingRes").html(lstrOngoing);
+        $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in Arrrangefilter() - ' + e.toString());
+    }
+
+}
+
+function Deptrangefilter(Fromtime, Totime) {
+    try {
+        if (parseInt(Totime) != 0) {
+            Totime = parseInt(Totime) - 1;
+        }
+        Fromtime = parseInt(Fromtime + '' + '00');
+        Totime = parseInt(Totime + '' + '59');
+        var lstrOngoing = "", lstrReturn = "";
+        console.log('log', lobjDT)
+        var Lobjarray = SortingObj(lobjDT, 'Departure', 1);
+        console.log('Lobjarray', Lobjarray)
+        $.each(Lobjarray, function (idx, obj) {
+            var tempdep = parseInt(obj.Departure.split(' ')[1].split(':')[0] + obj.Departure.split(' ')[1].split(':')[1]);
+
+            if ((tempdep >= Fromtime) && (tempdep <= Totime)) {
+                lstrOngoing = lstrOngoing + obj.Ongoingstr;
+
+                lstrReturn = lstrReturn + obj.Returnstr;
+            }
+
+        });
+        $("#OngoingRes").html(lstrOngoing);
+        //   $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in Deptrangefilter() - ' + e.toString());
+    }
+}
+function Deptrangefilter(Fromtime, Totime) {
+    try {
+        if (parseInt(Totime) != 0) {
+            Totime = parseInt(Totime) - 1;
+        }
+        Fromtime = parseInt(Fromtime + '' + '00');
+        Totime = parseInt(Totime + '' + '59');
+        var lstrOngoing = "", lstrReturn = "";
+        console.log('log', lobjDT)
+        var Lobjarray = SortingObj(lobjDT, 'Departure', 1);
+        console.log('Lobjarray', Lobjarray)
+        $.each(Lobjarray, function (idx, obj) {
+            var tempdep = parseInt(obj.Departure.split(' ')[1].split(':')[0] + obj.Departure.split(' ')[1].split(':')[1]);
+
+            if ((tempdep >= Fromtime) && (tempdep <= Totime)) {
+                lstrOngoing = lstrOngoing + obj.Ongoingstr;
+
+                lstrReturn = lstrReturn + obj.Returnstr;
+            }
+
+        });
+        $("#OngoingRes").html(lstrOngoing);
+        //   $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in Deptrangefilter() - ' + e.toString());
+    }
+}
+
+function Amountrangefilter(minamount, maxamount) {
+    try {
+        var lstrOngoing = "", lstrReturn = "";
+        var Lobjarray = SortingObj(lobjDT, 'GrossAmount', 1);
+        $.each(Lobjarray, function (idx, obj) {
+            if ((obj.GrossAmount >= minamount) && (obj.GrossAmount <= maxamount))
+                lstrOngoing = lstrOngoing + obj.Ongoingstr;
+            lstrReturn = lstrReturn + obj.Returnstr;
+
+        });
+        $("#OngoingRes").html(lstrOngoing);
+        $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in Amountrangefilter() - ' + e.toString());
+    }
+}
+function QuickSort(sortkey, tripflag) {
+    try {
+        var lstrOngoing = "", lstrReturn = "";
+        var Lobjarray = SortingObj(lobjDT, sortkey, 1);
+        $.each(Lobjarray, function (idx, obj) {
+            lstrOngoing = lstrOngoing + obj.Ongoingstr;
+            lstrReturn = lstrReturn + obj.Returnstr;
+
+        });
+        if (tripflag == 1) {
+            $("#ReturnRes").html('');
+            $("#ReturnRes").html(lstrReturn);
+        }
+        else {
+            $("#OngoingRes").html('');
+            $("#OngoingRes").html(lstrOngoing);
+        }
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in QuickSort() - ' + e.toString());
+    }
+}
+function sortbyGrossAmount() {
+    try {
+        $("#OngoingRes").html('');
+        $("#ReturnRes").html('');
+        var lstrOngoing = "", lstrReturn = "";
+        var Lobjarray = SortingObj(lobjDT, 'GrossAmount', 1);
+        $.each(Lobjarray, function (idx, obj) {
+            lstrOngoing = lstrOngoing + obj.Ongoingstr;
+            lstrReturn = lstrReturn + obj.Returnstr;
+
+        });
+        $("#OngoingRes").html(lstrOngoing);
+        $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in sortbyGrossAmount() - ' + e.toString());
+    }
+}
+function sortbyairlineid(airid) {
+    try {
+        $("#OngoingRes").html('');
+        $("#ReturnRes").html('');
+        var lstrOngoing = "", lstrReturn = "";
+        var Lobjarray = SortingObj(lobjDT, 'GrossAmount', 1);
+        $.each(Lobjarray, function (idx, obj) {
+            if ((airid == 'Z2') || (airid == 'PQ')) {
+                if ((obj.Flight == 'Z2') || (obj.Flight == 'PQ')) {
+                    lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                    lstrReturn = lstrReturn + obj.Returnstr;
+                }
+            }
+            else {
+                if (obj.Flight == airid) {
+                    lstrOngoing = lstrOngoing + obj.Ongoingstr;
+                    lstrReturn = lstrReturn + obj.Returnstr;
+                }
+            }
+        });
+        $("#OngoingRes").html(lstrOngoing);
+        $("#ReturnRes").html(lstrReturn);
+        SetDesignloc();
+    }
+    catch (e) {
+        console.log('Error in sortbyairlineid() - ' + e.toString());
+    }
+}
+function SortingObj(objArray, prop, direction) {
+    try {
+        if (arguments.length < 2) throw new Error("SortingObj function requires 2 arguments");
+        var direct = arguments.length > 2 ? arguments[2] : 1; //Default to ascending
+
+        if (objArray && objArray.constructor === Array) {
+            var propPath = (prop.constructor === Array) ? prop : prop.split(".");
+            if (direction == '1') {
+                objArray.sort(function (a, b) {
+                    for (var p in propPath) {
+                        if (a[propPath[p]] && b[propPath[p]]) {
+                            a = a[propPath[p]];
+                            b = b[propPath[p]];
+                        }
+                    }
+                    // convert numeric strings to integers
+                    try {
+                        a = a.match(/^\d+$/) ? +a : a;
+                        b = b.match(/^\d+$/) ? +b : b;
+                    }
+                    catch (e) {
+                    }
+                    return ((a < b) ? -1 * direct : ((a > b) ? 1 * direct : 0));
+                });
+                return objArray;
+            }
+
+            if (direction == '0') {
+                objArray.reverse();
+                return objArray;
+            }
+        }
+    }
+    catch (e) {
+        console.log('Error in SortingObj() - ' + e.toString());
+    }
+}
+function getAirlineName(psrtAirLineCode) {
+    try {
+
+
+        if ('2P' == psrtAirLineCode) {
+            return "Air Phil Express";
+        }
+        else if ('JQ' == psrtAirLineCode) {
+            return "Jetstar";
+        }
+        else if ('3K' == psrtAirLineCode) { //Jetstar Asia
+            return "Jetstar Asia";
+        }
+        else if ('5J' == psrtAirLineCode) { //CebupacificAir
+
+            return "Cebu Pacific Air";
+        }
+        else if ('PR' == psrtAirLineCode) {   //Philippine Airlines
+            return "Philippine Airlines";
+        }
+        else if ('Z2' == psrtAirLineCode) {
+            return "Air Asia Zest";
+        }
+        else if ('PQ' == psrtAirLineCode) {
+            return "Air Asia";
+        }
+        else {
+            return "";
+        }
+
+
+    }
+    catch (e) {
+        console.log('Error in getImage() - ' + e.toString());
+    }
+}
+function getImage(psrtAirLineCode) {
+    try {
+        var lstrAirIMG = "";
+
+
+        if ('2P' == psrtAirLineCode) {
+            //Airphilexpress
+            lstrAirIMG = " class='airsprite airlogowidth  A1 Airimg' alt='Airphilexpress'";
+        }
+        else if ('JQ' == psrtAirLineCode) {
+            //Jetstar
+            lstrAirIMG = " class='airsprite airlogowidth  A2 Airimg' alt='Jetstar'";
+        }
+        else if ('3K' == psrtAirLineCode) { //Jetstar Asia
+            lstrAirIMG = " class='airsprite airlogowidth  A3 Airimg' alt='Jetstar Asia'";
+        }
+        else if ('5J' == psrtAirLineCode) { //CebupacificAir
+
+            lstrAirIMG = " class='airsprite airlogowidth  A9 Airimg' alt='CebupacificAir'";
+        }
+        else if ('PR' == psrtAirLineCode) {   //Philippine Airlines
+            lstrAirIMG = " class='airsprite airlogowidth  A6 Airimg' alt='Philippine Airlines'";
+        }
+        else if ('Z2' == psrtAirLineCode) {
+            //Zest Air
+            lstrAirIMG = " class='airsprite airlogowidth  A10 Airimg' alt='Zest Air'";
+        }
+        else {
+            return "0";
+        }
+
+        return "<img src='" + getPath() + "/images/sp_trans.gif' " + lstrAirIMG + " />"
+
+    }
+    catch (e) {
+        console.log('Error in getImage() - ' + e.toString());
+    }
+}
+function buildCost(strinput) {
+    try {
+        var pdblTotalCost = 0;
+
+        var lintclscnt = 0;
+        var parrInput = strinput.split("~");
+        var pintcnt = parseInt(parrInput[2]);
+
+        if ((parrInput[1] == "IC") || (parrInput[1] == "IT") || (parrInput[1] == "AI") || (parrInput[1] == "9W") || (parrInput[1] == "S2")) {
+            for (lintclscnt = 0; lintclscnt < parrInput[3].pplit("$").length - 1; lintclscnt++) {
+                if (lintclscnt == 0) {
+                    if (parrInput[3].split("$")[lintclscnt].split("*")[10] != "") {
+                        pdblTotalCost = parrInput[3].split("$")[lintclscnt].split("*")[10];
+                    }
+                }
+            }
+        }
+        else {
+            for (lintclscnt = 0; lintclscnt < parrInput[3].split("$").length - 1; lintclscnt++) {
+                var strArr = parrInput[3].split("$")[lintclscnt].split("*");
+                if (lintclscnt == 0) {
+                    if (strArr.Length == 9) {
+                        pdblTotalCost = strArr[3];
+                    }
+                    else {
+                        if (strArr[10] != "") {
+                            pdblTotalCost = strArr[10];
+                        }
+                    }
+
+
+                }
+            }
+        }
+        return pdblTotalCost;
+    }
+    catch (e) {
+        console.log('Error in buildCost() - ' + e.toString());
+    }
+}
+function setserverDAT(arg, flag) {
+    try {
+        $("#ddate").val(arg);
+        $('#rdate').val(arg);
+        $('#HdnServerDate').val(arg);
+        if (flag == 0) {
+            xhttpss = new XMLHttpRequest();
+            xhttpss.open("GET", getPath() + "Source/Xml/city.xml", false);
+            xhttpss.send();
+            xml = xhttpss.responseXML;
+            xhttpss.open("GET", getPath() + "Source/xml/InternationalAirlines.xml", false);
+            xhttpss.send();
+            airxml = xhttpss.responseXML;
+            $.ajax({
+                type: "POST",
+                url: getPath() + "WCF/wsDomSearch.svc/PageLoad",
+                contentType: "application/json; charset=utf-8",
+                dataType: "json",
+                global: false,
+                success: function (Responce) {
+                    MarkupIdValue = Responce.d;
+                }
+            });
+        }
+    }
+    catch (e) {
+        console.log('Error in setserverDAT() - ' + e.toString());
+    }
+}
+function ClearResult() {
+    try {
+        setChepestFares = [];
+        lobjDT.length = 0;
+        ThreadCount = 0;
+        ThreadId = 0;
+        TotalThread = 0;
+        $("#divmailicon").addClass("Dnone");
+        $("#hdnUsertTrack").val('');
+        $("#HdnPageTrack").val('');
+        //$("#Divinnercheapestfare").html('');
+        $("#OngoingRes").html('');
+        $("#ReturnRes").html('');
+        $("#OnResholder").addClass("Dnone");
+        $("#Divcheapestfare").addClass('Dnone');
+        $("#RetResholder").addClass("Dnone");
+
+        $("#h3refine").addClass("Dnone");
+        $('#pnlFares').addClass('Dnone');
+        $('#chkSendMail').attr('checked', false).trigger('change');
+        $('#chkSendMailRtn').attr('checked', false).trigger('change');
+        $("#ChkDflight").attr('checked', true).trigger('change');
+        $("#ChkDF").attr('checked', false).trigger('change');
+        $("#DivOtherMonthFare").addClass("hidden");
+    }
+    catch (e) {
+        console.log('Error in ClearResult() - ' + e.toString());
+    }
+}
+function NextPreviousDay(arg) {
+    try {
+        var begD = $.datepicker.parseDate('dd/mm/yy', $('#ddate').val());
+        var endD = $.datepicker.parseDate('dd/mm/yy', $('#rdate').val());
+        var SerD = $.datepicker.parseDate('dd/mm/yy', $('#HdnServerDate').val());
+        if (arg == 1) {
+            if (begD > SerD) {
+                var nextDayDate = new Date(begD);
+                nextDayDate.setDate(begD.getDate() - 1);
+                $('#ddate').val($.datepicker.formatDate('dd/mm/yy', nextDayDate));
+            }
+        }
+        if (arg == 2) {
+            if ($("#RbtOngoingval").is(':checked')) {
+                var nextDayDate = new Date(begD);
+                nextDayDate.setDate(begD.getDate() + 1);
+                $('#ddate').val($.datepicker.formatDate('dd/mm/yy', nextDayDate));
+
+            }
+            else {
+                if (begD < endD) {
+                    var nextDayDate = new Date(begD);
+                    nextDayDate.setDate(begD.getDate() + 1);
+                    $('#ddate').val($.datepicker.formatDate('dd/mm/yy', nextDayDate));
+                }
+            }
+        }
+        if (arg == 3) {
+            if (endD > begD) {
+                var nextDayDate = new Date(endD);
+                nextDayDate.setDate(endD.getDate() - 1);
+                $('#rdate').val($.datepicker.formatDate('dd/mm/yy', nextDayDate));
+            }
+        }
+        if (arg == 4) {
+            var nextDayDate = new Date(endD);
+            nextDayDate.setDate(endD.getDate() + 1);
+            $('#rdate').val($.datepicker.formatDate('dd/mm/yy', nextDayDate));
+        }
+        DSearchvalidate();
+    }
+    catch (e) {
+        console.log('Error in NextPreviousDay() - ' + e.toString());
+    }
+}
+function buildSearchfileds(arg) {
+    try {
+        $("#HdnBackflag").val("1");
+        if (arg.split('@').length == 2) {
+            if (arg.split('@')[1] == "1") {
+                $("#HdnBackflag").val("0");
+            }
+        }
+        var temp = arg.split('@')[0];
+        var lstrInput = temp.split('$');
+        var tempinp = lstrInput[2].split('*');
+        if (lstrInput[1] == "O") {
+            $("#RbtOngoingval").prop("checked", true).trigger('change');
+        }
+        else if (lstrInput[1] == "R") {
+            $("#RbtReturnval").prop("checked", true).trigger('change');
+        }
+        $("#ddlfrom").val(tempinp[0].split('~')[0]).trigger('change');
+        $("#ddlto").val(tempinp[0].split('~')[1]).trigger('change');
+        var Odate = tempinp[0].split('~')[2].split("/")[1] + "/" + tempinp[0].split('~')[2].split("/")[0] + "/" + tempinp[0].split('~')[2].split("/")[2];
+        var Rdate;
+        $("#ddate").val(Odate);
+
+        if (tempinp[1] != "") {
+            Rdate = tempinp[1].split('~')[2].split("/")[1] + "/" + tempinp[1].split('~')[2].split("/")[0] + "/" + tempinp[1].split('~')[2].split("/")[2];
+            $("#rdate").val(Rdate);
+        }
+        else {
+            $("#rdate").val(Odate);
+        }
+        $("#ddladult").val(lstrInput[5]).trigger('change');
+        $("#ddlchild").val(lstrInput[6]).trigger('change');
+        $("#ddlinfant").val(lstrInput[7]).trigger('change');
+        $("#ddlclass").val(lstrInput[3]).trigger('change');
+
+        if (lstrInput[15] == "0") {
+            $("#chkbxSeniorCitizen").prop("checked", false).trigger('change');
+        }
+        else {
+            $("#chkbxSeniorCitizen").prop("checked", true).trigger('change');
+            $("#ddlchild").val('0').trigger('change');
+            $("#ddlinfant").val('0').trigger('change');
+            $("#ddlchild").attr('disabled', true);
+            $("#ddlinfant").attr('disabled', true);
+        }
+        var i;
+        var airid = lstrInput[4].split(',');
+        $("input[name = 'chklstAirlines']").each(function () {
+            //if (lstrInput[4].indexOf($(this).val() + ",") >= 0) {
+            if ($.inArray($(this).val(), airid) >= 0) {
+                //alert("if-" + lstrInput[4] + $(this).val());
+                $(this).prop("checked", true).trigger('change');
+            }
+            else {
+                $("#chkAllAirlines").prop("checked", false);
+                //alert("else-" + $(this).val());
+                if (lstrInput[4] != "") {
+                    $(this).prop("checked", false).trigger('change');
+                }
+            }
+        });
+        Getmarkupvalue();
+    }
+    catch (e) {
+        console.log('Error in buildSearchfileds() - ' + e.toString());
+    }
+}
+function Gotolowfarecal() {
+    $("#HdnBackflag").val('2');
+    DSearchvalidate()
+}
+function DSearchvalidate() {
+    try {
+        ClearResult();
+        if ($("#ddlfrom").val() == '') {
+            ShowMSG('Please Enter Origin city');
+            return false;
+        }
+        if ($("#ddlto").val() == '') {
+            ShowMSG('Please Enter Destination city');
+            return false;
+        }
+        if ($("#ddlfrom").val() == $("#ddlto").val()) {
+            ShowMSG('Please select different destination city to continue your booking.');
+            return false;
+        }
+        if ($('#ddate').val() == '') {
+            ShowMSG('Please Enter Onward Date');
+            $('#ddate').focus();
+            return false;
+        }
+
+        $("#OnResholder").addClass("Dnone");
+        $("#RetResholder").addClass("Dnone");
+        $("#OnResholder").addClass("col-md-12");
+        $("#OnResholder").removeClass("col-md-6 col-sm-6");
+        $("#RetResholder").removeClass("col-md-6 col-sm-6");
+        $(".hideround").css("display", "block");
+        if ($("#RbtReturnval").is(':checked')) {
+
+
+            $(".hideround").css("display", "none");
+            $("#OnResholder").removeClass("col-md-12");
+            $("#OnResholder").addClass("col-md-6 col-sm-6");
+            $("#RetResholder").addClass("col-md-6 col-sm-6");
+
+            if ($('#rdate').val() == '') {
+                ShowMSG('Please Enter Return Date');
+                $('#rdate').focus();
+                return false;
+            }
+            var begD = $.datepicker.parseDate('dd/mm/yy', $('#ddate').val());
+            var endD = $.datepicker.parseDate('dd/mm/yy', $('#rdate').val());
+            if (begD > endD) {
+                ShowMSG('Please Enter Valid Date');
+                $('#rdate').focus();
+                return false;
+            }
+        }
+        var temp = true;
+        $("input[name = 'chklstAirlines']").each(function () {
+            if ($(this).prop('checked')) {
+                temp = false;
+            }
+        });
+        if (temp) {
+            ShowMSG('Please select atleast one airline to continue.');
+            return false;
+        }
+
+        buildSearch();
+    }
+    catch (e) {
+        console.log('Error in DSearchvalidate() - ' + e.toString());
+    }
+}
+function buildSearchStr() {
+    try {
+        //  var triptypr;
+        if ($("#RbtOngoingval").is(':checked')) {
+            triptypr = "O";
+
+        }
+        else {
+            triptypr = "R";
+
+        }
+        var lstrInput;
+        var orgin = $("#ddlfrom");
+        var dest = $("#ddlto");
+        var ddate = $("#ddate");
+        var rdate = $("#rdate");
+        var ddladult = $("#ddladult");
+        var ddlchild = $("#ddlchild");
+        var ddlinfant = $("#ddlinfant");
+        var clsass = $("#ddlclass");
+
+        var chkbxSeniorCitizen = "0";
+        if ($("#chkbxSeniorCitizen").is(':checked')) {
+            chkbxSeniorCitizen = "1";
+        }
+        var Odate = $(ddate).val().split("/")[1] + "/" + $(ddate).val().split("/")[0] + "/" + $(ddate).val().split("/")[2];
+        var Rdate = $(rdate).val().split("/")[1] + "/" + $(rdate).val().split("/")[0] + "/" + $(rdate).val().split("/")[2];
+
+        if (triptypr == "O") {
+            lstrInput = "^LOGINCREDENTIAL^" + "$" + triptypr + "$" + $(orgin).val() + "~" + $(dest).val() + "~" + Odate + "*" + "$" + $(clsass).val() + "$" + "^AIRLINESID^" + "$" + $(ddladult).val() + "$" + $(ddlchild).val() + "$" + $(ddlinfant).val() + "$1$" + "^USERTRACKID^" + "$^HOSTSEARCH^$1$$1$1$" + chkbxSeniorCitizen + "$";
+        }
+        else {
+            lstrInput = "^LOGINCREDENTIAL^" + "$" + triptypr + "$" + $(orgin).val() + "~" + $(dest).val() + "~" + Odate + "*" + $(dest).val() + "~" + $(orgin).val() + "~" + Rdate + "*$" + $(clsass).val() + "$" + "^AIRLINESID^" + "$" + $(ddladult).val() + "$" + $(ddlchild).val() + "$" + $(ddlinfant).val() + "$1$" + "^USERTRACKID^" + "$^HOSTSEARCH^$1$$1$1$" + chkbxSeniorCitizen + "$";
+        }
+        return lstrInput;
+    }
+    catch (e) {
+        console.log('Error in buildSearchStr() - ' + e.toString());
+    }
+}
+function buildSearch() {
+    try {
+
+        $("#SpnOnTriptitele").html($("#ddlfrom option:selected").text() + " To " + $("#ddlto option:selected").text() + "<br>" + $.datepicker.parseDate('dd/mm/yy', $('#ddate').val()).format('dd-MMM-yyyy'));
+        $("#SpnRtTriptitle").html($("#ddlto option:selected").text() + " To " + $("#ddlfrom option:selected").text() + "<br>" + $.datepicker.parseDate('dd/mm/yy', $('#rdate').val()).format('dd-MMM-yyyy'));
+
+        ThreadCount = 0;
+        ThreadId = 0;
+        TotalThread = 0;
+
+        var lstrInput = buildSearchStr();
+        var airs = "";
+        var tempbool = true;
+        $("input[name = 'chklstAirlines']").each(function () {
+            if ($(this).prop('checked')) {
+                airs += ($(this).val()) + ",";
+            }
+            else {
+                airs += ",";
+            }
+        });
+
+        var input = {};
+        input.strinputs = lstrInput;
+        input.AirlineIds = airs;
+        if ($("#chkbxHostSearch").prop("checked")) {
+            AirlineId = airs;
+            input.AirlineIds = "";
+            input.strinputs = input.strinputs.replace("^HOSTSEARCH^", 1);
+        }
+        else {
+            input.strinputs = input.strinputs.replace("^HOSTSEARCH^", 0);
+        }
+
+        var pth = getPath() + "WCF/wsDomSearch.svc/GetClientCache";
+        $.ajax({
+            type: "POST",
+            url: pth,
+            data: JSON.stringify(input),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: OncacheSuccess
+        });
+
+        return true;
+    }
+    catch (e) {
+        console.log('Error in buildSearch() - ' + e.toString());
+    }
+}
+function OncacheSuccess(Responce) {
+    try {
+        if (Responce.d.split("~")[0] == 2) {
+            window.location = "ErrorPage.aspx";
+            return false;
+        }
+        if ($("#HdnBackflag").val() == "2") {
+            Responce.d.split("~")[0] = "";
+            $("#HdnBackflag").val("0");
+            window.location = "pgLowfarecalendar.aspx";
+            return false;
+        }
+        if (Responce.d.split('~')[2] != '') {
+            $("#HdnPageTrackId").val(Responce.d.split('~')[2]);
+        }
+        // if (Responce.d.split('~')[2] != '') {
+        //  $("#hdnUsertTrack").val(Responce.d.split('~')[2]);
+        // }
+        if (Responce.d.split("~")[1] != "") {
+            var ongoingstr = '', returnstr = '';
+            var i, j;
+            var outsplit = Responce.d.split('~')[1].split('`')
+            for (i = 0; i < outsplit.length - 1; i++) {
+                ongoingstr += outsplit[i].split('^')[0];
+                returnstr += outsplit[i].split('^')[1];
+            }
+            BuildDataTable(ongoingstr + '^' + returnstr + '^', 0);
+            Activeaccordion(2);
+            $("#OnResholder").removeClass("Dnone");
+            $("#h3refine").removeClass("Dnone");
+            if ($("#RbtReturnval").is(':checked')) {
+                $("#RetResholder").removeClass("Dnone");
+            }
+            initSliderange(returnstr);
+            setAmntfilterRange();
+
+        }
+        else {
+            $("#progressBar").find('#Progressinner').html('');
+            WaitingprogressBar();
+        }
+        if ($("#HdnBackflag").val() == "1") {
+            Responce.d.split("~")[0] = "";
+            $("#HdnBackflag").val("0");
+            $('#progressBar').css("display", "none");
+
+            return false;
+        }
+        if ($("#HdnBackflag").val() == "2") {
+            Responce.d.split("~")[0] = "";
+            $("#HdnBackflag").val("0");
+            $('#progressBar').css("display", "none");
+
+            return false;
+        }
+        if (Responce.d.split("~")[0] == "," && $("#chkbxHostSearch").prop("checked")) {
+            Responce.d = AirlineId + Responce.d;
+        }
+        if (Responce.d.split("~")[0] != "") {
+            var airIDs = Responce.d.split("~")[0].split(",");
+            var i, lstrinstring;
+            var tbool = false;
+            for (i = 0; i < airIDs.length; i++) {
+                if (airIDs[i] != "") {
+                    if (airIDs[i] == "9") {
+                        if (airIDs[i + 1] == "620") {
+                            airIDs[i] = "9,620";
+                            tbool = true;
+
+                        }
+                    }
+                    var lstrInput = buildSearchStr();
+                    lstrinstring = lstrInput.replace("^AIRLINESID^", airIDs[i] + ",");
+                    if ($("#chkbxHostSearch").prop("checked")) {
+                        lstrinstring = lstrinstring.replace("^HOSTSEARCH^", 1);
+                    }
+                    else {
+                        lstrinstring = lstrinstring.replace("^HOSTSEARCH^", 0);
+                    }
+                    if (tbool) {
+                        i++;
+                    }
+                    ThreadId++;
+                    TotalThread++;
+                    StartThread(lstrinstring, ThreadId, Responce.d.split('~')[2]);
+
+
+                }
+            }
+        }
+
+
+    }
+    catch (e) {
+        console.log('Error in OncacheSuccess() - ' + e.toString());
+    }
+}
+function StartThread(strinputs, ThreadId, PageTrack) {
+    try {
+        onGoingFare = 0;
+        RtGoingFare = 0;
+        var input = {};
+        input.strinputs = strinputs;
+        input.ThreadId = ThreadId;
+        input.PageTrack = PageTrack;
+        // $("#SearchLoader").removeClass("Dnone");
+        var pth = getPath() + "WCF/wsDomSearch.svc/MakeDomSearch";
+        $.ajax({
+            type: "POST",
+            url: pth,
+            data: JSON.stringify(input),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: OnSuccess
+        });
+    }
+    catch (e) {
+        console.log('Error in StartThread() - ' + e.toString());
+    }
+}
+function OnSuccess(Responce) {
+    try {
+        console.log('Responcedd', Responce, Responce.d.split('~')[3], Responce.d.split('~')[2],'fgf', Responce.d.split('~')[0])
+        var temp = 0;
+        ThreadCount++;
+        if (ThreadCount == 1) {
+            progressBarstop();
+        }
+
+        if (Responce.d.split('~')[3] != '') {
+            $("#HdnPageTrackId").val(Responce.d.split('~')[3]);
+        }
+        if (Responce.d.split('~')[4] != '') {
+            $("#hdnUsertTrack").val(Responce.d.split('~')[4]);
+        }
+
+        temp = 100 / TotalThread;
+        temp = temp * ThreadCount;
+        temp = parseInt(temp);
+        progressBar(temp, $('#progressBar'));
+        if (Responce.d.split('~')[1] == "1") {
+            $("#OnResholder").removeClass("Dnone");
+            $("#h3refine").removeClass("Dnone");
+            if ($("#RbtReturnval").is(':checked')) {
+                $("#RetResholder").removeClass("Dnone");
+            }
+            Activeaccordion(2);
+            BuildDataTable(Responce.d.split('~')[2], Responce.d.split('~')[0]);
+
+        }
+
+        if (ThreadCount == ThreadId) {
+
+            if ($("#OngoingRes").html() == '') {
+                ClearResult();
+                $("#DivSearchpnl").hide(200);
+                Activeaccordion(0);
+                ShowMSG('Result Not Found.');
+                return false;
+            }
+            initSliderange();
+            setAmntfilterRange();
+
+
+            if ($("#RbtReturnval").is(':checked')) {
+                if ($("#OngoingRes").html() == '') {
+                    ClearResult();
+                    $("#DivSearchpnl").hide(200);
+                    Activeaccordion(0);
+                    ShowMSG('Result Not Found.');
+                    return false;
+                }
+                if (($("#OngoingRes").html() != '') && ($("#ReturnRes").html() == '')) {
+                    ClearResult();
+                    $("#DivSearchpnl").hide(200);
+                    Activeaccordion(0);
+                    ShowMSG('Return Result Not Found.');
+                    return false;
+                }
+            }
+            Putlowfare();
+            setTimeout(function () {
+                SetCheapestFare(setChepestFares);
+                if ($("#RbtOngoingval").is(':checked')) {
+                    getNextPrevFare("O");
+                }
+
+            }, 200);
+        }
+    }
+    catch (e) {
+        console.log('Error in OnSuccess() - ' + e.toString());
+    }
+}
+function showDetails(ids) {
+    try {
+        var tbl = document.getElementById('Div' + ids);
+        if (tbl.style.display == 'none') {
+            //tbl.style.display = '';
+            $(tbl).slideDown();
+            $('#SpnSeemore' + ids).html('Less[--]');
+        }
+        else {
+            $('#SpnSeemore' + ids).html('More[+]');
+            $(tbl).slideUp();
+            //tbl.style.display = 'none';
+        }
+    }
+    catch (e) {
+        console.log('Error in showDetails() - ' + e.toString());
+    }
+
+}
+
+function CalTax(tis, ids) {
+    try {
+        var btn = "#btnselect" + ids.split('~')[0];
+        $(btn).removeClass("btn-danger");
+        $(btn).parent().addClass('progress progress-striped active').css('height', '100%');
+        $(btn).addClass('progress-bar').css({ "padding": "5px", "text-align": "center", "width": "100%" });
+        $(btn).val('Loading...');
+        var airlogo = $(tis).parent().parent().find('img').prop('class');
+        var PagetrackID = $("#HdnPageTrack").val();
+        var map = document.getElementById('LoadMap');
+        var obj;
+        var Lobjarray = lobjDT;
+        $.each(Lobjarray, function (idx, obj1) {
+            if (obj1.RowInd == ids.split('~')[0]) {
+                obj = obj1;
+            }
+        });
+
+        //--------------------------------------Disable Phillipnes airlines with "O" clas------------------------------------------------------------------------
+        //        var cmdArgArr = obj.CmdArg.split('~');
+
+        //        if (cmdArgArr[2] == "PR") {
+        //            var lstrAirlineClass = cmdArgArr[3].split("$");
+        //            if (lstrAirlineClass[1] == "O") {
+        //                $(btn).addClass("btn-danger");
+        //                $(btn).parent().removeClass('progress progress-striped active').css('height', 'inherit');
+        //                $(btn).removeClass('progress-bar').removeAttr("style");
+        //                $(btn).val('Select');
+        //                ShowMSG("<b><span class='text-primary'>ADVISORY : </span>UNAUTHORIZED TO ISSUE. THIS IS TRAVEL EXPO PROMO, SORRY FOR THE INCONVENIENCE.</b>");
+        //                return false;
+        //            }
+        //        }
+        //--------------------------------------------------------------------------------------------------------------
+        var input = {};
+
+
+        input.strinputs = ids + "~" + airlogo;
+        if (ids.split('~')[1] == "O") {
+            onGoingFare = 0;
+            onGoingFare = ids.split("~")[2];
+        }
+        else {
+            RtGoingFare = 0;
+            RtGoingFare = ids.split("~")[2];
+        }
+        input.CmdArg = obj.CmdArg;
+        input.Departure = obj.Departure;
+        input.Arrival = obj.Arrival;
+        input.Cmdtxt = obj.Cmdtxt;
+        input.Airimg = obj.Airimg;
+        input.PageTrackId = $("#HdnPageTrackId").val();
+        Showloader();
+        $('#SpncartAmountcon').addClass('Dnone');
+        $("#tdreturn").addClass('Dnone');
+        $('#Rbook').addClass('Dnone');
+
+        $.ajax({
+            type: "POST",
+            url: getPath() + "WCF/wsDomSearch.svc/GetTax",
+            data: JSON.stringify(input),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            global: false,
+            async: false,
+            success: OnSuccessTax
+        });
+        return false;
+
+    }
+    catch (e) {
+        console.log('Error in CalTax() - ' + e.toString());
+    }
+}
+function OnSuccessTax(Responce) {
+    try {
+        console.log("SearchedFare", parseInt(onGoingFare) + parseInt(RtGoingFare));
+        var NewFare = 0;
+        if (Responce.d.split('|')[0] == 2) {
+            window.location = "ErrorPage.aspx";
+        }
+        Hideloader();
+        var btn = '#btnselect' + Responce.d.split('|')[1].split('~')[0];
+        $(btn).addClass("btn-danger");
+        $(btn).parent().removeClass('progress progress-striped active').css('height', 'inherit');
+        $(btn).removeClass('progress-bar').removeAttr("style");
+        $(btn).val('Select');
+
+        if (Responce.d.split('|').length == 1) {
+            ShowMSG("UNABLE TO PROCESS. PLEASE TRY AGAIN.");
+            return false;
+        }
+
+        if (Responce.d.split('|')[0] == 0) {
+            ShowMSG(Responce.d.split('|')[1].split('~')[1]);
+        }
+
+        if (Responce.d.split('|')[1].split('~')[2] == '1') {
+            //            if ((parseInt($("#ddladult").val()) == 1) && (parseInt($("#ddlchild").val()) == 0) && (parseInt($("#ddlinfant").val()) == 0)) {
+            //                if (!confirm('Please Note : Your final pricing amount is changed due to a recent update on airline host server. Do you want to continue ?')) {
+            //                    return false;
+            //                }
+            //            }
+            var PaxCount = parseInt($("#ddladult").val()) + parseInt($("#ddlchild").val()) + parseInt($("#ddlinfant").val());
+            if (Responce.d.split('|')[1].split('~')[1].split('`').length > 8) {
+                NewFare = Responce.d.split('|')[1].split('~')[1].split('`')[12].split('$')[1].split('*')[0];
+            }
+            else {
+                NewFare = Responce.d.split('|')[1].split('~')[1].split('`')[6].split('$')[1].split('*')[0];
+            }
+            NewFare = parseInt(NewFare);
+            SearchedFare = 0;
+            SearchedFare = parseInt(onGoingFare) + parseInt(RtGoingFare);
+            SearchedFare = parseInt(SearchedFare) * PaxCount;
+            //NewFare = parseInt(NewFare) * PaxCount;
+            if (!confirm('Alert : Your final  pricing amount is changed. Due to recent update on airline host server.  Searched  Fare : PHP ' + SearchedFare.toFixed(2) + ' New Fare :  PHP ' + NewFare.toFixed(2) + '. Do you want to continue ?')) {
+                return false;
+            }
+        }
+        $("#HdnPageTrack").val(Responce.d.split('~')[2])
+
+        setLbls(Responce.d.split('~')[1]);
+
+    }
+    catch (e) {
+        console.log('Error in OnSuccessTax() - ' + e.toString());
+    }
+}
+function setLbls(strs) {
+    try {
+        var str1 = strs.split('$');
+        var str = str1[0].split('`');
+        var str2 = str1[1].split('`');
+        var str3 = str1[2].split('`');
+        var Hdnvalue = str;
+        if (str.length > 1) {
+            $('#lblflight1').html(str[1]);
+            $('#lblDepa1').html(str[2]);
+            $('#lblArr1').html(str[3]);
+            var img = str3[0];
+
+            img = img.replace(/@/g, "/");
+            $("#Divairimg").html(img);
+            $("#Spnfrom").html('<b>' + str3[1] + '</b>');
+            $("#Spnto").html('<b>' + str3[2] + '</b>');
+            $("#SpncartAmount").html(str1[3].split('*')[0]);
+            $("#Spnseg").html(str1[3].split('*')[1]);
+
+            if (!$("#RbtReturnval").is(':checked')) {
+                $('#Rbook').removeClass('Dnone');
+                $('#SpncartAmountcon').removeClass('Dnone');
+
+            }
+        }
+        if (str2.length > 1) {
+            var str4 = str1[4].split('`');
+            $("#tdreturn").removeClass('Dnone');
+            $('#lblflight2').html(str2[1]);
+            $('#lblDepa2').html(str2[2]);
+            $('#lblArr2').html(str2[3]);
+            var img = str4[0];
+            img = img.replace(/@/g, "/");
+            img = img;
+            $("#Divairimgret").html(img);
+            $("#Spnfromret").html('<b>' + str4[1] + '</b>');
+            $("#Spntoret").html('<b>' + str4[2] + '</b>');
+            $("#Spnsegret").html(str1[5].split('*')[1]);
+            var Discountamount = 0;
+            var crossedamount = 0;
+            $("#SpncartAmount").html(parseInt(str1[3].split('*')[0]) + parseInt(str1[5].split('*')[0]));
+            if (parseInt(str1[6]) != 0) {
+                crossedamount = "<span style='text-decoration: line-through;'>" + (parseInt(str1[3].split('*')[0]) + parseInt(str1[5].split('*')[0])) + "</span>";
+                Discountamount = (parseInt(str1[3].split('*')[0]) + parseInt(str1[5].split('*')[0]) - (parseInt(str1[6])));
+                $("#SpncartAmount").html(crossedamount + " " + Discountamount);
+            }
+
+
+            $('#Rbook').removeClass('Dnone');
+            $('#SpncartAmountcon').removeClass('Dnone');
+        }
+
+        $('#pnlFares').removeClass('Dnone');
+        return false;
+    }
+    catch (e) {
+        console.log('Error in setLbls() - ' + e.toString());
+    }
+}
+function redirecturl() {
+    try {
+        var btn = '#Rbook';
+        $(btn).removeClass("btn-danger");
+        $(btn).parent().addClass('progress progress-striped active').css('height', '100%');
+        $(btn).addClass('progress-bar').css({ "padding": "5px", "text-align": "center", "width": "100%" });
+        $(btn).val('Please Wait...');
+        var usertrackID = $("#HdnPageTrackId").val();
+        window.location = "pgBookingRes.aspx?UT=" + usertrackID;
+        //Evaluate_DI();             
+        //localStorage.usertrackID = "";
+        //localStorage.usertrackID = usertrackID;       
+        return false;
+    }
+    catch (e) {
+        console.log('Error in redirecturl() - ' + e.toString());
+    }
+
+}
+
+function progressBarstop() {
+    try {
+        $element = $("#progressBar");
+        $innerelm = $element.find('#Progressinner');
+        $innerelm.css({ left: '0%', 'width': '0%' });
+        $innerelm.stop();
+    }
+    catch (e) {
+        console.log('Error in progressBarstop() - ' + e.toString());
+    }
+}
+function WaitingprogressBar() {
+    try {
+        $element = $("#progressBar");
+        $innerelm = $element.find('#Progressinner');
+        $('#SpnLoaderMsg').removeClass('Dnone');
+        $innerelm.stop();
+        var wid = $(window).width();
+        if ((wid > 0) && (wid < 400)) {
+            $('#SpnLoaderMsg').css("left", "2%");
+        }
+        if ((wid > 400) && (wid < 800)) {
+            $('#SpnLoaderMsg').css("left", "30%");
+        }
+        if (wid > 800) {
+            $('#SpnLoaderMsg').css("left", "40%");
+        }
+
+
+        $element.css("display", "block");
+        $innerelm.css({ 'width': '50%' });
+        //var left = $innerelm.offset().left;
+        $innerelm.css({ left: '-50%' }).animate({ "left": "100%" }, 1000, function () {
+            WaitingprogressBar();
+        });
+    }
+    catch (e) {
+        console.log('Error in WaitingprogressBar() - ' + e.toString());
+    }
+
+}
+function progressBar(percent, $element) {
+    try {
+        var Duration = 2000;
+        if (percent >= 100) {
+            Duration = 50;
+            percent = 100;
+
+        }
+        $('#SpnLoaderMsg').addClass('Dnone');
+        $element.css("display", "block");
+        var progressBarWidth = percent * $element.width() / 100;
+        $element.find('#Progressinner').animate(
+    {
+        width: (parseInt(progressBarWidth) / 10) + "%"
+    },
+    {
+        duration: Duration,
+        step: function (currentWidth) {
+            var tempload = parseInt(currentWidth);
+            if (tempload > 97)
+                tempload = 100;
+            $(this).html(tempload + "% ");
+        }
+
+    });
+        if (percent == 100) {
+            $element.find('#Progressinner').animate({ width: progressBarWidth }, Duration, function () {
+                $element.css("display", "none");
+                $(this).css("width", "0%");
+            });
+
+        }
+    }
+    catch (e) {
+        console.log('Error in progressBar() - ' + e.toString());
+    }
+}
+function changedt(strdt) {
+    try {
+        var strAr = strdt.split(" ")[0].split("/");
+        var temp = "" + strAr[1] + "" + "/" + strAr[0] + "" + "/" + strAr[2] + "";
+        var ndate = new Date(temp);
+        return $.datepicker.formatDate('dd-M-yy', ndate);
+    }
+    catch (e) {
+        console.log('Error in changedt() - ' + e.toString());
+    }
+}
+function getFareRul(ids) {
+    try {
+        Showloader();
+        var tempinput = ids.split('#');
+        var tempstr = '';
+        var i;
+        for (i = 0; i < tempinput.length; i++) {
+            tempstr += tempinput[i] + '*'
+        }
+        var map = document.getElementById('LoadMap');
+        var frameDoc = map.contentDocument || map.contentWindow.document;
+        if (frameDoc != null) { frameDoc.removeChild(frameDoc.documentElement); }
+        map.src = 'pgFareRule.aspx?input=' + tempstr;
+        $("#divfarecon").html($('#DetailView').html());
+        ShowModelpopup("Divfarerule", "", "");
+        return false;
+    }
+    catch (e) {
+        console.log('Error in getFareRul() - ' + e.toString());
+    }
+}
+function setAmntfilterRange() {
+    try {
+        var Lobjarray = SortingObj(lobjDT, 'GrossAmount', 1);
+        $("#DivFilterGAmount").ionRangeSlider("update", {
+            min: 0,                        // change min value
+            max: Lobjarray[Lobjarray.length - 1].GrossAmount,                      // change slider step
+            from: 0,                       // change default FROM setting
+            to: Lobjarray[Lobjarray.length - 1].GrossAmount,
+            step: 1,
+            onFinish: function (obj) {      // callback is called on slider action is finished
+                Amountrangefilter(obj.fromNumber, obj.toNumber);
+
+            }
+        });
+        $(".irs-grid-text").css('display', 'none');
+    }
+    catch (e) {
+        console.log('Error in setAmntfilterRange() - ' + e.toString());
+    }
+}
+function Activeaccordion(arg) {
+    try {
+        if (arg == 0) {
+
+            $("#DivSearchpnl").addClass('Dnone');
+            $("#DivSearchpnl").slideToggle(200);
+        }
+        else if (arg == 1) {
+            $("#DivSearchpnl").addClass('Dnone');
+            $("#DivSearchpnl").hide(200);
+
+
+        }
+        else if (arg == 2) {
+            $("#DivSearchpnl").hide("slow");
+        }
+    }
+    catch (e) {
+        console.log('Error in Activeaccordion() - ' + e.toString());
+    }
+}
+function initSliderange(stringval) {
+    try {
+
+        $("#DivFilterGAmount").ionRangeSlider({
+            min: 0,
+            max: 10000,
+            type: 'double',
+            prefix: "PHP ",
+            maxPostfix: "+",
+            prettify: true,
+            hasGrid: true
+
+        });
+        var $range = $("#DivFilterDeparture");
+        var time = [
+        "0:00", "1:00", "2:00", "3:00", "4:00", "5:00",
+        "6:00", "7:00", "8:00", "9:00", "10:00", "11:00",
+        "12:00", "13:00", "14:00", "15:00", "16:00", "17:00",
+        "18:00", "19:00", "20:00", "21:00", "22:00", "23:59"
+    ];
+
+        $range.ionRangeSlider({
+            type: "double",
+            values: time,
+            prettify: true,
+            hasGrid: true,
+            onFinish: function (obj) {      // callback is called on slider action is finished
+                Deptrangefilter(obj.fromNumber, obj.toNumber);
+            }
+        });
+
+
+
+        var $range = $("#DivFilterArrival");
+        var time = [
+        "0:00", "1:00", "2:00", "3:00", "4:00", "5:00",
+        "6:00", "7:00", "8:00", "9:00", "10:00", "11:00",
+        "12:00", "13:00", "14:00", "15:00", "16:00", "17:00",
+        "18:00", "19:00", "20:00", "21:00", "22:00", "23:59"
+
+    ];
+
+        $range.ionRangeSlider({
+            type: "double",
+            values: time,
+            min: time[5],
+            max: time[5],
+            to: time[23],
+            prettify: true,
+            hasGrid: true,
+            onFinish: function (obj) {      // callback is called on slider action is finished
+                Arrrangefilter(obj.fromNumber, obj.toNumber);
+            }
+        });
+        if (triptypr != "O") {
+            $("#ReturnDeparture").show();
+            $("#ReturnArrival").show();
+
+            var $range = $("#DivFilterReturnDeparture");
+            var time = [
+        "0:00", "1:00", "2:00", "3:00", "4:00", "5:00",
+        "6:00", "7:00", "8:00", "9:00", "10:00", "11:00",
+        "12:00", "13:00", "14:00", "15:00", "16:00", "17:00",
+        "18:00", "19:00", "20:00", "21:00", "22:00", "23:59"
+
+    ];
+
+            $range.ionRangeSlider({
+                type: "double",
+                values: time,
+                min: time[5],
+                max: time[5],
+                to: time[23],
+                prettify: true,
+                hasGrid: true,
+                onFinish: function (obj) {      // callback is called on slider action is finished
+                    ReturnDeparturefilter(obj.fromNumber, obj.toNumber);
+                }
+            });
+
+            var $range = $("#DivFilterReturnArrival");
+            var time = [
+        "0:00", "1:00", "2:00", "3:00", "4:00", "5:00",
+        "6:00", "7:00", "8:00", "9:00", "10:00", "11:00",
+        "12:00", "13:00", "14:00", "15:00", "16:00", "17:00",
+        "18:00", "19:00", "20:00", "21:00", "22:00", "23:59"
+
+    ];
+
+            $range.ionRangeSlider({
+                type: "double",
+                values: time,
+                min: time[5],
+                max: time[5],
+                to: time[23],
+                prettify: true,
+                hasGrid: true,
+                onFinish: function (obj) {      // callback is called on slider action is finished
+                    ReturnArrrangefilter(obj.fromNumber, obj.toNumber);
+                }
+            });
+
+        }
+        else {
+            $("#ReturnDeparture").hide();
+            $("#ReturnArrival").hide();
+        }
+    }
+    catch (e) {
+        console.log('Error in initSliderange()' + e.toString());
+    }
+}
+function OnSuccessPageLoad(Responce) {
+    try {
+        MarkupIdValue = Responce.d;
+        DSearchvalidate();
+    }
+    catch (e) {
+        console.log('Error in OnSuccessPageLoad()' + e.toString());
+    }
+}
+function Getmarkupvalue() {
+    try {
+        xhttpss = new XMLHttpRequest();
+        xhttpss.open("GET", getPath() + "Source/Xml/city.xml", false);
+        xhttpss.send();
+        xml = xhttpss.responseXML;
+        xhttpss.open("GET", getPath() + "Source/xml/InternationalAirlines.xml", false);
+        xhttpss.send();
+        airxml = xhttpss.responseXML;
+        $.ajax({
+            type: "POST",
+            url: getPath() + "WCF/wsDomSearch.svc/PageLoad",
+            contentType: "application/json; charset=utf-8",
+            global: false,
+            dataType: "json",
+            success: OnSuccessPageLoad
+        });
+    }
+    catch (e) {
+        console.log('Error in Getmarkupvalue()' + e.toString());
+    }
+}
+$(document).ready(function () {
+    try {
+
+        $("select").change(function () {
+            var str = "";
+            str = $(this).find(":selected").text();
+            $(this).parent().find(".selectdiv").css("width", $(this).css("width"));
+            $(this).parent().find(".out").css("width", $(this).css("width"));
+            $(this).parent().find(".out").text(str);
+        }).trigger('change');
+
+        $(".mycheck").change(function () {
+            var str = "";
+            if ($(this).is(':checked')) {
+                $(this).parent().removeClass("UnCheckdiv");
+                $(this).parent().addClass("Checkdiv");
+            }
+            else {
+                $(this).parent().removeClass("Checkdiv");
+                $(this).parent().addClass("UnCheckdiv");
+
+            }
+
+        }).trigger('change');
+
+        $(".myRadio").change(function () {
+            var name = $(this).prop("name");
+            var radiobtns = $("form input:radio");
+            $(radiobtns).each(function () {
+                if ($(this).prop("name") == name) {
+                    if ($(this).is(':checked')) {
+                        $(this).parent().removeClass("UnSeldiv");
+                        $(this).parent().addClass("Seldiv");
+                    }
+                    else {
+                        $(this).parent().removeClass("Seldiv");
+                        $(this).parent().addClass("UnSeldiv");
+                    }
+                }
+            });
+        }).trigger('change');
+
+        if ($("#RbtOngoingval").is(':checked')) {
+            $("#rdate").prop('disabled', true);
+        }
+        else {
+            $("#rdate").prop('disabled', false);
+        }
+
+        $("input[name = 'RbtTrip']").click(function () {
+            if ($("#RbtOngoingval").is(':checked')) {
+                $("#rdate").prop('disabled', true);
+            }
+            else {
+                $("#rdate").prop('disabled', false);
+            }
+        });
+        $("input[name = 'chklstAirlines']").click(function () {
+            var temp = true;
+            $("input[name = 'chklstAirlines']").each(function () {
+                if (!$(this).prop('checked')) {
+                    temp = false;
+                }
+            });
+            $("#chkAllAirlines").prop("checked", temp).trigger('change');
+        });
+        $("#chkAllAirlines").click(function () {
+            $("input[name = 'chklstAirlines']").each(function () {
+                $(this).prop("checked", $("#chkAllAirlines").is(':checked'));
+            }).trigger('change');
+        });
+
+        $("#ddladult").change(function () {
+            $("#ddlchild option").remove();
+            $("#ddlinfant option").remove();
+            $("#ddlchild").next().html('0');
+            $("#ddlinfant").next().html('0');
+            var i;
+            for (i = 0; i < 8 - parseInt($("#ddladult").val()); i++) {
+                var newOption = $('<option>');
+                newOption.prop('value', i).text(i);
+                $('#ddlchild').append(newOption);
+            }
+            $("#ddlchild > [value = 0]").prop("selected", "true");
+
+            for (i = 0; i < parseInt($("#ddladult").val()) + 1; i++) {
+                var newOption = $('<option>');
+                newOption.prop('value', i).text(i);
+                $('#ddlinfant').append(newOption);
+            }
+            $("#ddlinfant > [value = 0]").prop("selected", "true");
+
+        });
+        $("#ddlchild").change(function () { });
+        $("#ddlinfant").change(function () { });
+        ClearResult();
+    }
+    catch (e) {
+        console.log('Error in $(document).ready(function ()' + e.toString());
+    }
+
+});
+function buildChkButton() {
+    $(".mycheck").change(function () {
+        var str = "";
+        if ($(this).is(':checked')) {
+            $(this).parent().removeClass("UnCheckdiv");
+            $(this).parent().addClass("Checkdiv");
+        }
+        else {
+            $(this).parent().removeClass("Checkdiv");
+            $(this).parent().addClass("UnCheckdiv");
+
+        }
+
+    }).trigger('change');
+
+}
+function ReturnChkmail() {
+    try {
+        var temp = true;
+        $('#ReturnRes').find('.ReturnChkmail').each(function () {
+            if (!$(this).prop("checked")) {
+                temp = false;
+            }
+        });
+        if (temp) {
+            $("#chkSendMailRtn").prop("checked", true).trigger('change');
+        }
+        else {
+            $("#chkSendMailRtn").prop("checked", false).trigger('change');
+        }
+    }
+    catch (e) {
+        console.log('Error in RtgoMailChk()' + e.toString());
+    }
+}
+function OngoMailChk() {
+    try {
+        var temp = true;
+        $('#OngoingRes').find('.OngoingChkmail').each(function () {
+            if (!$(this).prop("checked")) {
+                temp = false;
+            }
+        });
+        if (temp) {
+            $("#chkSendMail").prop("checked", true).trigger('change');
+        }
+        else {
+            $("#chkSendMail").prop("checked", false).trigger('change');
+        }
+    }
+    catch (e) {
+        console.log('Error in OngoMailChk()' + e.toString());
+    }
+
+}
+function Chekall(arg) {
+    try {
+        if (arg == 1) {
+
+            $('#OngoingRes').find('.OngoingChkmail').each(function () {
+                if ($("#chkSendMail").prop("checked")) {
+                    $(this).prop("checked", true).trigger('change');
+                }
+                else {
+                    $(this).prop("checked", false).trigger('change');
+                }
+            });
+        }
+        if (arg == 2) {
+
+            $('#ReturnRes').find('.ReturnChkmail').each(function () {
+                if ($("#chkSendMailRtn").prop("checked")) {
+                    $(this).prop("checked", true).trigger('change');
+                }
+                else {
+                    $(this).prop("checked", false).trigger('change');
+                }
+            });
+        }
+    }
+    catch (e) {
+        console.log('Error in Chekall()' + e.toString());
+    }
+}
+function SendFareEmail() {
+    try {
+
+
+        var address = $("#txtAvailabilitySendMail").val();
+        if (address == "") {
+            ShowMSG("ENTER EMAIL ID");
+            return false;
+        }
+        if (address.length > 0) {
+            var reg = /^([A-Za-z0-9_\-\.])+\@([A-Za-z0-9_\-\.])+\.([A-Za-z]{2,4})$/;
+            if (reg.test(address) == false) {
+                ShowMSG("PLEASE ENTER VALID E-MAIL ID");
+                return false;
+            }
+        }
+        var MailBody = '';
+        var i = 0;
+        var flag1 = true;
+        var title = '<div class="row"><div id="OnResholder" class="col-md-12"><div style="padding: 2px; color: #fff; border-radius: 4px;" class="row form-group label-primary"><div class="col-md-3"></div><div class="col-md-6 text-center"><span style="color: #fff; font-size: 13px; font-weight: bold;">' + $("#SpnOnTriptitele").html() + '</span></div><div class="col-md-3"></div></div>';
+        MailBody += title + "<div class='row'><div class='col-md-12'>";
+        $('#OngoingRes').find('.OngoingChkmail').each(function () {
+            if ($(this).is(':checked')) {
+                var tempid = $(this).prop('id').replace("chkMail", "DivLeg");
+                flag1 = false;
+                if ($('#' + tempid).find(".col-md-10").length > 1) {
+                    MailBody += '<div class="container"><div class="row"><div class="col-md-9 ">' + $('#' + tempid).find(".col-md-10:eq(0)").html() + '</div><div class="col-md-2"><br><br><b>&nbsp;</b></div></div>';
+                    MailBody += '<div class="row"><div class="col-md-9 ">' + $('#' + tempid).find(".col-md-10:eq(1)").html() + '</div><div class="col-md-2"><br><br><b><span style="font-size:16px;" class="text-primary">PHP&nbsp; </span></b><span style="font-size:22px;" class="text-info">' + $("#" + $(this).prop('id').replace("chkMail", "SpnShowFareSummary")).text() + '</span></div></div></div>';
+                }
+                else {
+                    MailBody += '<div><div class="row form-group container"><div class="col-md-9 ">' + $('#' + tempid).find(".col-md-10").html() + '</div><div class="col-md-2"><br><br><b><span style="font-size:16px;" class="text-primary">PHP&nbsp; </span></b><span style="font-size:22px;" class="text-info">' + $("#" + $(this).prop('id').replace("chkMail", "SpnShowFareSummary")).text() + '</span></div></div></div>';
+                }
+                title = '';
+
+                $("#DivMailContent").html(MailBody);
+                $("#DivMailContent").find('.btn-danger').css('display', 'none');
+                $("#DivMailContent").find('.OngoingChkmail').css('display', 'none');
+                $("#DivMailContent").find('.OngoingChkmail').next().next().css('display', 'none');
+                //Sendemail('', '', $("#DivMailContent").html());
+                //MailBody = "";
+
+            }
+        });
+        MailBody += "</div></div></div>";
+
+        if (!$("#RetResholder").hasClass(""))
+            title = '<div id="RetResholder" class="col-md-6"><div style="padding: 2px; color: #fff; border-radius: 4px;" class="row form-group label-primary"><div class="col-md-3"></div><div class="col-md-6 text-center"><span style="color: #fff; font-size: 13px; font-weight: bold;">' + $("#SpnRtTriptitle").html() + '</span></div><div class="col-md-3"></div></div>';
+        MailBody += title + "<div class='row'><div class='col-md-12'>";
+        $('#ReturnRes').find('.ReturnChkmail').each(function () {
+            if ($(this).is(':checked')) {
+                var tempid = $(this).prop('id').replace("chkMail", "DivLeg");
+                flag1 = false;
+                if ($('#' + tempid).find(".col-md-10").length > 1) {
+                    MailBody += '<div class="container"><div class="row"><div class="col-md-9 label">' + $('#' + tempid).find(".col-md-10:eq(0)").html() + '</div><div class="col-md-2"><br><br><b>&nbsp;</b></div></div>';
+                    MailBody += '<div class="row"><div class="col-md-9 label">' + $('#' + tempid).find(".col-md-10:eq(1)").html() + '</div><div class="col-md-2"><br><br><b><span style="font-size:16px;" class="text-primary">PHP&nbsp; </span></b><span style="font-size:22px;" class="text-info">' + $("#" + $(this).prop('id').replace("chkMail", "SpnShowFareSummary")).text() + '</span></div></div></div>';
+                }
+                else {
+                    MailBody += '<div><div class="row form-group container label-primary"><div class="col-md-9 label">' + $('#' + tempid).find(".col-md-10").html() + '</div><div class="col-md-2"><br><br><b><span style="font-size:16px;" class="text-primary">PHP&nbsp; </span></b><span style="font-size:22px;" class="text-info">' + $("#" + $(this).prop('id').replace("chkMail", "SpnShowFareSummary")).text() + '</span></div></div></div>';
+                }
+                title = '';
+
+                $("#DivMailContent").html(MailBody);
+                $("#DivMailContent").find('#OnResholder').removeClass("col-md-12").addClass("col-md-6");
+                $("#DivMailContent").find('.btn-danger').css('display', 'none');
+                $("#DivMailContent").find('.OngoingChkmail').css('display', 'none');
+                $("#DivMailContent").find('.OngoingChkmail').next().next().css('display', 'none');
+                //Sendemail('', '', $("#DivMailContent").html());
+                //MailBody = "";
+
+            }
+        });
+        MailBody += "</div></div>";
+        //        if (MailBody != "") {
+        //            $("#DivMailContent").html(MailBody);
+        //            MailBody = '';
+        //            $("#DivMailContent").find('.btn-danger').css('display', 'none');
+        //            $("#DivMailContent").find('.OngoingChkmail').css('display', 'none');
+        //            $("#DivMailContent").find('.OngoingChkmail').next().next().css('display', 'none');
+        //            Sendemail("", "", $("#DivMailContent").html());
+        //        }
+        //        title = "<br><br><span class='capsText cartFare'>Return Trip Detail(s) " + $("#ddlto option:selected").text() + " To " + $("#ddlfrom option:selected").text() + " </span><br><br>";
+        //        i = 0;
+        //        var flag2 = true;
+        //        $('#ReturnRes').find('.ReturnChkmail').each(function () {
+        //            if ($(this).is(':checked')) {
+        //                var tempid = $(this).prop('id');
+        //                flag2 = false;
+        //                MailBody += title + '<div class="boxsdw row">' + $('#' + tempid).parent().parent().html() + '</div>';
+        //                title = '';
+        //                if (i == 4) {
+        //                    i = 0;
+        //                    $("#DivMailContent").html(MailBody);
+        //                    $("#DivMailContent").find('.btn-danger').css('display', 'none');
+        //                    $("#DivMailContent").find('.ReturnChkmail').css('display', 'none');
+        //                    $("#DivMailContent").find('.ReturnChkmail').next().next().css('display', 'none');
+        //                    Sendemail('', '', $("#DivMailContent").html());
+        //                    MailBody = "";
+        //                }
+        //                i++;
+        //            }
+        //        });
+        //        if (flag1 && flag2) {
+        //            HideModelpopup("DivSendMail");
+        //            ShowMSG("PLEASE SELECT ATLEAST ONE FLIGHT FOR SEND MAIL");
+        //            return false;
+        //        }
+        //        $("#DivMailContent").html(MailBody);
+        //        $("#DivMailContent").find('.btn-danger').css('display', 'none');
+        //        $("#DivMailContent").find('.ReturnChkmail').css('display', 'none');
+        //        $("#DivMailContent").find('.ReturnChkmail').next().next().css('display', 'none');
+        MailBody += "</div>";
+        var subj = $("#ddlfrom option:selected").text() + ' To ' + $("#ddlto option:selected").text();
+        if ($("#RbtReturnval").is(':checked')) {
+            subj += " And " + $("#ddlto option:selected").text() + " To " + $("#ddlfrom option:selected").text();
+        }
+        Sendemail(address, subj, $("#DivMailContent").html());
+
+        HideModelpopup("DivSendMail");
+    }
+    catch (e) {
+        console.log('Error in SendFareEmail()' + e.toString());
+    }
+
+}
+function Sendemail(address, Subject, MailBody) {
+    var input = {};
+    input.RstrToMailId = address;
+    input.RstrSubject = Subject;
+    input.RstrMailBody = MailBody;
+    var pth = getPath() + "WCF/wsDomSearch.svc/EmailFare";
+    Showloader();
+    $.ajax({
+        type: "POST",
+        url: pth,
+        data: JSON.stringify(input),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (Responce) {
+            if (Responce.d != "")
+                ShowMSG(Responce.d);
+            Hideloader();
+        },
+        failure: function (Responce) {
+            Hideloader();
+        }
+    });
+}
+function sticky_relocate() {
+    try {
+        //chkSendMail btnSMail
+
+        var window_top = $(window).scrollTop();
+        var div_top = $('#sticky-anchor').offset().top;
+        if (window_top >= div_top) {
+            $('#sticky').addClass('stick');
+            $('#divretstiky').addClass('stick');
+            if ($("#ctl00_cpg_pnlFares").css('display') != 'none') {
+                $("#ctl00_cpg_pnlFares").addClass('stick');
+                $("#sticky").css('top', '120px');
+                $("#divretstiky").css('top', '120px');
+
+            }
+        }
+        else {
+            $('#sticky').removeClass('stick');
+            $('#divretstiky').removeClass('stick');
+            if ($("#ctl00_cpg_pnlFares").css('display') != 'none') {
+                $("#ctl00_cpg_pnlFares").removeClass('stick');
+                $("#sticky").css('top', '0');
+                $("#divretstiky").css('top', '0');
+            }
+        }
+    } catch (e) { }
+}
+function Putlowfare() {
+    var tempairid = '';
+    var Lobjarray = SortingObj(lobjDT, 'GrossAmount', 1);
+    var strlowfare = "";
+    if ($("#RbtOngoingval").is(':checked')) {
+        var tempdate = $("#ddate").val().split('/');
+        if (tempdate.length != "3" || tempdate[0] == "" || tempdate[1] == "" || tempdate[2] == "") {
+            return false;
+        }
+        strlowfare = $("#ddlfrom").val() + "$" + $("#ddlto").val() + "$" + tempdate[1] + '/' + tempdate[0] + '/' + tempdate[2] + "$" + Lobjarray[0].Flight + "$" + Lobjarray[0].GrossAmount + "$D$" + $("#ctl00_lblTerminalID").html() + "$@";
+    }
+    if (strlowfare == "")
+        return true;
+    var input = {};
+    input.lstrFinal = strlowfare;
+    var pth = getPath() + "WCF/wsDomSearch.svc/PutLowFare";
+    $.ajax({
+        type: "POST",
+        url: pth,
+        data: JSON.stringify(input),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function (Responce) {
+            console.log("Put Low Fare : " + Responce.d);
+        }
+    });
+
+}
+//<div><br> Passenger/s who will avail Senior Citizen Discount must present any valid ID indicating date of birth upon ticket purchase. Applicable to all Filipino residents only. Kindly scan and send it to airsupport@gicorpphil.com<br><br> *Office of the Senior Citizens Affairs (OSCA) ID issued by their municipality<br>*This are reference in our end and to our supplier. <br><br><br>Airlines : Cebu pacific , Philippine Airlines</div>
+function sticky_relocate() {
+    try {
+        var window_top = $(window).scrollTop();
+        var div_top = $('#sticky-anchor').offset().top;
+        if (window_top > div_top) {
+            $('#sticky').addClass('stick');
+            $('#pnlFares').addClass('stick');
+            $("#pnlFares").css({ 'position': 'fixed', 'top': '0px' });
+            if ($("#pnlFares").css('display') != 'none') {
+                if ($("#RbtReturnval").is(':checked')) {
+                    $('#sticky').css({ 'top': '100px' });
+                }
+                else {
+                    $('#sticky').css({ 'top': '146px' });
+                }
+            }
+        }
+        else {
+            $('#sticky').removeClass('stick');
+            $('#pnlFares').removeClass('stick');
+            $("#pnlFares").css({ 'position': 'static', 'top': div_top - 10 });
+        }
+    } catch (e) { }
+}
+$(function () {
+    $(window).scroll(sticky_relocate); sticky_relocate();
+});
+
+
+var DepartTerminal = [{ "MNL": "NAIA Terminal 4", "CEB": "Mactan-Cebu Int'l Airport", "BCD": "Bacolod-Silay Int'l Airport", "TAG": "Tagbilaran Airport", "MPH": "Godofredo P. Ramos Airport", "BXU": "Butuan Airport", "CGY": "Laguindingan Int'l Airport", "CRK": "Diosdado Macapagal Int'l Airport", "USU": "Francisco B. Reyes Airport", "CBO": "Awang Airport", "DVO": "Davao Airport", "DPL": "Dipolog Airport", "DGT": "Sibulan Airport", "GES": "General Santos Int'l Airport", "ILO": "Iloilo Int'l Airport", "KLO": "Kalibo Int'l Airport", "LAO": "Laoag Int'l Airport", "LGP": "Legaspi Airport", "WNP": "Naga Airport", "OZC": "Labo Airport", "PAG": "Pagadian Airport", "PPS": "Puerto Princesa Int'l Airport", "RXS": "Roxas Airport", "": "Siargao Airport", "SUG": "Surigao Airport Terminal", "TAC": "Daniel Z. Romualdez Airport", "TWT": "Sanga-Sanga Airport", "TUG": "Tuguegarao Airport", "ZAM": "Zamboanga Int'l Airport"}];
+var ArrivalTerminal = [{ "MNL": "NAIA Terminal ", "CEB": "Mactan-Cebu Int'l Airport", "BCD": "Bacolod-Silay Int'l Airport", "TAG": "Tagbilaran Airport", "MPH": "Godofredo P. Ramos Airport", "BXU": "Butuan Airport", "CGY": "Laguindingan Int'l Airport", "CRK": "Diosdado Macapagal Int'l Airport", "USU": "Francisco B. Reyes Airport", "CBO": "Awang Airport", "DVO": "Davao Airport", "DPL": "Dipolog Airport", "DGT": "Sibulan Airport", "GES": "General Santos Int'l Airport", "ILO": "Iloilo Int'l Airport", "KLO": "Kalibo Int'l Airport", "LAO": "Laoag Int'l Airport", "LGP": "Legaspi Airport", "WNP": "Naga Airport", "OZC": "Labo Airport", "PAG": "Pagadian Airport", "PPS": "Puerto Princesa Int'l Airport", "RXS": "Roxas Airport", "": "Siargao Airport", "SUG": "Surigao Airport Terminal", "TAC": "Daniel Z. Romualdez Airport", "TWT": "Sanga-Sanga Airport", "TUG": "Tuguegarao Airport", "ZAM": "Zamboanga Int'l Airport"}];
+
+
+function HostSearchCheck() {
+    if ($("#chkbxHostSearch").prop("checked")) {
+        var footerbtn = "<div id='btnDiv'><button class='btn btn-danger' onclick='return Txst(this.id);' id='btnYes' type='button'> Yes</button> <button id='btnNo' class='btn btn-danger' onclick='return Txst(this.id);' type='button'> No</button></div>"
+        $("#dialog").attr("data-backdrop", "static");
+        $("#dialog").attr("data-keyboard", "false");
+        $("#dialog").find(".btn-danger").addClass("hidden");
+        $("#dialog").find(".modal-footer").append(footerbtn);
+        ShowMSG('BY SELECTING THE HOST SEARCH REQUIRES DIRECT COMMUNICATION WITH THE AIRLINE HOST AND MAY FURTHER DELAY IN YOUR SEARCH RESPONSE TIME. ARE YOU SURE WANT TO CONTINUE.');
+        return false;
+    }
+    else {
+        return true;
+    }
+}
+
+function Txst(id) {
+    if (id == "btnYes") {
+        $("#chkbxHostSearch").prop("checked", true);
+        $("#HostSearchDiv").removeClass("UnCheckdiv").addClass("Checkdiv");
+        $("#dialog").modal('hide');
+        $("#btnDiv").remove();
+        $("#dialog").find(".btn-danger").removeClass("hidden");
+        DSearchvalidate();
+    }
+    else {
+        $("#chkbxHostSearch").prop("checked", false);
+        $("#HostSearchDiv").removeClass("Checkdiv").addClass("UnCheckdiv");
+        $("#dialog").modal('hide');
+        $("#btnDiv").remove();
+        $("#dialog").find(".btn-danger").removeClass("hidden");
+        return false;
+    }
+}
