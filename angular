@@ -1,0 +1,2319 @@
+app.controller('DomesticCtrl', ['$scope', 'RemoteService', '$mdDialog', 'Searchresult', '$mdSidenav', '$filter', '$timeout', '$mdToast', '$window', '$http', '$mdpDatePicker', '$route', '$mdpDatePickerFare', function LoginCtrl($scope, RemoteService, $mdDialog, Searchresult, $mdSidenav, $filter, $timeout, $mdToast, $window, $http, $mdpDatePicker, $route, $mdpDatePickerFare) {
+    $scope.Search = {};
+    $scope.SearchM = {};
+    $scope.Search.Triptype = "O";
+    $scope.segCount = 0;
+    $scope.Search.MDomestic = {}
+    $scope.SearchM.Orgin = "";
+    $scope.SearchM.Dest = "";
+    $scope.SearchM.DepDate = new Date();
+    $scope.Search.MDomestic.segList = [];
+    $scope.Search.MDomestic.segList.push($scope.SearchM);
+    $scope.Search.MDomestic.segList[0].Orgin = "MNL";
+    $scope.Search.MDomestic.segList[0].Dest = "CEB";
+    $scope.Search.MDomestic.segList[0].DepDate = new Date();
+
+    $scope.slidesToShow = 6;
+    $scope.Search.allairline = true;
+    $scope.Search.Domestic = {};
+    $scope.Search.Domestic.Adult = 1;
+    $scope.Search.Domestic.Orgin = "MNL";
+    $scope.Search.Domestic.Dest = "CEB";
+    $scope.Search.Domestic.DepDate = new Date();
+    var Domestic = {};
+
+    $scope.AirlineList = {};
+    $scope.AirlineListRt = {};
+    $scope.ShwRtnFligth = true;
+    $scope.myExp = 'one';
+    $scope.ModifySearch = "Myshow";
+    $scope.SearchFailCount = 0;
+    $scope.PrefAirlines = 0;
+    $scope.ResCount = 0;
+    $scope.TripType = "O";
+    $scope.Ongoing = true;
+    $scope.todayDate = new Date().setHours(0, 0, 0, 0);
+    console.log("today date", $scope.todayDate)
+    sessionStorage.removeItem("domSegList");
+    sessionStorage.removeItem("domSegListRt");
+    sessionStorage.removeItem("selectedFlightRt");
+    sessionStorage.removeItem("selectedFlight");
+    $scope.toggleRight = function (componentId) {
+        $mdSidenav(componentId).toggle();
+        setTimeout(function () { $scope.recalcDem(); }, 50);
+    }
+
+    var req = {
+        method: "GET",
+        url: getpath() + "Content/Script/IntCity.js?v=" + ver,
+        dataType: "json",
+        contentType: "application/json; charset=utf-8;html"
+    }
+    $http(req).success(function (citys) {
+        $scope.ICL = citys[0];
+    });
+
+    $scope.FarePage = function (val) {
+        sessionStorage.setItem("FAREDETAILS", JSON.stringify($scope.Search.Domestic));
+
+        //  window.location = getpath() + "#lowfarecalender";
+        window.location = "#/" + val.toLowerCase();
+        console.log('window.location', window.location)
+    }
+
+
+
+    var CurrentDate = new Date();
+    var PaxArray = [1, 2, 3, 4, 5, 6, 7, 8, 9];
+    $scope.AdultArr = PaxArray;
+    $scope.ChildArr = PaxArray;
+    $scope.InfantArr = PaxArray;
+
+
+    $scope.Carrier = {};
+    $scope.Carrier.palphilippine = true;
+    $scope.Carrier.skyjet = true;
+    $scope.Carrier.airasiazest = true;
+    $scope.Carrier.airasia = true;
+    $scope.Carrier.cebupacific = true;
+    $scope.Carrier.cebgo = true;
+
+
+
+    $scope.Carriercode = {};
+    $scope.Carriercode.palphilippine = "6";
+    $scope.Carriercode.skyjet = "892";
+    $scope.Carriercode.airasiazest = "10";
+    $scope.Carriercode.airasia = "869";
+    $scope.Carriercode.cebupacific = "9";
+    $scope.Carriercode.cebgo = "620";
+
+    $scope.$on('$routeChangeStart', function (event, next) {
+        console.log("PAth is", next.originalPath);
+        if (next.originalPath != "/dombooking") {
+            sessionStorage.removeItem("searchData");
+            sessionStorage.removeItem("searchDataM");
+            sessionStorage.removeItem("result");
+            sessionStorage.removeItem("TempDomSearch");
+            sessionStorage.removeItem("domSegList");
+            sessionStorage.removeItem("domSegListRt");
+            sessionStorage.removeItem("selectedFlight");
+            sessionStorage.removeItem("selectedFlightRt");
+            Searchresult.setResult();
+        }
+    });
+
+
+    var MaxDate = new Date(CurrentDate.getFullYear() + 1, CurrentDate.getMonth(), CurrentDate.getDate());
+
+    $scope.ChangeChild = function (count) {
+        $scope.ChildArr = PaxArray.slice(0, 9 - count);
+        $scope.InfantArr = PaxArray.slice(0, 9 - count);
+        $scope.Search.Domestic.Child = 0;
+
+    }
+    $scope.ChangeInfant = function (count) {
+        count = count + $scope.Search.Domestic.Adult;
+        $scope.Search.Domestic.Infant = 0;
+        $scope.InfantArr = PaxArray.slice(0, 9 - count);
+
+    }
+
+    $scope.changePax = function (count) {
+        var childCount = 0;
+
+        count = count + $scope.Search.Domestic.Adult;
+        childCount = $scope.Search.Domestic.Child;
+
+        if (childCount == 0) {
+            $scope.ChildArr = PaxArray.slice(0, 9 - count);
+        }
+    }
+    $scope.ChangeChild(1);
+    $scope.ShowOnWardDatePicker = function (ev, index) {
+
+        if ($scope.Search.Triptype != "M") {
+            $mdpDatePickerFare($scope.Search.Domestic.DepDate, {
+                minDate: CurrentDate,
+                maxDate: MaxDate,
+                targetEvent: ev,
+                Search: $scope.Search.Domestic,
+                type:'O'
+            }).then(function (SelectedDate) {
+
+                $scope.Search.Domestic.RetDate = SelectedDate;
+                $scope.Search.Domestic.DepDate = SelectedDate;
+            });
+        }
+        else {
+            if (index != 0) {
+                CurrentDate = $scope.Search.MDomestic.segList[index - 1].DepDate;
+            }
+            else {
+                CurrentDate = new Date();
+            }
+            $mdpDatePicker($scope.Search.MDomestic.segList[index].DepDate, {
+                minDate: CurrentDate,
+                maxDate: MaxDate,
+                targetEvent: ev,
+
+            }).then(function (SelectedDate) {
+                $scope.Search.MDomestic.segList[index].DepDate = SelectedDate;
+
+                for (var i = index; i < 4; i++) {
+                    if ($scope.Search.MDomestic.segList[i].DepDate < SelectedDate) {
+                        $scope.Search.MDomestic.segList[i].DepDate = SelectedDate;
+                    }
+                }
+
+            });
+
+            //console.log("seg count", $scope.segCount)
+            //for (var i = 0; i <= $scope.segCount; i++) {
+            //    console.log("i is",i)
+            //    if (i != 0) {
+            //        CurrentDate = $scope.Search.MDomestic.segList[i].DepDate;
+            //        console.log("current date", CurrentDate);
+            //    }
+
+            //    $mdpDatePicker($scope.Search.MDomestic.segList[i].DepDate, {
+            //        minDate: CurrentDate,
+            //        maxDate: MaxDate,
+            //        targetEvent: ev,
+
+            //    }).then(function (SelectedDate) {
+            //        console.log("Selected", SelectedDate, "and test", $scope.Search.MDomestic.segList,"i is",i);
+
+            //        $scope.Search.MDomestic.segList[0].DepDate = SelectedDate;
+            //    });
+            //}
+        }
+    }
+
+    //$scope.ModifySearchh = function()
+    //{
+    //    $scope.ModifySearch == 'Myhide' ? 'Myshow' : 'Myhide';
+    //    $scope.RtnFlights = [];
+    //    $scope.Flights = [];
+    //}
+
+
+    $scope.ShowReturnDatePicker = function (ev) {
+        if (!$scope.Search.Domestic.DepDate) {
+            $mdDialog.show($mdDialog.alert().textContent("Please Select OnWard Date").title("Alert").ariaLabel('OnWardDate').ok('OK'));
+        }
+        else {
+            $mdpDatePickerFare($scope.Search.Domestic.RetDate, {
+                targetEvent: ev,
+                minDate: $scope.Search.Domestic.DepDate,
+                maxDate: MaxDate,
+                Search: $scope.Search.Domestic,
+                type: 'R'
+            }).then(function (SelectedDate) {
+                $scope.Search.Domestic.RetDate = SelectedDate;
+            });
+        }
+    }
+
+    $scope.SelectAllair = function () {
+        if ($scope.Search.allairline) {
+            angular.forEach($scope.Search.Carrier, function (value, key) {
+                $scope.Search.Carrier[key] = true;
+            });
+        }
+        else {
+            angular.forEach($scope.Search.Carrier, function (value, key) {
+                $scope.Search.Carrier[key] = false;
+            });
+        }
+
+    };
+
+    $scope.Selectair = function () {
+        var temp = true;
+        angular.forEach($scope.Search.Carrier, function (value, key) {
+            if (!$scope.Search.Carrier[key]) {
+                temp = false;
+            }
+        });
+        $scope.Search.allairline = temp;
+    };
+
+    $scope.changeOrgin = function (index) {
+        if ($scope.segCount > index) {
+            if ($scope.Search.MDomestic.segList[index + 1].Orgin == "") {
+                $scope.Search.MDomestic.segList[index + 1].Orgin = $scope.Search.MDomestic.segList[index].Dest;
+            }
+        }
+    }
+
+    $scope.searchMulti = function (arg) {
+        if (arg == 0) {
+            $scope.selectedMflight = [];
+            $scope.segListM = [];
+        }
+
+        $scope.SearchFailCount = 0;
+        for (var i = 0; i <= $scope.segCount; i++) {
+            if (!$scope.Search.MDomestic.segList[i].Orgin) {
+                $mdDialog.show($mdDialog.alert().textContent("Please Select Segment " + (i + 1) + " Orgin").title("Alert").ariaLabel('OngoingDate').ok('OK'));
+                return false;
+            }
+            if (!$scope.Search.MDomestic.segList[i].Dest) {
+                $mdDialog.show($mdDialog.alert().textContent("Please Select Segment " + (i + 1) + " Destination").title("Alert").ariaLabel('OngoingDate').ok('OK'));
+                return false;
+            }
+            if ($scope.Search.MDomestic.segList[i].Orgin == $scope.Search.MDomestic.segList[i].Dest) {
+                $mdDialog.show($mdDialog.alert().textContent("Orgin and Destination can not be same for segment " + (i + 1) + " ").title("Alert").ariaLabel('OngoingDate').ok('OK'));
+                return false;
+            }
+        }
+        $scope.Search.PrefAirlines = "";
+        angular.forEach($scope.Search.Carrier, function (value, key) {
+            if ($scope.Search.Carrier[key] == true) {
+                $scope.Search.PrefAirlines += $scope.Carriercode[key] + ",";
+            }
+        });
+
+        if ($scope.Search.PrefAirlines == "") {
+            return false;
+        }
+
+        $scope.Search.Domestic.PrefAirlines = $scope.Search.PrefAirlines;
+        $scope.Search.Domestic.Carrier = $scope.Search.Carrier;
+        $scope.Search.Domestic.Orgin = $scope.Search.MDomestic.segList[arg].Orgin;
+        $scope.Search.Domestic.Dest = $scope.Search.MDomestic.segList[arg].Dest;
+        $scope.Search.Orgin = $scope.Search.MDomestic.segList[arg].Orgin;
+        $scope.Search.Dest = $scope.Search.MDomestic.segList[arg].Dest;
+
+        $scope.Search.Domestic.DepDate = $scope.Search.MDomestic.segList[arg].DepDate;
+        $scope.Search.Domestic.RetDate = $scope.Search.MDomestic.segList[arg].DepDate;
+
+        $scope.Search.Domestic.currentSeg = arg;
+        $scope.TripType = $scope.Search.Triptype;
+        //$scope.Search.Domestic.DirectAccess = $scope.Search.Domestic.HostSearch;
+        $scope.Flights = [];
+        $scope.SelFlight = null;
+        $scope.Search.Domestic.Triptype = $scope.Search.Triptype;
+        $scope.Domair = {};
+        sessionStorage.setItem("searchData", JSON.stringify($scope.Search.Domestic));
+        sessionStorage.setItem("searchDataM", JSON.stringify($scope.Search.MDomestic));
+
+
+        var req = {
+            method: 'POST',
+            url: getpath() + 'Domestic/PreSearch',
+            dataType: 'json',
+            //data: $scope.Search.Domestic
+            data: { "input": $scope.Search.Domestic, "multiReq": $scope.Search.MDomestic }
+        }
+
+        $http(req).success(function (data, status, header, config) {
+            console.log("JSON.parse(data)", data, 'datassss');
+            var Response = JSON.parse(data)[0];
+
+            if (Response["Status"] == "0") { }
+            else if (Response["Status"] == "1") {
+                //$scope.CheapestFareListRt = {};
+                sessionStorage.removeItem("result")
+                $scope.getCache();
+                CheapestFareByDate();
+
+            }
+            else if (Response["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                            .title('Alert')
+                            .textContent(Response["StatusDesc"])
+                            .ariaLabel('')
+
+                .ok('OK')
+                .cancel('CLOSE')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                function () {
+                    window.location = getpath();
+                });
+            }
+
+        }).error(function (data, status, header, config) { });
+
+    }
+
+    $scope.SearchDom = function () {
+        $scope.ResCount = 0;
+        if (!$scope.Search.Domestic.DepDate) {
+            $mdDialog.show($mdDialog.alert().textContent("Please Select Date").title("Alert").ariaLabel('OngoingDate').ok('OK'));
+            return false;
+        }
+
+        $scope.Search.PrefAirlines = "";
+        angular.forEach($scope.Search.Carrier, function (value, key) {
+            if ($scope.Search.Carrier[key] == true) {
+                $scope.Search.PrefAirlines += $scope.Carriercode[key] + ",";
+            }
+        });
+
+        if ($scope.Search.PrefAirlines == "") {
+            return false;
+        }
+
+
+
+        $scope.Search.Domestic.PrefAirlines = $scope.Search.PrefAirlines;
+        $scope.Search.Domestic.Carrier = $scope.Search.Carrier;
+        $scope.Search.Orgin = $scope.Search.Domestic.Orgin;
+        $scope.Search.Dest = $scope.Search.Domestic.Dest;
+
+        $scope.Search.DepDate = $scope.Search.Domestic.DepDate;
+        $scope.Search.RetDate = $scope.Search.Domestic.RetDate;
+        $scope.Search.Adult = $scope.Search.Domestic.Adult;
+        $scope.Search.Child = $scope.Search.Domestic.Child;
+        $scope.Search.Infant = $scope.Search.Domestic.Infant;
+        $scope.Search.Domestic.DirectAccess = $scope.Search.Domestic.HostSearch;
+
+        $scope.TripType = $scope.Search.Triptype;
+        $scope.RtnFlights = [];
+        $scope.Flights = [];
+        //if (!$scope.Search.Domestic.RetDate) {
+        //    $scope.Search.Domestic.Triptype = "O";
+        //}
+        //else {
+        //    $scope.Search.Domestic.Triptype = "R";
+        //}
+        $scope.Search.Domestic.Triptype = $scope.Search.Triptype;
+        $scope.Domair = {};
+        sessionStorage.setItem("searchData", JSON.stringify($scope.Search.Domestic))
+        $scope.SearchFailCount = 0;
+        //$scope.Search = $scope.Search.Domestic;
+
+        $scope.SelFlight = null;
+        $scope.SelFlightRt = null;
+
+        if ($scope.Search.Domestic.SeniorCtzn) {
+            $scope.Search.Domestic.Child = 0;
+            $scope.Search.Domestic.Infant = 0;
+        }
+
+        var req = {
+            method: 'POST',
+            url: getpath() + 'Domestic/PreSearch',
+            dataType: 'json',
+            data: $scope.Search.Domestic
+        }
+
+        $http(req).success(function (data, status, header, config) {
+            console.log("JSON.parse(data)", data, 'datassss');
+            var Response = JSON.parse(data)[0];
+
+            if (Response["Status"] == "0") { }
+            else if (Response["Status"] == "1") {
+                //$scope.CheapestFareListRt = {};
+                sessionStorage.removeItem("result")
+                $scope.getCache();
+                CheapestFareByDate();
+
+            }
+            else if (Response["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                            .title('Alert')
+                            .textContent(Response["StatusDesc"])
+                            .ariaLabel('')
+
+                .ok('OK')
+                .cancel('CLOSE')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                function () {
+                    window.location = getpath();
+                });
+            }
+
+        }).error(function (data, status, header, config) { });
+    }
+
+    $scope.prevNextDay = function (TripType, selectedType) {
+
+        if (TripType == "O") {
+            $scope.Search.Domestic.DepDate = new Date($scope.Search.Domestic.DepDate);
+            if (selectedType == 1) {
+                $scope.Search.Domestic.DepDate = $scope.Search.Domestic.DepDate.setDate($scope.Search.Domestic.DepDate.getDate() - 1)
+
+            }
+            else {
+                $scope.Search.Domestic.DepDate = $scope.Search.Domestic.DepDate.setDate($scope.Search.Domestic.DepDate.getDate() + 1)
+
+
+            }
+            $scope.Search.Domestic.DepDate = new Date($scope.Search.Domestic.DepDate);
+        }
+        else {
+            $scope.Search.Domestic.RetDate = new Date($scope.Search.Domestic.RetDate);
+            if (selectedType == 1) {
+
+                $scope.Search.Domestic.RetDate = $scope.Search.Domestic.RetDate.setDate($scope.Search.Domestic.RetDate.getDate() - 1);
+
+
+            }
+            else {
+                $scope.Search.Domestic.RetDate = $scope.Search.Domestic.RetDate.setDate($scope.Search.Domestic.RetDate.getDate() + 1);
+
+
+            }
+            $scope.Search.Domestic.RetDate = new Date($scope.Search.Domestic.RetDate);
+
+        }
+        $scope.SearchDom();
+    }
+
+    $scope.opnSCalert = function () {
+        if ($scope.Search.Domestic.SeniorCtzn) {
+            $scope.Search.Domestic.Child = 0;
+            $scope.Search.Domestic.Infant = 0;
+            $mdDialog.show({
+                templateUrl: 'SeniorCitizen.tmpl.html',
+                // parent: angular.element(document.body),
+                clickOutsideToClose: true,
+                locals: $scope,
+                preserveScope: true,
+                bindToController: true,
+                controller: ViewCtrl,
+                controllerAs: 'Ctrl'
+            });
+            function ViewCtrl($scope, $mdDialog) {
+                $scope.dgcancel = function () {
+                    //$scope.Search.Domestic.SeniorCtzn = false;
+                    $mdDialog.hide();
+                }
+            }
+            ViewCtrl.$inject = ['$scope', '$mdDialog'];
+        }
+    }
+
+    $scope.showHostAlert = function (ev) {
+        if ($scope.Search.Domestic.HostSearch) {
+            var confirm = $mdDialog.confirm()
+               .title('Alert')
+               .textContent('You have chosen HOST SEARCH option. This requires direct communication with the airline host, Which may future delay your search response time. Are you sure want to continue.')
+               .ariaLabel('')
+               .targetEvent(ev)
+               .ok('Ok')
+               .cancel('Cancel');
+
+            $mdDialog.show(confirm).then(function () {
+                $scope.SearchDom();
+            }, function () {
+                $scope.Search.Domestic.HostSearch = false;
+
+            });
+        }
+    }
+
+    $scope.addSegments = function () {
+        $scope.SearchM = {};
+        $scope.SearchM.Orgin = "";
+        $scope.SearchM.Dest = "";
+        $scope.SearchM.DepDate = new Date();
+
+        if ($scope.segCount < 3) {
+            if ($scope.Search.MDomestic.segList[$scope.segCount].Dest) {
+                //$scope.SearchM.Orgin = $scope.Search.MDomestic.segList[$scope.segCount].Dest;
+            }
+            if ($scope.Search.MDomestic.segList[$scope.segCount].DepDate) {
+                $scope.SearchM.DepDate = $scope.Search.MDomestic.segList[$scope.segCount].DepDate;
+            }
+            $scope.segCount++;
+            $scope.Search.MDomestic.segList.push($scope.SearchM);
+        }
+
+    }
+
+    $scope.removeSegments = function () {
+        if ($scope.segCount > 0) {
+            $scope.segCount--;
+            $scope.Search.MDomestic.segList.pop();
+        }
+
+    }
+
+
+    $scope.getCache = function () {
+        var req = {
+            method: 'POST',
+            url: getpath() + 'Domestic/getCahce',
+            dataType: 'json',
+            data: $scope.Search.Domestic
+        }
+
+        $http(req).success(function (data, status, header, config) {
+
+            var Ressponse = JSON.parse(data)[0];
+            if (Ressponse["Status"] == "1") {
+                $scope.Domair = {};
+                $scope.ModifySearch = "Myhide";
+                $scope.Domair.Flights = Ressponse["Data"][0]["Flights"];
+                $scope.Flights = $scope.Domair.Flights;
+
+                if (Ressponse["Data"].length > 1) {
+                    $scope.Domair.RtnFlights = Ressponse["Data"][1]["Flights"];
+                    $scope.RtnFlights = $scope.Domair.RtnFlights;
+                    $scope.slidesToShow = 3;
+
+
+                }
+                else {
+                    $scope.Domair.RtnFlights = [];
+                    $scope.RtnFlights = [];
+                }
+                $scope.Domair.Search = $scope.Search.Domestic;
+                //Searchresult.setResult($scope.Domair);
+                // sessionStorage.removeItem("result");
+                $(".md-dialog-backdrop").addClass("hide");
+                sessionStorage.setItem("result", JSON.stringify($scope.Domair));
+
+
+                $scope.ResetFilter(true);
+
+
+            } else if (Ressponse["Status"] == "0") {
+                $scope.threadCount = 4;
+                $scope.makeSearch(1);
+                $scope.makeSearch(2);
+                $scope.makeSearch(3);
+                $scope.makeSearch(4);
+                $scope.makeSearch(5);
+            }
+            else if (Ressponse["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(Ressponse["StatusDesc"])
+                              .ariaLabel('')
+                              .ok('OK')
+                .cancel('CLOSE')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                function () {
+                    window.location = getpath();
+                });
+            }
+        }).error(function (data, status, header, config) { });
+
+    }
+
+    $scope.makeSearch = function (threadId) {
+        var ThreadDetails = {};
+        ThreadDetails.ThreadCount = 5;
+        ThreadDetails.ThreadNo = threadId;
+        var req = {
+            method: 'POST',
+            async: true,
+            url: getpath() + 'Domestic/Search',
+            dataType: 'json',
+            data: { "input": $scope.Search.Domestic, "threaddetails": ThreadDetails }
+        }
+
+        $http(req).success(function (data, status, header, config) {
+            $scope.ResCount++;
+            var Ressponse = JSON.parse(data)[0];
+            if (Ressponse["Status"] == "1") {
+                $scope.Domair = {};
+                $scope.ModifySearch = "Myhide";
+                $scope.Domair.Flights = Ressponse["Data"][0]["Flights"];
+                $scope.Flights = $scope.Domair.Flights;
+
+                if (Ressponse["Data"].length > 1) {
+                    $scope.Domair.RtnFlights = Ressponse["Data"][1]["Flights"];
+                    $scope.RtnFlights = $scope.Domair.RtnFlights;
+                    $scope.slidesToShow = 3;
+                }
+                else {
+                    $scope.Domair.RtnFlights = [];
+                    $scope.RtnFlights = [];
+                }
+                $scope.Domair.Search = $scope.Search.Domestic;
+                //Searchresult.setResult($scope.Domair);
+                // sessionStorage.removeItem("result");
+                $(".md-dialog-backdrop").addClass("hide");
+                sessionStorage.setItem("result", JSON.stringify($scope.Domair));
+
+                $scope.ResetFilter(true)
+                //console.log("$scope.Domair Home", $scope.Domair);
+                //window.location = getpath() + "#dresult";
+            }
+            else if (Ressponse["Status"] == "0") {
+                $scope.SearchFailCount = $scope.SearchFailCount + 1;
+                if ($scope.SearchFailCount == 5) {
+                    $scope.ModifySearch = "Myshow";
+                    var confirm = $mdDialog.confirm()
+                                  .title('Alert')
+                                  .textContent("Search result not found")
+                                  .ariaLabel('')
+                                  .ok('OK')
+                .cancel('CLOSE')
+                    $mdDialog.show(confirm);
+                }
+            }
+            else if (Ressponse["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(Ressponse["StatusDesc"])
+                              .ariaLabel('')
+                              .ok('OK')
+                .cancel('CLOSE')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                function () {
+                    window.location = getpath();
+                });
+            }
+            if ($scope.ResCount == 5 && $scope.CheapestFareListTemp) {
+                //update fare
+                var airlineID = 0;
+                var cost = 0;
+                var index = 0;
+                angular.forEach($scope.CheapestFareListTemp, function (value, key) {
+                    console.log('$scope.CheapestFareListTemp', value, key)
+                    if (index == 0) {
+                        cost = value.Cost;
+                        airlineID = value.AirlineCode;
+                        console.log(cost, airlineID,'logggg')
+                    }
+                    else {
+                        if (cost > value.Cost) {
+                            cost = value.Cost;
+                            airlineID = value.AirlineCode;
+                            console.log(cost, airlineID, 'logggg1')
+                        }
+                    }
+                    index++;
+
+                })
+                var lstrInput = "";
+
+                lstrInput = $scope.Search.Orgin + "$" + $scope.Search.Dest + "$" + "*DATE*" + "$" + airlineID + "$" + cost + "$D$";
+                var req = {
+                    method: 'POST',
+                    url: getpath() + 'Domestic/updateChepestFare',
+                    dataType: 'json',
+                    data: { "pstrInput": lstrInput, "pDate": $scope.Search.DepDate }
+                }
+
+                $http(req).success(function (data, status, header, config) {
+                });
+                if ($scope.TripType == "R" && $scope.CheapestFareListRt) {
+                    index = 0;
+                    airlineID = 0;
+                    cost = 0;
+                    angular.forEach($scope.CheapestFareListRt, function (value, key) {
+                        console.log('$scope.CheapestFareListRt', value, key)
+                        if (index == 0) {
+                            cost = value.Cost;
+                            airlineID = value.AirlineCode;
+                            console.log(cost, airlineID, 'logggg')
+                        }
+                        else {
+                            if (cost > value.Cost) {
+                                cost = value.Cost;
+                                airlineID = value.AirlineCode;
+                                console.log(cost, airlineID, 'logggg1')
+                            }
+                        }
+                        index++;
+                    })
+                    var lstrInput = "";
+
+                    lstrInput = $scope.Search.Dest + "$" + $scope.Search.Orgin + "$" + "*DATE*" + "$" + airlineID + "$" + cost + "$D$";
+                    var req = {
+                        method: 'POST',
+                        url: getpath() + 'Domestic/updateChepestFare',
+                        dataType: 'json',
+                        data: { "pstrInput": lstrInput, "pDate": $scope.Search.RetDate }
+                    }
+
+                    $http(req).success(function (data, status, header, config) {
+                    });
+                }
+
+            }
+
+        }).error(function (data, status, header, config) { });
+    }
+
+    $scope.Segmenttype = {};
+    $scope.RtnFligth = "";
+
+
+    $scope.SelFlight = null;
+    $scope.SelFlightRt = null;
+
+    $scope.DivHeight = { "max-height": "100px" };
+
+
+    //if ($scope.Domair.Search) {
+
+    //    sessionStorage.setItem("result", JSON.stringify($scope.Domair));
+    //}
+
+
+    $scope.count = 0;
+
+    $scope.CityList = CityList;
+    //if ($scope.Domair.Search) {
+    //    $scope.Search = $scope.Domair.Search;
+    //}
+
+
+
+    if (sessionStorage.getItem("searchData")) {
+
+        $scope.Search = JSON.parse(sessionStorage.getItem("searchData"));
+        $scope.Search.MDomestic = {};
+        $scope.Search.MDomestic.segList = [];
+        $scope.Search.MDomestic.segList.push($scope.SearchM);
+        $scope.Search.MDomestic.segList[0].Orgin = "MNL";
+        $scope.Search.MDomestic.segList[0].Dest = "CEB";
+        $scope.Search.MDomestic.segList[0].DepDate = new Date();
+        $scope.Search.Domestic = JSON.parse(sessionStorage.getItem("searchData"))
+        //$scope.ChangeChild($scope.Search.Domestic.Adult);
+        $scope.InfantArr = PaxArray.slice(0, $scope.Search.Domestic.Adult);
+        $scope.Domair = Searchresult.getResult();
+        $scope.TripType = $scope.Search.Triptype;
+        $scope.Carrier = $scope.Search.Carrier;
+        CheapestFareByDate();
+
+        if ($scope.Search.Triptype == "M") {
+            if (sessionStorage.getItem("searchDataM")) {
+                $scope.Search.MDomestic = JSON.parse(sessionStorage.getItem("searchDataM"))
+                $scope.segCount = $scope.Search.MDomestic.segList.length - 1;
+
+                console.log("seg count is", $scope.segCount);
+                $scope.searchMulti(0);
+            }
+
+        }
+        else {
+            if (sessionStorage.getItem("result")) {
+                $scope.Domair = JSON.parse(sessionStorage.getItem("result"));
+                $scope.Flights = $scope.Domair.Flights;
+
+                //$scope.Flights = JSON.parse('[{"AvailSegments":[{"FlightId":"67","AirlineCode":"PR","FlightNumber":"2863","AirCraftType":"320","Origin":"MNL","OriginAirportTerminal":"","Destination":"CEB","DestinationAirportTerminal":"","DepartureDateTime":"2017-07-08T18:15:00","ArrivalDateTime":"2017-07-08T19:30:00","Duration":"01Hrs 15Mins","NumberofStops":0,"Via":"OPERATED BY PAL EXPRESS","CurrencyCode":"PHP","Currency_Conversion_Rate":"","AvailPaxFareDetails":{"ClassCode":"N","ClassCodeDesc":"N","BaggageAllowed":{"CheckInBaggage":"0","HandBaggage":""},"Adult":{"FareBasis":"NLPH-Refundable","FareType":"","BasicAmount":4188,"YQ":0,"TaxDetails":null,"TotalTaxAmount":703,"GrossAmount":4941,"Commission":"0"},"Child":{"FareBasis":null,"FareType":null,"BasicAmount":0,"YQ":0,"TaxDetails":null,"TotalTaxAmount":0,"GrossAmount":0,"Commission":null},"Infant":{"FareBasis":null,"FareType":null,"BasicAmount":0,"YQ":0,"TaxDetails":null,"TotalTaxAmount":0,"GrossAmount":0,"Commission":null},"CancelPenalty":null,"ReschedulePenalty":null},"AirlinesId":"6","AirlineName":"Philippine Airlines"}],"CrdID":"3","BaseDetail":{"BaseOrigin":"MNL","BaseOriginTerminal":"","BaseDestination":"CEB","BaseDestinationTerminal":"","BaseDepartureDateTime":"2017-07-08T18:15:00","BaseArrivalDateTime":"2017-07-08T19:30:00","BaseDuration":"1 Hrs 15 Mins","GrossAmount":4941,"NoOfStops":0,"BaseAirlineName":"Philippine Airlines","FlightsCount":35,"ReturnBaseOrigin":null,"ReturnBaseOriginTerminal":null,"ReturnBaseDestination":"CEB","ReturnBaseDestinationTerminal":"","ReturnBaseDepartureDateTime":"0001-01-01T00:00:00","ReturnBaseArrivalDateTime":"2017-07-08T19:30:00","ReturnBaseDuration":"1 Hrs 15 Mins","ReturnNoOfStops":0,"ReturnBaseAirlineName":"Philippine Airlines"},"FareType":""},{"AvailSegments":[{"FlightId":"67","AirlineCode":"PR","FlightNumber":"2863","AirCraftType":"320","Origin":"MNL","OriginAirportTerminal":"","Destination":"CEB","DestinationAirportTerminal":"","DepartureDateTime":"2017-07-08T18:15:00","ArrivalDateTime":"2017-07-08T19:30:00","Duration":"01Hrs 15Mins","NumberofStops":0,"Via":"OPERATED BY PAL EXPRESS","CurrencyCode":"PHP","Currency_Conversion_Rate":"","AvailPaxFareDetails":{"ClassCode":"N","ClassCodeDesc":"N","BaggageAllowed":{"CheckInBaggage":"0","HandBaggage":""},"Adult":{"FareBasis":"NLPH-Refundable","FareType":"","BasicAmount":4188,"YQ":0,"TaxDetails":null,"TotalTaxAmount":703,"GrossAmount":4941,"Commission":"0"},"Child":{"FareBasis":null,"FareType":null,"BasicAmount":0,"YQ":0,"TaxDetails":null,"TotalTaxAmount":0,"GrossAmount":0,"Commission":null},"Infant":{"FareBasis":null,"FareType":null,"BasicAmount":0,"YQ":0,"TaxDetails":null,"TotalTaxAmount":0,"GrossAmount":0,"Commission":null},"CancelPenalty":null,"ReschedulePenalty":null},"AirlinesId":"6","AirlineName":"Philippine Airlines"}],"CrdID":"3","BaseDetail":{"BaseOrigin":"MNL","BaseOriginTerminal":"","BaseDestination":"CEB","BaseDestinationTerminal":"","BaseDepartureDateTime":"2017-07-08T18:15:00","BaseArrivalDateTime":"2017-07-08T19:30:00","BaseDuration":"1 Hrs 15 Mins","GrossAmount":4941,"NoOfStops":0,"BaseAirlineName":"Philippine Airlines","FlightsCount":35,"ReturnBaseOrigin":null,"ReturnBaseOriginTerminal":null,"ReturnBaseDestination":"CEB","ReturnBaseDestinationTerminal":"","ReturnBaseDepartureDateTime":"0001-01-01T00:00:00","ReturnBaseArrivalDateTime":"2017-07-08T19:30:00","ReturnBaseDuration":"1 Hrs 15 Mins","ReturnNoOfStops":0,"ReturnBaseAirlineName":"Philippine Airlines"},"FareType":""},{"AvailSegments":[{"FlightId":"67","AirlineCode":"PR","FlightNumber":"2863","AirCraftType":"320","Origin":"MNL","OriginAirportTerminal":"","Destination":"CEB","DestinationAirportTerminal":"","DepartureDateTime":"2017-07-08T18:15:00","ArrivalDateTime":"2017-07-08T19:30:00","Duration":"01Hrs 15Mins","NumberofStops":0,"Via":"OPERATED BY PAL EXPRESS","CurrencyCode":"PHP","Currency_Conversion_Rate":"","AvailPaxFareDetails":{"ClassCode":"N","ClassCodeDesc":"N","BaggageAllowed":{"CheckInBaggage":"0","HandBaggage":""},"Adult":{"FareBasis":"NLPH-Refundable","FareType":"","BasicAmount":4188,"YQ":0,"TaxDetails":null,"TotalTaxAmount":703,"GrossAmount":4941,"Commission":"0"},"Child":{"FareBasis":null,"FareType":null,"BasicAmount":0,"YQ":0,"TaxDetails":null,"TotalTaxAmount":0,"GrossAmount":0,"Commission":null},"Infant":{"FareBasis":null,"FareType":null,"BasicAmount":0,"YQ":0,"TaxDetails":null,"TotalTaxAmount":0,"GrossAmount":0,"Commission":null},"CancelPenalty":null,"ReschedulePenalty":null},"AirlinesId":"6","AirlineName":"Philippine Airlines"}],"CrdID":"3","BaseDetail":{"BaseOrigin":"MNL","BaseOriginTerminal":"","BaseDestination":"CEB","BaseDestinationTerminal":"","BaseDepartureDateTime":"2017-07-08T18:15:00","BaseArrivalDateTime":"2017-07-08T19:30:00","BaseDuration":"1 Hrs 15 Mins","GrossAmount":4941,"NoOfStops":0,"BaseAirlineName":"Philippine Airlines","FlightsCount":35,"ReturnBaseOrigin":null,"ReturnBaseOriginTerminal":null,"ReturnBaseDestination":"CEB","ReturnBaseDestinationTerminal":"","ReturnBaseDepartureDateTime":"0001-01-01T00:00:00","ReturnBaseArrivalDateTime":"2017-07-08T19:30:00","ReturnBaseDuration":"1 Hrs 15 Mins","ReturnNoOfStops":0,"ReturnBaseAirlineName":"Philippine Airlines"},"FareType":""}]');
+                $scope.RtnFlights = $scope.Domair.RtnFlights;
+
+            }
+            else {
+                $scope.SearchDom();
+            }
+        }
+    }
+    else {
+        $scope.Search.Domestic.Child = 0;
+        $scope.Search.Domestic.Infant = 0;
+    }
+
+
+    $scope.Search.Carrier = $scope.Carrier;
+    $scope.Search.Carriercode = $scope.Carriercode;
+
+    $scope.gotoback = function (mode) {
+        if (mode == 0) {
+            sessionStorage.setItem("bkappback", "back");
+            window.location = getpath() + "#airline";
+        }
+        else if (mode == 1) {
+            $scope.myExp = 'one';
+
+        }
+    };
+
+    var req = {
+        method: "GET",
+        url: getpath() + "Content/Script/IntCity.js?v=" + ver,
+        dataType: "json",
+        contentType: "application/json; charset=utf-8;html"
+    }
+    $http(req).success(function (citys) {
+        $scope.ICL = citys[0];
+    });
+
+    if (sessionStorage.getItem("Lowfare")) {
+        $scope.Search.Domestic.DepDate = new Date(sessionStorage.getItem("Lowfare"));
+        //$scope.SearchDom();
+        sessionStorage.removeItem("Lowfare")
+    }
+
+    $scope.clearResult = function () {
+        $scope.RtnFlights = [];
+        $scope.Flights = [];
+        $scope.Domair = {};
+    };
+
+    $scope.CheapestFare = function (FlightList, TripType) {
+
+        $scope.CheapestFareList = {};
+        $scope.showLLow = false;
+
+        angular.forEach(FlightList, function (item, key) {
+
+
+            var tempItem = {};
+            if (TripType == "O") {
+                tempItem.Airlinename = item.BaseDetail.BaseAirlineName;
+            }
+            else {
+
+                tempItem.Airlinename = item.BaseDetail.ReturnBaseAirlineName;
+            }
+
+            tempItem.AirlineId = item.AvailSegments[0].AirlinesId;
+            tempItem.Cost = item.BaseDetail.GrossAmount;
+            tempItem.AirlineCode = item.AvailSegments[0].AirlineCode;
+
+
+            var basedate = "";
+            basedate = item.BaseDetail.BaseDepartureDateTime;
+
+
+            tempItem.BaseDepartureDateTime = basedate;
+
+
+            if (!$scope.CheapestFareList[tempItem.Airlinename]) {
+
+                $scope.CheapestFareList[tempItem.Airlinename] = {};
+                $scope.CheapestFareList[tempItem.Airlinename] = tempItem;
+
+                $scope.showLLow = true;
+
+            }
+            else {
+                if ($scope.CheapestFareList[tempItem.Airlinename].Cost > tempItem.Cost) {
+                    $scope.CheapestFareList[tempItem.Airlinename] = tempItem;
+                    $scope.showLLow = true;
+                }
+            }
+
+            $scope.CheapestFareListTemp = {};
+
+            $scope.CheapestFareListTemp = $scope.CheapestFareList;
+            
+
+
+
+            $scope.AirlineList[$scope.CheapestFareList[tempItem.Airlinename].Airlinename] = true;
+
+
+            if ($scope.Fareslider.minValue == 0) {
+                console.log($scope.Fareslider.minValue,'min')
+                $scope.Fareslider.minValue = item.BaseDetail.GrossAmount;
+                $scope.Fareslider.options.floor = item.BaseDetail.GrossAmount;
+                console.log($scope.Fareslider.minValue, 'min')
+            }
+            else if ($scope.Fareslider.minValue > item.BaseDetail.GrossAmount) {
+                $scope.Fareslider.minValue = item.BaseDetail.GrossAmount;
+                $scope.Fareslider.options.floor = item.BaseDetail.GrossAmount;
+                console.log($scope.Fareslider.minValue, 'min1')
+            }
+            if ($scope.Fareslider.maxValue == 0) {
+                $scope.Fareslider.maxValue = item.BaseDetail.GrossAmount;
+                $scope.Fareslider.options.ceil = item.BaseDetail.GrossAmount;
+                console.log($scope.Fareslider.maxValue, 'minValue')
+            }
+            else if ($scope.Fareslider.maxValue < item.BaseDetail.GrossAmount) {
+                $scope.Fareslider.maxValue = item.BaseDetail.GrossAmount;
+                $scope.Fareslider.options.ceil = item.BaseDetail.GrossAmount;
+                console.log($scope.Fareslider.maxValue, 'minValue1')
+            }
+
+            var ddate = "";
+            var adate = "";
+            if (TripType == "O") {
+                ddate = item.BaseDetail.BaseDepartureDateTime;
+                adate = item.BaseDetail.BaseArrivalDateTime;
+            }
+            else {
+
+                ddate = item.BaseDetail.ReturnBaseDepartureDateTime;
+                adate = item.BaseDetail.ReturnBaseArrivalDateTime;
+
+
+            }
+
+            if (!$scope.Deptslider.minValue) {
+                $scope.Deptslider.minValue = new Date(ddate).getTime()
+
+                console.log($scope.Deptslider.minValue, 'minvaluw')
+
+                $scope.Deptslider.options.floor = new Date(ddate).getTime();
+            }
+            if (!$scope.Deptslider.maxValue) {
+                $scope.Deptslider.maxValue = new Date(ddate).getTime();
+                $scope.Deptslider.options.ceil = new Date(ddate).getTime();
+            }
+            if (new Date($scope.Deptslider.minValue).getTime() > new Date(ddate).getTime()) {
+                $scope.Deptslider.minValue = new Date(ddate).getTime();
+                $scope.Deptslider.options.floor = new Date(ddate).getTime();
+            }
+            if (new Date($scope.Deptslider.maxValue).getTime() < new Date(ddate).getTime()) {
+                $scope.Deptslider.maxValue = new Date(ddate).getTime();
+                $scope.Deptslider.options.ceil = new Date(ddate).getTime();
+            }
+
+            if (!$scope.Arrslider.minValue) {
+                $scope.Arrslider.minValue = new Date(adate).getTime();
+                $scope.Arrslider.options.floor = new Date(adate).getTime();
+            }
+            if (!$scope.Arrslider.maxValue) {
+                $scope.Arrslider.maxValue = new Date(adate).getTime();
+                $scope.Arrslider.options.ceil = new Date(adate).getTime();
+            }
+            if (new Date($scope.Arrslider.minValue).getTime() > new Date(adate).getTime()) {
+                $scope.Arrslider.minValue = new Date(adate).getTime();
+                $scope.Arrslider.options.floor = new Date(adate).getTime();
+            }
+            if (new Date($scope.Arrslider.maxValue).getTime() < new Date(adate).getTime()) {
+                $scope.Arrslider.maxValue = new Date(adate).getTime();
+                $scope.Arrslider.options.ceil = new Date(adate).getTime();
+            }
+
+            $timeout(function () { $scope.HideCheapestDiv(); }, 500);
+
+        });
+
+    };
+
+    $scope.CheapestFareRt = function (FlightList) {
+        $scope.CheapestFareListRt = {};
+        $scope.showRLow = false;
+
+        angular.forEach(FlightList, function (item, key) {
+            var tempItem = {};
+            tempItem.Airlinename = item.BaseDetail.ReturnBaseAirlineName;
+            tempItem.AirlineId = item.AvailSegments[0].AirlinesId;
+            tempItem.AirlineCode = item.AvailSegments[0].AirlineCode;
+            var lintAmount = item.BaseDetail.GrossAmount;
+            tempItem.Cost = lintAmount;
+
+            if (!$scope.CheapestFareListRt[tempItem.Airlinename]) {
+                $scope.CheapestFareListRt[tempItem.Airlinename] = {};
+                $scope.CheapestFareListRt[tempItem.Airlinename] = tempItem;
+                $scope.showRLow = true;
+            }
+            else {
+                if ($scope.CheapestFareListRt[tempItem.Airlinename].Cost > tempItem.Cost) {
+                    $scope.CheapestFareListRt[tempItem.Airlinename] = tempItem;
+                    $scope.showRLow = true;
+                }
+            }
+            $scope.AirlineListRt[$scope.CheapestFareListRt[tempItem.Airlinename].Airlinename] = true;
+            //if ($scope.Fareslider.minValue == 0) {
+            //    $scope.Fareslider.minValue = item.BaseDetail.GrossAmount;
+            //    $scope.Fareslider.options.floor = item.BaseDetail.GrossAmount;
+            //}
+            //else if ($scope.Fareslider.minValue > item.BaseDetail.GrossAmount) {
+            //    $scope.Fareslider.minValue = item.BaseDetail.GrossAmount;
+            //    $scope.Fareslider.options.floor = item.BaseDetail.GrossAmount;
+            //}
+            /** /
+            if ($scope.Fareslider.maxValue == 0) {
+                $scope.Fareslider.maxValue = lintAmount;
+                $scope.Fareslider.options.ceil = lintAmount;
+            }
+            else if ($scope.Fareslider.maxValue < lintAmount) {
+                $scope.Fareslider.maxValue = lintAmount;
+                $scope.Fareslider.options.ceil = lintAmount;
+            }
+            /**/
+
+
+            var ddate = "";
+            var adate = "";
+
+
+            ddate = item.BaseDetail.ReturnBaseDepartureDateTime;
+            adate = item.BaseDetail.ReturnBaseArrivalDateTime;
+
+            if ($scope.Fareslider.minValue > item.BaseDetail.GrossAmount) {
+                $scope.Fareslider.minValue = item.BaseDetail.GrossAmount;
+                $scope.Fareslider.options.floor = item.BaseDetail.GrossAmount;
+            }
+            if ($scope.Fareslider.maxValue < item.BaseDetail.GrossAmount) {
+                $scope.Fareslider.maxValue = item.BaseDetail.GrossAmount;
+                $scope.Fareslider.options.ceil = item.BaseDetail.GrossAmount;
+            }
+
+            if (!$scope.RTDeptslider.minValue) {
+                $scope.RTDeptslider.minValue = new Date(ddate).getTime()
+
+                $scope.RTDeptslider.options.floor = new Date(ddate).getTime();
+            }
+            if (!$scope.RTDeptslider.maxValue) {
+                $scope.RTDeptslider.maxValue = new Date(ddate).getTime();
+                $scope.RTDeptslider.options.ceil = new Date(ddate).getTime();
+            }
+            if (new Date($scope.RTDeptslider.minValue).getTime() > new Date(ddate).getTime()) {
+                $scope.RTDeptslider.minValue = new Date(ddate).getTime();
+                $scope.RTDeptslider.options.floor = new Date(ddate).getTime();
+            }
+            if (new Date($scope.RTDeptslider.maxValue).getTime() < new Date(ddate).getTime()) {
+                $scope.RTDeptslider.maxValue = new Date(ddate).getTime();
+                $scope.RTDeptslider.options.ceil = new Date(ddate).getTime();
+            }
+
+            if (!$scope.RTArrslider.minValue) {
+                $scope.RTArrslider.minValue = new Date(adate).getTime();
+                $scope.RTArrslider.options.floor = new Date(adate).getTime();
+            }
+            if (!$scope.RTArrslider.maxValue) {
+                $scope.RTArrslider.maxValue = new Date(adate).getTime();
+                $scope.RTArrslider.options.ceil = new Date(adate).getTime();
+            }
+            if (new Date($scope.RTArrslider.minValue).getTime() > new Date(adate).getTime()) {
+                $scope.RTArrslider.minValue = new Date(adate).getTime();
+                $scope.RTArrslider.options.floor = new Date(adate).getTime();
+            }
+            if (new Date($scope.RTArrslider.maxValue).getTime() < new Date(adate).getTime()) {
+                $scope.RTArrslider.maxValue = new Date(adate).getTime();
+                $scope.RTArrslider.options.ceil = new Date(adate).getTime();
+            }
+
+        });
+        //$scope.FilterValues.HV = $scope.Fareslider.maxValue;
+        $timeout(function () { $scope.HideCheapestDivRet(); }, 500);
+        $scope.recalcDem();
+
+    };
+
+    var xhttpss = new XMLHttpRequest();
+    xhttpss.open("GET", getpath() + "Content/Sources/xml/InternationalAirlines.xml", false);
+    xhttpss.send();
+    var airxml = xhttpss.responseXML;
+
+
+    $scope.myData = null;
+
+    $scope.loadData = function () {
+        $scope.myData = '...';
+    }
+
+    $scope.GetTravel = function (ev, f) {
+
+
+        var ms = moment(f).diff(moment(ev));
+        var d = moment.duration(ms);
+
+        var s = Math.floor(d.asHours()) + " Hrs " + moment.utc(ms).format("mm") + " Min";
+
+        return s;
+    }
+
+    $scope.fnSetAirLogo = function (AirlineCode) {
+
+        var lstrAirLogo = getImage(AirlineCode);
+        if (lstrAirLogo == "0") {
+            $(airxml).find('airlines').each(function () {
+                if ($(this).attr('IATACode') == AirlineCode) {
+                    lstrAirLogo = "<img class='airlogowidth Airimg img-responsive' src='http://biyaheko.com/images/logos/A" + $(this).attr("AirlinesId") + ".bmp' alt='" + $(this).attr("AirlinesName") + "'/>";
+                }
+            });
+        }
+        return lstrAirLogo;
+
+    }
+    function getImage(psrtAirLineCode) {
+        try {
+            var lstrAirIMG = "";
+
+
+            if ('2P' == psrtAirLineCode) {
+                //Airphilexpress
+                lstrAirIMG = " class='airsprite airlogowidth  A1 Airimg' alt='Airphilexpress'";
+            }
+            else if ('JQ' == psrtAirLineCode) {
+                //Jetstar
+                lstrAirIMG = " class='airsprite airlogowidth  A2 Airimg' alt='Jetstar'";
+            }
+            else if ('3K' == psrtAirLineCode) { //Jetstar Asia
+                lstrAirIMG = " class='airsprite airlogowidth  A3 Airimg' alt='Jetstar Asia'";
+            }
+            else if ('5J' == psrtAirLineCode) { //CebupacificAir
+
+                lstrAirIMG = " class='airsprite airlogowidth  A9 Airimg' alt='CebupacificAir'";
+            }
+            else if ('PR' == psrtAirLineCode) {   //Philippine Airlines
+                lstrAirIMG = " class='airsprite airlogowidth  A6 Airimg' alt='Philippine Airlines'";
+            }
+            else if ('Z2' == psrtAirLineCode) {
+                //Zest Air
+                lstrAirIMG = " class='airsprite airlogowidth  A10 Airimg' alt='Zest Air'";
+            }
+            else if ('DG' == psrtAirLineCode) {
+                //Zest Air
+                lstrAirIMG = " class='airsprite airlogowidth  A620 Airimg' alt='Cebgo'";
+            }
+            else if ('M8' == psrtAirLineCode) {
+                //Zest Air
+                lstrAirIMG = " class='airsprite airlogowidth  A892 Airimg' alt='Sky Jet'";
+            }
+            else {
+                return "0";
+            }
+            return "<img src='" + getpath() + "Content/Images/sp_trans.gif'" + lstrAirIMG + " />"
+
+        }
+        catch (e) {
+            console.log('Error in getImage() - ' + e.toString());
+        }
+    }
+
+    $scope.searchongoing = function (Flight, value) {
+        //  $scope.Check.ALL = false;
+
+        angular.forEach($scope.AirlineList, function (item, key) {
+
+            if (Flight == key) {
+                $scope.AirlineList[key] = true;
+            } else {
+                $scope.AirlineList[key] = false;
+            }
+        });
+    }
+    $scope.searchreturn = function (Flight, value) {
+        //$scope.Check.RtnALL = false;
+        angular.forEach($scope.AirlineListRt, function (item, key) {
+            if (Flight == key) {
+                $scope.AirlineListRt[key] = true;
+
+            } else {
+                $scope.AirlineListRt[key] = false;
+
+            }
+        });
+    }
+
+
+    //----------------------OrderBy--------------------------
+    $scope.predicate = 'BaseDetail.GrossAmount';
+
+
+
+    $scope.predicateRt = 'BaseDetail.GrossAmount';
+    $scope.reverse = false;
+    $scope.reverseRt = false;
+    $scope.order = function (predicate) {
+
+        console.log(predicate, 'dd')
+
+        if ($scope.predicate == predicate) {
+
+
+            $scope.reverse = ($scope.predicate === predicate) ? !$scope.reverse : false;
+
+        }
+        else {
+            $scope.reverse = ($scope.predicate != predicate) ? !$scope.reverse : false;
+
+
+        }
+        $scope.predicate = predicate;
+
+
+    };
+    $scope.Returnorder = function (predicate) {
+        if ($scope.predicateRt == predicate) {
+            $scope.reverseRt = ($scope.predicateRt === predicate) ? !$scope.reverseRt : false;
+        }
+        else {
+            $scope.reverseRt = ($scope.predicateRt != predicate) ? !$scope.reverseRt : false;
+        }
+        $scope.predicateRt = predicate;
+    };
+
+    $scope.ResetFilter = function (enable) {
+        //$scope.FilterValues.LV = 0;
+        $scope.Fareslider.minValue = 0;
+        $scope.Fareslider.maxValue = 0;
+        $scope.Fareslider.floor = 0;
+
+        //$scope.FilterValues.DeptLV = 0;
+        //$scope.FilterValues.DeptHV = 24;
+        $scope.Deptslider.minValue = 0;
+        $scope.Deptslider.floor = 0;
+        $scope.Deptslider.maxValue = 24;
+        $scope.Deptslider.ceil = 24;
+
+        //$scope.FilterValues.ArrLV = 0;
+        //$scope.FilterValues.ArrHV = 24;
+        $scope.Arrslider.minValue = 0;
+        $scope.Arrslider.floor = 0;
+        $scope.Arrslider.maxValue = 24;
+        $scope.Arrslider.ceil = 24;
+
+        $scope.RTDeptslider.minValue = 0;
+        $scope.RTDeptslider.floor = 0;
+        $scope.RTDeptslider.maxValue = 24;
+        $scope.RTDeptslider.ceil = 24;
+
+
+        $scope.RTArrslider.minValue = 0;
+        $scope.RTArrslider.floor = 0;
+        $scope.RTArrslider.maxValue = 24;
+        $scope.RTArrslider.ceil = 24;
+
+        $scope.Segmenttype.Direct = true;
+        $scope.Segmenttype.Connecting = true;
+
+        //$scope.Policy.Inpolicy = true;
+        //$scope.Policy.Outpolicy = true
+        if (enable) {
+            if ($scope.Flights[0]) {
+                $scope.CheapestFare($scope.Flights, "O");
+            }
+            if ($scope.RtnFlights) {
+                if ($scope.RtnFlights[0]) {
+                    $scope.CheapestFareRt($scope.RtnFlights);
+                }
+            }
+        }
+    }
+
+    //----------------------Filter--------------------------
+    $scope.Fareslider = {
+        minValue: 0,
+        maxValue: 0,
+        options: {
+            translate: function (value, sliderId, label) {
+
+                return '<span class="Cur" style="font-size: 14px">&#8369;</span> &nbsp;&nbsp;&nbsp;' + value
+            }
+
+        }
+
+    };
+    $scope.Deptslider = {
+        options: {
+            translate: function (value, sliderId, label) {
+
+
+                return $filter('date')(new Date(value), "h:mm a")
+
+            }
+        }
+    };
+    $scope.Arrslider = {
+        options: {
+            translate: function (value, sliderId, label) {
+                return $filter('date')(new Date(value), " h:mm a")
+            }
+        }
+    };
+
+    $scope.RTDeptslider = {
+        options: {
+            translate: function (value, sliderId, label) {
+                return $filter('date')(new Date(value), " h:mm a")
+            }
+        }
+    };
+    $scope.RTArrslider = {
+        options: {
+            translate: function (value, sliderId, label) {
+                return $filter('date')(new Date(value), " h:mm a")
+            }
+        }
+    };
+
+    $scope.AirlineFilter = function (Flight) {
+        var ret = true;
+
+        //console.log($scope.Fareslider.minValue, 'minvalue')
+        //console.log($scope.Fareslider.maxvalue, 'max')
+
+
+
+        if (($scope.Fareslider.minValue) && (parseInt($scope.Fareslider.minValue) > parseInt(Flight.BaseDetail.GrossAmount))) {
+            ret = false;
+        }
+        if (($scope.Fareslider.maxValue) && (parseInt($scope.Fareslider.maxValue) < parseInt(Flight.BaseDetail.GrossAmount))) {
+            ret = false;
+        }
+        if (($scope.Deptslider.minValue) && (new Date($scope.Deptslider.minValue) > new Date(Flight.BaseDetail.BaseDepartureDateTime))) {
+            ret = false;
+        }
+        if (($scope.Deptslider.maxValue) && (new Date($scope.Deptslider.maxValue) < new Date(Flight.BaseDetail.BaseDepartureDateTime))) {
+            ret = false;
+        }
+        if (($scope.Arrslider.minValue) && (new Date($scope.Arrslider.minValue) > new Date(Flight.BaseDetail.BaseArrivalDateTime))) {
+            ret = false;
+        }
+        if (($scope.Arrslider.maxValue) && (new Date($scope.Arrslider.maxValue) < new Date(Flight.BaseDetail.BaseArrivalDateTime))) {
+            ret = false;
+        }
+        if (!$scope.AirlineList[Flight.BaseDetail.BaseAirlineName] && $scope.AirlineList[Flight.BaseDetail.BaseAirlineName] == 0) {
+            ret = false;
+        }
+        if (!$scope.AirlineList[Flight.BaseDetail.ReturnBaseAirlineName] && $scope.AirlineList[Flight.BaseDetail.ReturnBaseAirlineName] == 0) {
+            ret = false;
+        }
+        if (($scope.Segmenttype.Direct && $scope.Segmenttype.Connecting) || ($scope.Segmenttype.Direct && $scope.Segmenttype.Connecting)) {
+            //need to be blank
+        }
+        else if (($scope.Segmenttype.Direct) && (Flight.AvailSegments.length > 1)) {
+            ret = false;
+        } else if (($scope.Segmenttype.Connecting) && (Flight.AvailSegments.length == 1)) {
+            ret = false;
+        }
+        return ret;
+    };
+
+    $scope.AirlineRtnFilter = function (Flight) {
+        var ret = true;
+        if (($scope.Fareslider.minValue) && (parseInt($scope.Fareslider.minValue) > parseInt(Flight.BaseDetail.GrossAmount))) {
+            ret = false;
+        }
+        if (($scope.Fareslider.maxValue) && (parseInt($scope.Fareslider.maxValue) < parseInt(Flight.BaseDetail.GrossAmount))) {
+            ret = false;
+        }
+        if (($scope.RTDeptslider.minValue) && (new Date($scope.RTDeptslider.minValue) > new Date(Flight.BaseDetail.ReturnBaseDepartureDateTime))) {
+            ret = false;
+        }
+        if (($scope.RTDeptslider.maxValue) && (new Date($scope.RTDeptslider.maxValue) < new Date(Flight.BaseDetail.ReturnBaseDepartureDateTime))) {
+            ret = false;
+        }
+        if (($scope.RTArrslider.minValue) && (new Date($scope.RTArrslider.minValue) > new Date(Flight.BaseDetail.ReturnBaseArrivalDateTime))) {
+            ret = false;
+        }
+        if (($scope.RTArrslider.maxValue) && (new Date($scope.RTArrslider.maxValue) < new Date(Flight.BaseDetail.ReturnBaseArrivalDateTime))) {
+            ret = false;
+        }
+        if (!$scope.AirlineListRt[Flight.BaseDetail.BaseAirlineName] && $scope.AirlineListRt[Flight.BaseDetail.ReturnBaseAirlineName] == 0) {
+            ret = false;
+        }
+        if (!$scope.AirlineListRt[Flight.BaseDetail.ReturnBaseAirlineName] && $scope.AirlineListRt[Flight.BaseDetail.ReturnBaseAirlineName] == 0) {
+            ret = false;
+        }
+        if (($scope.Segmenttype.Direct && $scope.Segmenttype.Connecting) || ($scope.Segmenttype.Direct && $scope.Segmenttype.Connecting)) {
+            //need to be blank
+        }
+        else if (($scope.Segmenttype.Direct) && (Flight.AvailSegments.length > 1)) {
+            ret = false;
+        } else if (($scope.Segmenttype.Connecting) && (Flight.AvailSegments.length == 1)) {
+            ret = false;
+        }
+        return ret;
+    };
+
+
+
+
+    $scope.recalcDem = function () {
+        console.log("Called");
+        //$scope.$$postDigest
+        $timeout(function () {
+            $scope.$broadcast('rzSliderForceRender');
+        }, 10);
+    }
+    $scope.CheapestFare($scope.Flights, "O");
+    console.log("$scope.RtnFlights", $scope.RtnFlights);
+    if ($scope.RtnFlights) {
+        $scope.CheapestFareRt($scope.RtnFlights);
+    }
+    //----------------------------tex ------------------------
+    $scope.GotoTax = function (FlightId, ev, Type, seg, arg, totalAmt) {
+
+        console.log(FlightId, ev, Type, seg, arg, totalAmt, 'totl')
+
+        $scope.ThrdCount = $scope.ThrdCount + 1;
+        var req = {
+            method: "POST",
+            async: true,
+            url: getpath() + "Domestic/GetTax",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8;html",
+            data: { "FlightId": FlightId, "TaxType": Type, "Segment": seg }
+        }
+
+        RemoteService.FetchData(req).success(function (data, status, headers, config) {
+            var Ressponse = JSON.parse(data)[0];
+            if (Ressponse["Status"] == "1" || Ressponse["Status"] == "3") {
+                if (Ressponse["Data"]["TaxType"] == "O") {
+                    sessionStorage.setItem("DomSegmentlist", JSON.stringify(Ressponse["Data"]));
+                    if (Ressponse["Status"] == "1") {
+                        window.location = getpath() + "#dombooking";
+                    } else if (Ressponse["Status"] == "3") {
+                        $mdDialog.show({
+                            targetEvent: ev,
+                            template:
+                              '<md-dialog aria-label="List dialog">' +
+                              '<div class="md-input-focused label Cur pad10"><b class="errors">FARE ALERT</b></div>' +
+                              '  <md-dialog-content>' +
+                              '<div class="md-padding">Your final pricing amount is changed due to a recent update on airline host server.<br> Showed Fare: <b class="FareOLD"> &#x20b9; ' + Ressponse["Data"].GrossAmount + '</b> <br>Update Fare: <b class="Fare"> &#x20b9; ' + Ressponse["Data"].TaxFare + '</b><br><br> Do you want to continue ?</div>' +
+                              '  </md-dialog-content>' +
+                              '  <md-dialog-actions>' +
+                              '    <md-button ng-click="No()" class="md-raised md-primary">' +
+                              '      NO' +
+                              '    </md-button>' +
+                              '    <md-button ng-click="YES()" class="md-raised md-accent">' +
+                              '      YES' +
+                              '    </md-button>' +
+                              '  </md-dialog-actions>' +
+                              '</md-dialog>',
+                            controller: confirmController
+                        });
+                        function confirmController($scope, $mdDialog) {
+                            $scope.YES = function () {
+                                $mdDialog.hide();
+                                window.location = getpath() + "#dombooking";
+                            }
+                            $scope.No = function () {
+                                $mdDialog.hide();
+                            }
+                        }
+                        confirmController.$inject = ['$scope', '$mdDialog'];
+                    }
+                }
+                else {
+                    if (Ressponse["Data"]["Segment"] == "O") {
+                        sessionStorage.setItem("DomSegmentlist", JSON.stringify(Ressponse["Data"]));
+                    }
+                    else {
+                        sessionStorage.setItem("DomSegmentlistRt", JSON.stringify(Ressponse["Data"]));
+                    }
+                    if (arg == 1) {
+                        $scope.ThrdCount = $scope.ThrdCount + 1;
+                        $scope.roundTripTaxFare = parseInt($scope.roundTripTaxFare) + parseInt(Ressponse["Data"].TaxFare);
+                    }
+                    if (arg == 2) {
+                        $scope.ThrdCount = $scope.ThrdCount + 1;
+                        $scope.roundTripTaxFare = parseInt($scope.roundTripTaxFare) + parseInt(Ressponse["Data"].TaxFare);
+                    }
+                    if ($scope.roundTripTaxFare != totalAmt && $scope.ThrdCount == 4) {
+                        $mdDialog.show({
+                            targetEvent: ev,
+                            template:
+                              '<md-dialog aria-label="List dialog">' +
+                              '<div class="md-input-focused label pad5"><b class="errors">FARE ALERT</b></div>' +
+                              '  <md-dialog-content>' +
+                              '<div class="md-padding">Your final pricing amount is changed due to a recent update on airline host server.<br> Showed Fare: <b class="FareOLD"> &#x20b9; ' + totalAmt + '</b> <br>Update Fare: <b class="Fare"> &#x20b9; ' + $scope.roundTripTaxFare + '</b><br><br> Do you want to continue ?</div>' +
+                              '  </md-dialog-content>' +
+                              '  <md-dialog-actions>' +
+                              '    <md-button ng-click="No()" class="md-raised md-warn">' +
+                              '      NO' +
+                              '    </md-button>' +
+                              '    <md-button ng-click="YES()" class="md-raised md-primary">' +
+                              '      YES' +
+                              '    </md-button>' +
+                              '  </md-dialog-actions>' +
+                              '</md-dialog>',
+                            controller: confirmController
+                        });
+                        function confirmController($scope, $mdDialog) {
+                            $scope.YES = function () {
+                                $mdDialog.hide();
+                                window.location = getpath() + "#dombooking";
+                            }
+                            $scope.No = function () {
+                                $mdDialog.hide();
+                            }
+                        }
+                        confirmController.$inject = ['$scope', '$mdDialog'];
+                    }
+                    else if ($scope.ThrdCount == 4) {
+                        window.location = getpath() + "#dombooking";
+                    }
+                }
+            }
+            else if (Ressponse["Status"] == "0") {
+                $mdDialog.show(
+                    $mdDialog.alert()
+                    .parent(angular.element(document.querySelector('#popupContainer')))
+                    .clickOutsideToClose(true)
+                    .title('Message')
+                    .textContent(Ressponse["StatusDesc"])
+                    .ariaLabel('')
+                    .ok('Close')
+                    .targetEvent(ev));
+            }
+            else if (Ressponse["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(Ressponse["StatusDesc"])
+                              .ariaLabel('')
+                              .targetEvent(ev)
+                              .ok('OK')
+                .cancel('CLOSE')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                function () {
+                    window.location = getpath();
+                });
+            }
+        }).error(function (data, status, headers, config) {
+
+        });
+    };
+
+    $scope.GotoTaxRt = function (FlightId, FlightIdRt, ev, Type, seg, arg, totalAmt) {
+        $(".md-dialog-backdrop").removeClass("hide");
+        $scope.roundTripTaxFare = 0.00;
+        $scope.taxCount = 2;
+        $scope.ThrdCount = 0;
+        $scope.GotoTax(FlightId, ev, 'R', 'O', 1, totalAmt);
+        $scope.GotoTax(FlightIdRt, ev, 'R', 'R', 2, totalAmt);
+    };
+    /** /
+    $scope.SelectFlight = function (FlightId) {
+    
+    
+    
+        $scope.recalcDem();
+        //One Way Trip
+        if ($scope.Search.Triptype == "O" && $scope.ShwRtnFligth == false) {
+            $scope.RtnFligth = "";
+            $scope.OneWayFligth = $scope.Flights.filter(function (item) {
+                return (item.BaseDetail.FlightsCount == FlightId);
+            });
+            $scope.OneWayFligth = $scope.OneWayFligth[0];
+    
+            $scope.lstGoToTaxClick = function (ev) {
+                $scope.GotoTax($scope.OneWayFligth.BaseDetail.FlightsCount, ev, 'O', 'O', 0, 0.00);
+            }
+            $scope.lstGetFareRuleClick = function (index, ev) {
+                //$scope.fnGetFareRules($scope.OneWayFligth.AvailSegments[0].FlightId, ev, "O")
+                $scope.fnGetFareRules($scope.OneWayFligth.AvailSegments[index].FlightId, $scope.OneWayFligth.AvailSegments[index].AirlinesId, $scope.OneWayFligth.AvailSegments[index].AvailPaxFareDetails.ClassCode, ev, "O")
+            }
+            $scope.myExp = 'two';
+        }
+        //Return Trip
+        if ($scope.Search.Triptype == "R" && $scope.ShwRtnFligth == false) {
+            $scope.ShwRtnFligth = true;
+            $scope.OneWayFligth = $scope.Flights.filter(function (item) {
+                return (item.BaseDetail.FlightsCount == FlightId);
+            });
+            $scope.OneWayFligth = $scope.OneWayFligth[0];
+            $scope.ResetFilter(false);
+            $scope.recalcDem();
+            $scope.CheapestFare($scope.RtnFlights, "R");
+            $scope.RtnFligth = "";
+            $scope.lstGetFareRuleClick = function (index, ev) {
+                //$scope.fnGetFareRules($scope.OneWayFligth.AvailSegments[0].FlightId, ev,"O")
+                $scope.fnGetFareRules($scope.OneWayFligth.AvailSegments[index].FlightId, $scope.OneWayFligth.AvailSegments[index].AirlinesId, $scope.OneWayFligth.AvailSegments[index].AvailPaxFareDetails.ClassCode, ev, "O")
+            }
+    
+            $mdToast.show($mdToast.simple()
+            .textContent('Please Pick Return Flight')
+            .hideDelay(3000)
+            .toastClass('toaster-over toaster-fade-close')
+             );
+        }
+            //Return Trip with Selected Filgth
+        else if ($scope.Search.Triptype == "R" && $scope.ShwRtnFligth == true) {
+            $scope.recalcDem();
+            $scope.RtnFligth = $scope.RtnFlights.filter(function (item) {
+                return (item.BaseDetail.FlightsCount == FlightId);
+            });
+            $scope.RtnFligth = $scope.RtnFligth[0];
+    
+            $scope.ShwRtnFligth = true;
+            $scope.myExp = 'two';
+            $scope.TotPay = (($scope.OneWayFligth.BaseDetail.GrossAmount * 1) + ($scope.RtnFligth.BaseDetail.GrossAmount * 1)) * ($scope.Search.Adult + $scope.Search.Child + $scope.Search.Infant);
+            $scope.lstGoToTaxClick = function (ev) {
+                $scope.GotoTaxRt($scope.OneWayFligth.BaseDetail.FlightsCount, $scope.RtnFligth.BaseDetail.FlightsCount, ev, 'O', 'O', 0, $scope.TotPay)
+            }
+            $scope.lstRtnGetFareRuleClick = function (index, ev) {
+                //$scope.fnGetFareRules($scope.RtnFligth.AvailSegments[0].FlightId, ev, "R");
+                $scope.fnGetFareRules($scope.RtnFligth.AvailSegments[index].FlightId, $scope.RtnFligth.AvailSegments[index].AirlinesId, $scope.RtnFligth.AvailSegments[index].AvailPaxFareDetails.ClassCode, ev, "R");
+            }
+        }
+    }
+    /**/
+    $scope.SelectAirlinrRt = [];
+    $scope.SelectAirlinr = [];
+    $scope.SetRoundTripTax = function (FlightId, ev, type, device, ThreadCount) {
+
+        //if (index != null) {
+        //    if (index != 0) {
+        //        return false;
+        //    }
+        //}
+        if (device) {
+
+            if ($scope.Search.Triptype == "O") {
+                $scope.bookflight(FlightId, ev, ThreadCount);
+                //return false;
+            }
+
+        }
+        if (type == 'O') {
+            $scope.Ongoing = false;
+            /** /
+            $scope.SelFlight = $scope.Flights[FlightId];
+            // sessionStorage.setItem("DomSegmentlist", $scope.SelFlight);
+            if ($scope.SelFlight) {
+                console.log("test data is", $scope.SelectAirlinr);
+                angular.forEach($scope.SelectAirlinr, function (value, key) {
+                    $scope.SelectAirlinr[key] = false;
+                    console.log("Value is", value);
+                    if (FlightId == key) {
+                        
+                        $scope.SelectAirlinr[key] = true;
+                    }
+                });
+            }
+            /**/
+            $scope.SelFlight = {};
+            $scope.SelFlight = $scope.Flights.filter(function (item) {
+
+                return (item.BaseDetail.FlightsCount == FlightId && item.BaseDetail.ThreadCount == ThreadCount);
+            });
+
+            angular.forEach($scope.SelectAirlinr, function (value, key) {
+
+                $scope.SelectAirlinr[key] = false;
+                if (FlightId == key) {
+                    $scope.SelectAirlinr[key] = true;
+                }
+            });
+            flightDetails = FlightId + "|" + ThreadCount;
+            sessionStorage.setItem("selectedFlight", flightDetails);
+            sessionStorage.setItem("domSegList", JSON.stringify($scope.SelFlight[0]));
+            $scope.SelFlight = $scope.SelFlight[0];
+
+        }
+        else {
+
+            /** /
+            $scope.SelFlightRt = $scope.RtnFlights[FlightId];
+            //sessionStorage.setItem("DomSegmentlistRt", $scope.SelFlightRt);
+            angular.forEach($scope.SelectAirlinrRt, function (value, key) {
+                $scope.SelectAirlinrRt[key] = false;
+                if (FlightId == key) {
+
+                    sessionStorage.setItem("domSegListRt", JSON.stringify($scope.SelFlightRt));
+                    sessionStorage.setItem("selectedFlightRt", FlightId);
+                    $scope.SelectAirlinrRt[key] = true;
+                }
+            });
+            /**/
+            $scope.SelFlightRt = {};
+            flightDetails = FlightId + "|" + ThreadCount;
+            $scope.SelFlightRt = $scope.RtnFlights.filter(function (item) {
+
+                return (item.BaseDetail.FlightsCount == FlightId && item.BaseDetail.ThreadCount == ThreadCount);
+            });
+            angular.forEach($scope.SelectAirlinrRt, function (value, key) {
+                $scope.SelectAirlinrRt[key] = false;
+                if (FlightId == key) {
+
+                    $scope.SelectAirlinrRt[key] = true;
+                }
+            });
+            sessionStorage.setItem("selectedFlightRt", flightDetails);
+            sessionStorage.setItem("domSegListRt", JSON.stringify($scope.SelFlightRt[0]));
+            $scope.SelFlightRt = $scope.SelFlightRt[0];
+        }
+
+        var lintOnwayGross = 0.0;
+        var lintOnwayComm = 0.0;
+        var lstrOnwayClass = "";
+        var linRtnGross = 0.0;
+        var linRtnComm = 0.0;
+        var lstrRtnClass = "";
+
+
+        if (type != 'O') {
+
+            $scope.SelFlightRt.GrossAmount = ($scope.SelFlightRt.BaseDetail.GrossAmount);
+            $scope.SelFlightRt.ClassCode = $scope.SelFlightRt.AvailSegments[$scope.SelFlightRt.AvailSegments.length - 1].AvailPaxFareDetails.ClassCode;
+            $scope.SelFlightRt.Comm = $scope.SelFlightRt.AvailSegments[$scope.SelFlightRt.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission;
+
+        }
+        else {
+
+            $scope.SelFlight.GrossAmount = $scope.SelFlight.BaseDetail.GrossAmount;
+            $scope.SelFlight.ClassCode = $scope.SelFlight.AvailSegments[$scope.SelFlight.AvailSegments.length - 1].AvailPaxFareDetails.ClassCode;
+            $scope.SelFlight.Comm = $scope.SelFlight.AvailSegments[$scope.SelFlight.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission;
+        }
+
+    };
+
+    $scope.goToBookRT = function () {
+        if (sessionStorage.getItem("selectedFlight") && sessionStorage.getItem("selectedFlightRt")) {
+            window.location = getpath() + "#dombooking";
+        }
+    }
+
+    $scope.CanSelFlight = function () {
+
+        //$scope.ResetFilter(false);
+        //$scope.CheapestFare($scope.Flights, "O");
+        //$scope.recalcDem();
+
+        //$scope.ShwRtnFligth = false;
+
+        $scope.Ongoing = true;
+
+
+    }
+    $scope.selectedMflight = [];
+    $scope.segListM = [];
+    $scope.bookflight = function (FlightId, ev, ThreadCount) {
+        $scope.SearchFailCount = 0;
+        var flightDetails = "";
+        var selectedMFlightDetails = {};
+        $scope.OneWayFligth = $scope.Flights.filter(function (item) {
+            return (item.BaseDetail.FlightsCount == FlightId && item.BaseDetail.ThreadCount == ThreadCount);
+        });
+        flightDetails = FlightId + "|" + ThreadCount;
+        if ($scope.TripType != "M") {
+
+            sessionStorage.setItem("selectedFlight", flightDetails);
+            $scope.OneWayFligth = $scope.OneWayFligth[0];
+            sessionStorage.setItem("domSegList", JSON.stringify($scope.OneWayFligth[0]));
+            //sessionStorage.setItem("DomSegmentlist", $scope.OneWayFligth);
+            sessionStorage.setItem("selectedFlightRt", null);
+        }
+        else {
+            console.log("length", $scope.selectedMflight.length);
+            if ($scope.selectedMflight.length > 0) {
+                var previousArrivalTime = new Date($scope.segListM[$scope.segListM.length - 1].BaseDetail.BaseArrivalDateTime);
+                var currenDepTime = new Date($scope.OneWayFligth[0].BaseDetail.BaseDepartureDateTime);
+                var difference = (currenDepTime - previousArrivalTime) / 1000 / 60;
+
+                if (difference < 120) {
+                    $mdDialog.show(
+                   $mdDialog.alert()
+                   .parent(angular.element(document.querySelector('#popupContainer')))
+                   .clickOutsideToClose(true)
+                   .title('Message')
+                   .textContent("Time Difference must be greater than 2 hours")
+                   .ariaLabel('')
+                   .ok('Close')
+                   .targetEvent(ev));
+                    return false;
+                }
+            }
+            selectedMFlightDetails.selectedFlight = flightDetails;
+            selectedMFlightDetails.domSegList = JSON.stringify($scope.OneWayFligth[0]);
+            $scope.segListM.push($scope.OneWayFligth[0]);
+            $scope.selectedMflight.push(selectedMFlightDetails);
+        }
+        if ($scope.TripType != "M") {
+            $scope.Search.Domestic.currentSeg = 0;
+        }
+        var req = {
+            method: "POST",
+            async: true,
+            url: getpath() + "Dombooking/bookselect",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8;html",
+            data: { "FlightId": FlightId, "ThreadId": ThreadCount, "Type": $scope.TripType, "PstrCurrentSeg": $scope.Search.Domestic.currentSeg }
+        }
+
+        RemoteService.FetchData(req).success(function (data, status, headers, config) {
+            var Ressponse = data;
+            $scope.Bookstatus = {};
+            $scope.Bookstatus.Flights = Ressponse;
+            var SelectedFilghtDetails = {};
+            SelectedFilghtDetails.segment = Ressponse;
+
+            SelectedFilghtDetails.MinorAirlineId = 0;
+            SelectedFilghtDetails.MinorAirlineExtrCost = 0.00;
+            SelectedFilghtDetails.Searchreq = $scope.Search
+            sessionStorage.removeItem("DomSegmentlistRt");
+            //Searchresult.setResult(Ressponse);
+
+            console.log("SelectedFilghtDetails", SelectedFilghtDetails);
+            if ($scope.TripType == "M") {
+
+                console.log("curernt", $scope.Search.Domestic.currentSeg, "sge count", $scope.segCount);
+
+                if ($scope.Search.Domestic.currentSeg < $scope.segCount) {
+                    $scope.Search.Domestic.currentSeg += 1;
+                    $scope.searchMulti($scope.Search.Domestic.currentSeg);
+                    return false;
+                }
+                else {
+
+                    sessionStorage.setItem("SelectedMFilghtDetails", JSON.stringify($scope.selectedMflight));
+                }
+            }
+
+            window.location = getpath() + "#dombooking";
+
+        }).error(function (data, status, headers, config) { });
+
+    }
+
+
+    $scope.fnGetFareRules = function (FlightId, AirLineID, ClassCode, ev, TravelType) {
+        var req = {
+            method: "POST",
+
+            async: true,
+            url: getpath() + "Domestic/GetFareRule",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8;html",
+            data: { "FlightId": FlightId, "AirlinesId": AirLineID, "ClassCode": ClassCode, "TravelType": TravelType }
+        }
+
+        RemoteService.FetchData(req).success(function (data, status, headers, config) {
+            var Ressponse = JSON.parse(data);
+            Ressponse = Ressponse[0];
+            if (Ressponse["Status"] == "1" || Ressponse["Status"] == "3") {
+                var lstrShowData = Ressponse["StatusDesc"];
+                lstrShowData = lstrShowData.replace("breaK", "<br/>");
+                console.log("fare rule uis", lstrShowData);
+                $scope.FareRuleContent = lstrShowData;
+                /** /
+                var lstrFareTemplate = '<md-dialog aria-label="List dialog" style="min-height:50%;min-width:50%">' +
+                              '<div class="md-input-focused label pad5"><b class="errors">FARE RULE</b></div>' +
+                              '  <md-dialog-content>' +
+                              '<div class="md-padding">' + lstrShowData + '</div>' +
+                              '  </md-dialog-content>' +
+                              '  <md-dialog-actions layout="row" layout-align="center center"   >' +
+                              '    <md-button ng-click="YES()" class="md-raised md-primary" flex="50" style="margin:0px">' +
+                              '      Close' +
+                              '    </md-button>' +
+                              '  </md-dialog-actions layout="row">' +
+                              '</md-dialog>';
+                              /**/
+
+                $mdDialog.show({
+                    targetEvent: ev,
+                    templateUrl: getpath() + 'Templates/Airline/fareRule.html?' + new Date(),
+                    controller: FareRuleBtnController,
+                    bindToController: true,
+                    controllerAs: 'ctrl',
+                    locals: $scope,
+                    clickOutsideToClose: false
+
+                });
+
+                function FareRuleBtnController($scope, $mdDialog) {
+                    $scope.YES = function () {
+                        $mdDialog.hide();
+                    }
+                }
+                //FareRuleBtnController.$inject = ['$scope', '$mdDialog'];
+            }
+            else if (Ressponse["Status"] == "0") {
+                $mdDialog.show(
+                    $mdDialog.alert()
+                    .parent(angular.element(document.querySelector('#popupContainer')))
+                    .clickOutsideToClose(true)
+                    .title("Fare Rule")
+                    .textContent(Ressponse["StatusDesc"])
+                    .ariaLabel('')
+                    .ok('Close')
+                    .targetEvent(ev)
+                    );
+            }
+            else if (Ressponse["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(Ressponse["StatusDesc"])
+                              .ariaLabel('')
+                              .targetEvent(ev)
+                              .ok('OK')
+                .cancel('CLOSE')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                function () {
+                    window.location = getpath();
+                });
+            }
+        }).error(function (data, status, headers, config) { });
+    }
+
+    $scope.GetTravelTime = function (DepTime, ArvTime) {
+        var ms = moment(ArvTime).diff(moment(DepTime));
+        var d = moment.duration(ms);
+
+        var s = Math.floor(d.asHours()) + " Hrs " + moment.utc(ms).format("mm") + " MM";
+
+        return s;
+    }
+
+    $scope.CurrentSlide = 0;
+    $scope.Slider = {
+        prev: function () {
+            if ($scope.CurrentSlide >= 0) {
+                $("#DivCheap_" + $scope.CurrentSlide).removeClass("hide");
+                $scope.CurrentSlide = $scope.CurrentSlide - 1;
+            }
+        },
+        next: function () {
+            if ($(".cheapDate").not('.hide').length > 5) {
+                $("#DivCheap_" + $scope.CurrentSlide).addClass("hide");
+                $scope.CurrentSlide = $scope.CurrentSlide + 1;
+            }
+        }
+    };
+
+    $scope.Count = 0;
+    $scope.ScrollRight = function () {
+        if ($(".CheapestFare > div").length > $scope.slidesToShow) {
+            $("#divCheap" + $scope.Count).hide('slow');
+            $("#divCheap" + ($scope.Count + $scope.slidesToShow)).show('slow');
+            if ($scope.Count < ($(".CheapestFare > div").length - ($scope.slidesToShow + 1))) {
+                $scope.Count = $scope.Count + 1;
+            }
+        }
+    }
+    $scope.ScrollLeft = function () {
+        if ($(".CheapestFare > div").length > $scope.slidesToShow) {
+            $("#divCheap" + $scope.Count).show('slow');
+            $("#divCheap" + ($scope.Count + ($scope.slidesToShow + 1))).hide('slow');
+            $scope.Count = $scope.Count - 1;
+            if ($scope.Count < 0) {
+                $scope.Count = 0;
+            }
+        }
+    }
+
+    $scope.HideCheapestDiv = function () {
+        for (var i = $scope.slidesToShow; i <= $(".CheapestFare > div").length; i++) {
+            $("#divCheap" + i).hide();
+        }
+    }
+
+    $scope.RetCount = 0;
+    $scope.ScrollRightRet = function () {
+        if ($(".CheapestFareRt > div").length > $scope.slidesToShow) {
+            $("#divCheapRt" + $scope.RetCount).hide('slow');
+            $("#divCheapRt" + ($scope.RetCount + $scope.slidesToShow)).show('slow');
+            if ($scope.RetCount < ($(".CheapestFareRt > div").length - ($scope.slidesToShow + 1))) {
+                $scope.RetCount = $scope.RetCount + 1;
+            }
+        }
+    }
+    $scope.ScrollLeftRet = function () {
+        if ($(".CheapestFareRt > div").length > $scope.slidesToShow) {
+            $("#divCheapRt" + $scope.RetCount).show('slow');
+            $("#divCheapRt" + ($scope.RetCount + $scope.slidesToShow)).hide('slow');
+            $scope.RetCount = $scope.RetCount - 1;
+            if ($scope.RetCount < 0) {
+                $scope.RetCount = 0;
+            }
+        }
+    }
+
+    $scope.HideCheapestDivRet = function () {
+        for (var i = $scope.slidesToShow; i <= $(".CheapestFareRt > div").length; i++) {
+            $("#divCheapRt" + i).hide();
+        }
+    }
+    $scope.EmailPrintFlightId = [[], []];
+    $scope.POngoingFlights = {};
+    $scope.PReturnFlights = {};
+    $scope.SendEmailPrint = function (arg, flag) {
+        if ($scope.EmailPrintFlightId[0].length == 0 && $scope.EmailPrintFlightId[1].length == 0) {
+            $mdDialog.show($mdDialog.alert().title("Alert").textContent("Atleast  Select one Airline").ok('close').ariaLabel('Alert'));
+            return false;
+        }
+
+        if ($scope.EmailPrintFlightId[0].length == 0 && $scope.EmailPrintFlightId[1].length > 0) {
+            $mdDialog.show($mdDialog.alert().title("Alert").textContent("Atleast  Select one Ongoing Airline").ok('close').ariaLabel('Alert'));
+            return false;
+        }
+        var OnwardSelectFligth = "";
+        var ReturnSelectFligth = "";
+        var TempFareType = "GROSS";
+        if ($scope.Search.TravelType == "R") {
+            angular.forEach(Object.keys($scope.SelectAirlinr), function (value, key) {
+                if (($scope.SelectAirlinr[key] == "true" || $scope.SelectAirlinr[key] === true) && OnwardSelectFligth == "") {
+                    console.log(key)
+                    OnwardSelectFligth = key;
+                }
+            });
+
+
+            angular.forEach(Object.keys($scope.SelectAirlinrRt), function (value, key) {
+                if (($scope.SelectAirlinrRt[key] == "true" || $scope.SelectAirlinrRt[key] === true) && ReturnSelectFligth == "") {
+                    console.log(key)
+                    ReturnSelectFligth = key;
+                }
+            });
+
+            TempFareType += "~" + OnwardSelectFligth + "$" + ReturnSelectFligth;
+        }
+
+
+        var req = {
+            method: 'POST',
+            url: getpath() + 'Domestic/EmailorPrint',
+            data: { "arrFlightCount": $scope.EmailPrintFlightId, "EmailID": arg, "Flag": flag, "FareType": TempFareType, "bookingType": 'D' },
+            dataType: 'json',
+            contentType: 'application/json;charset=utf-8'
+        }
+        $http(req).success(function (data, status, headers, config) {
+            var Ressponse = JSON.parse(data)[0];
+
+
+
+            $scope.EmailPrintFlightId = [[], []];
+            $scope.Check.ALL = false;
+            $scope.Check.RtnALL = false;
+            if (Ressponse["Status"] == "1") {
+
+                $scope.POngoingFlights = Ressponse["Data"][0].Ongoing;
+
+                $scope.PReturnFlights = Ressponse["Data"][0].Return;
+                console.log("Data is", $scope);
+                $mdDialog.show({
+                    templateUrl: getpath() + 'Templates/Airline/EmailorPrint.html?=' + new Date(),
+                    bindToController: true,
+                    clickOutsideToClose: false,
+                    controllerAs: 'ctrl',
+                    controller: EPController,
+                    locals: $scope
+                });
+
+                function EPController($scope, $mdDialog) {
+                    $scope.Close = function () {
+                        $mdDialog.hide();
+                        $scope.EPFlights = {};
+                    }
+                    $scope.printDiv = function () {
+                        var printContents = document.getElementById('DivFlights').innerHTML;
+                        var style = "";
+                        if (Ressponse["Data"][0].Return[0] != null) {
+                            style = "@font-face {   font-family: 'Open Sans';   font-style: normal;   font-weight: 600;   src: local('Open Sans SemiBold'), local('OpenSans-SemiBold'), url(https://fonts.gstatic.com/s/opensans/v15/MTP_ySUJH_bn48VBG8sNSq-j2U0lmluP9RWlSytm3ho.woff2) format('woff2');   unicode-range: U+0460-052F, U+20B4, U+2DE0-2DFF, U+A640-A69F; } .layout{		 		}		.flex{				width: 50%; 		 		}		.layout-row{		  display:flex;		}  .layout-column{    align-items: center;    display: flex;    flex-direction: column;         text-align: center;       }  .HideCupon {  display:none;  } .HideCorp {    display: none;}body{font-size:10px !important;font-family: 'Open Sans' !important;-webkit-filter: blur(0);} div{font-size: inherit !important;} .testlay { display: block; z-index: 2; position: absolute; height: 58px; background: rgba(240, 64, 65, 0.39) none repeat scroll 0px 0px; width: 25%; } .hideSelect { right: 0; width: 5% !important; } .MoreThinkTick { border-bottom: 3px solid #000 !important; border-right: 3px solid #000 !important; }";
+                        }
+                        else {
+                            style = "@font-face {   font-family: 'Open Sans';   font-style: normal;   font-weight: 600;   src: local('Open Sans SemiBold'), local('OpenSans-SemiBold'), url(https://fonts.gstatic.com/s/opensans/v15/MTP_ySUJH_bn48VBG8sNSq-j2U0lmluP9RWlSytm3ho.woff2) format('woff2');   unicode-range: U+0460-052F, U+20B4, U+2DE0-2DFF, U+A640-A69F; }  .layout{		 		}		.flex{				width: 100%; 		 		}		.layout-row{		  display:flex;		}  .layout-column{    align-items: center;    display: flex;    flex-direction: column;         text-align: center;       }  .HideCupon {  display:none;  } .HideCorp {    display: none;}body{font-size:10px !important; font-family: 'Open Sans' !important;-webkit-filter: blur(0);} div{font-size: inherit !important;} .testlay { display: block; z-index: 2; position: absolute; height: 58px; background: rgba(240, 64, 65, 0.39) none repeat scroll 0px 0px; width: 25%; } .hideSelect { right: 0; width: 5% !important; } .MoreThinkTick { border-bottom: 3px solid #000 !important; border-right: 3px solid #000 !important; }";
+                        }
+                        //var style = " .layout-gt-xs-row { flex-direction: row; } .layout-gt-xs, .layout-gt-xs-column, .layout-gt-xs-row { box-sizing: border-box; display: flex; } .layout-column { flex-direction: column; } .layout, .layout-column, .layout-row { box-sizing: border-box; display: flex; } .layout-column { flex-direction: column; } .layout, .layout-column, .layout-row { box-sizing: border-box; display: flex; } .layout-align-start-center, .layout-align-center-center, .layout-align-end-center, .layout-align-space-between-center, .layout-align-space-around-center { align-content: center; align-items: center; max-width: 100%; } .layout-align-center, .layout-align-center-start, .layout-align-center-center, .layout-align-center-end, .layout-align-center-stretch { justify-content: center; }.layout-column > .flex, .layout-lg-column > .flex { min-height: 0; } .layout-column > .flex, .layout-gt-md-column > .flex { min-height: 0; } .layout-column > .flex, .layout-gt-sm-column > .flex { min-height: 0; } .layout-column > .flex, .layout-gt-xs-column > .flex { min-height: 0; } .layout-row > .flex, .layout-gt-xs-row > .flex { min-width: 0; } .layout-column > .flex, .layout-column > .flex { min-height: 0; } .layout-column > .flex, .layout-column > .flex { min-height: 0; } .layout-column > .flex { flex-basis: auto; } .layout-column { flex-direction: column; } .layout, .layout-column, .layout-row { box-sizing: border-box; display: flex; } .flex { box-sizing: border-box; flex: 1 1 0; } .layout-align-start-center, .layout-align-center-center, .layout-align-end-center, .layout-align-space-between-center, .layout-align-space-around-center { align-content: center; align-items: center; max-width: 100%; } .layout-align-center, .layout-align-center-start, .layout-align-center-center, .layout-align-center-end, .layout-align-center-stretch { justify-content: center; }";
+                        if (navigator.userAgent.toLowerCase().indexOf('chrome') > -1) {
+                            var popupWin = window.open('', '_blank', 'width=600,height=600,scrollbars=no,menubar=no,toolbar=no,location=no,status=no,titlebar=no');
+                            popupWin.window.focus();
+                            popupWin.document.write('<!DOCTYPE html><html><head><link href="https://fonts.googleapis.com/css?family=Open+Sans:600" rel="stylesheet"/>' +
+                                '<link rel="stylesheet" type="text/css" href="Content/Css/Common.css" />' +
+                                '<style>' + style + '</style>' +
+                                '</head>');
+                            setTimeout(function () {
+                                popupWin.document.write('<body onload="window.print()"><div style="width:130px;height:60px;margin-left:10px"><img style="width:100%;height:auto" src="https://biyaheko.com/style/biyaheko/images/logo.gif" alt="TMS LOGO"></div><div class="reward-body">' + printContents + '</div></body></html>');
+                                popupWin.document.title = "Flight Details";
+                                popupWin.document.close();
+
+                            }, 100);
+
+                        } else {
+                            try {
+                                var popupWin = window.open();
+                                popupWin.document.open();
+                                popupWin.document.write('<html><head><link href="https://fonts.googleapis.com/css?family=Open+Sans:600" rel="stylesheet"/><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" /><style>' + style + '</style></head>');
+                                setTimeout(function () {
+                                    popupWin.document.write('<body onload="window.print()"><div style="width:130px;height:60px;margin-left:10px"><img style="width:100%;height:auto"  src="https://biyaheko.com/style/biyaheko/images/logo.gif" alt="TMS LOGO"></div><div class="reward-body">' + printContents + '</div></body></html>');
+                                    popupWin.document.title = "Flight Details";
+                                    popupWin.document.close();
+
+                                }, 100);
+
+                            }
+                            catch (e) {
+
+                            }
+                        }
+                        setTimeout(function () {
+                            popupWin.window.close(); $mdDialog.hide();
+                        }, 1000);
+                        return true;
+                    }
+                }
+            }
+            else if (Ressponse["Status"] == "0") {
+
+                $mdDialog.show(
+                    $mdDialog.alert()
+                    .parent(angular.element(document.querySelector('#popupContainer')))
+                    .clickOutsideToClose(true)
+                    .title('Alert')
+                    .textContent(Ressponse["StatusDesc"])
+                    .ariaLabel('')
+                    .ok('Close'));
+            }
+            else if (Ressponse["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(Ressponse["StatusDesc"])
+                              .ariaLabel('')
+                              .ok('OK')
+                .cancel('CLOSE')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                function () {
+                    window.location = getpath();
+                });
+            }
+            else if (Ressponse["Status"] == "3") {
+                var link = document.createElement("a");
+                document.body.appendChild(link);
+                link.download = name;
+                link.href = Ressponse["StatusDesc"];
+                link.click();
+                console.log(link);
+                document.body.removeChild(link);
+                delete link;
+                //window.open(link, '_blank');
+            }
+        }).error(function (data, status, headers, config) { });
+    }
+
+    $scope.ongoingIsChecked = function (value) {
+        $scope.Check.ALL = false;
+
+        if ($scope.EmailPrintFlightId[0].indexOf(value) == -1) {
+            $scope.EmailPrintFlightId[0].push(value);
+        }
+        else {
+            var index = $scope.EmailPrintFlightId[0].indexOf(value)
+            $scope.EmailPrintFlightId[0].splice(index, 1);
+        }
+        if ($scope.Flights.length == $scope.EmailPrintFlightId[0].length) {
+            $scope.Check.ALL = !$scope.Check.ALL;
+        }
+    }
+    $scope.Check = {};
+    $scope.Check.ALL = false;
+    $scope.Check.RtnALL = false;
+
+    $scope.SelectAllFlights = function (OngoingChk, RtnChk) {
+        $scope.EmailPrintFlightId = [[], []];
+
+        if ($scope.Flights != null && OngoingChk) {
+            var lobjFliterFlight = $filter('filter')($scope.Flights, $scope.AirlineFilter);
+            angular.forEach(lobjFliterFlight, function (value, key) {
+                $scope.EmailPrintFlightId[0].push(value.BaseDetail.FlightsCount);
+            });
+        }
+        if ($scope.RtnFlights != null && RtnChk) {
+            var lobjRtnFliterFlight = $filter('filter')($scope.RtnFlights, $scope.AirlineFilterRt);
+            angular.forEach(lobjRtnFliterFlight, function (value, key) {
+                $scope.EmailPrintFlightId[1].push(value.BaseDetail.FlightsCount);
+            });
+
+        }
+    }
+    $scope.ongoingexist = function (flightCount) {
+
+        if ($scope.EmailPrintFlightId[0].indexOf(flightCount) > -1) {
+            return true;
+        }
+        return false;
+    }
+    $scope.returnexist = function (flightCount) {
+        if ($scope.EmailPrintFlightId[1].indexOf(flightCount) > -1) {
+            return true;
+        }
+        return false;
+    }
+    $scope.returnIsChecked = function (flightCount) {
+        $scope.Check.RtnALL = false;
+        if ($scope.EmailPrintFlightId[1].indexOf(flightCount) == -1) {
+            $scope.EmailPrintFlightId[1].push(flightCount);
+
+        }
+        else {
+            var index = $scope.EmailPrintFlightId[1].indexOf(flightCount);
+            $scope.EmailPrintFlightId[1].splice(index, 1);
+        }
+
+    }
+    $scope.EmailFlightDetails = function () {
+        if ($scope.EmailPrintFlightId[0].length == 0 && $scope.EmailPrintFlightId[1].length == 0) {
+            $mdDialog.show($mdDialog.alert().title("Alert").textContent("Atleast  Select one Airline").ok('close').ariaLabel('Alert'));
+            return false;
+        }
+        if ($scope.EmailPrintFlightId[0].length == 0 && $scope.EmailPrintFlightId[1].length > 0) {
+            $mdDialog.show($mdDialog.alert().title("Alert").textContent("Atleast  Select one Ongoing Airline").ok('close').ariaLabel('Alert'));
+            return false;
+        }
+        $scope.isEnabled = false;
+        $scope.EmailId = null;
+        $scope.validater = false;
+        $mdDialog.show({
+            templateUrl: getpath() + 'Templates/AirlineHistory/Email.html?=' + new Date(),
+            clickOutsideToClose: false,
+            bindToController: true,
+            controllerAs: 'ctrl',
+            controller: EmailFlightCtrl,
+            locals: $scope
+        });
+
+        function EmailFlightCtrl($scope, $mdDialog) {
+            $scope.Close = function () {
+                $mdDialog.hide();
+            }
+            $scope.SendMail = function (ctrl) {
+                ctrl.validater = true;
+                var re = /\S+@\S+\.\S+/;
+                if (!ctrl.EmailId) {
+                    return false;
+                }
+                if (!re.test(ctrl.EmailId)) {
+                    $mdDialog.show($mdDialog.alert().title("Alert").textContent("Please Enter Valid Email ID").ok('close').ariaLabel('Alert'));
+                    return false;
+                }
+                ctrl.SendEmailPrint(ctrl.EmailId, 1);
+            }
+        }
+    }
+
+    function CheapestFareByDate() {
+
+        var inp = {};
+        var searchData = JSON.parse(sessionStorage.getItem("searchData"));
+        inp.Origin = searchData.Orgin;
+        inp.Destination = searchData.Dest;
+        inp.TravelDate = searchData.DepDate;
+        var req = {
+            url: getpath() + "Home/GetOtherMonthLowFare",
+            method: 'POST',
+            contentType: 'application/json',
+            data: inp
+        }
+
+        $http(req).success(function (data, status, headers, config) {
+            var Response = JSON.parse(data)[0];
+            if (Response["Status"] == "0") {
+                $scope.CheapestFareByDate = {};
+            }
+            else if (Response["Status"] == "1") {
+                $scope.CheapestFareByDate = Response["Data"];
+            }
+            else if (Response["Status"] == "2") {
+                $scope.CheapestFareByDate = {};
+            }
+        }).error(function (data, status, headers, config) {
+
+        });
+    }
+
+    $scope.DateCount = 0;
+    $scope.ScrollRightFareByDate = function () {
+        if ($(".CheapestDateFare > div").length > $scope.slidesToShow) {
+            $("#divDateCheap" + $scope.DateCount).hide('slow');
+            $("#divDateCheap" + ($scope.DateCount + $scope.slidesToShow)).show('slow');
+            if ($scope.DateCount < ($(".CheapestDateFare > div").length - ($scope.slidesToShow + 1))) {
+                $scope.DateCount = $scope.DateCount + 1;
+            }
+        }
+    }
+    $scope.ScrollLeftFareByDate = function () {
+        if ($(".CheapestDateFare > div").length > $scope.slidesToShow) {
+            $("#divDateCheap" + $scope.DateCount).show('slow');
+            $("#divDateCheap" + ($scope.DateCount + ($scope.slidesToShow + 1))).hide('slow');
+            $scope.DateCount = $scope.DateCount - 1;
+            if ($scope.DateCount < 0) {
+                $scope.DateCount = 0;
+            }
+        }
+    }
+}]);
+
