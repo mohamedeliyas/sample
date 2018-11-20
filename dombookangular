@@ -1,0 +1,3212 @@
+app.controller('DombookingCtrl', ["$scope", "$q", "RemoteService", "$mdDialog", "$mdBottomSheet", "$filter", "$mdToast", '$timeout', '$http', 'Searchresult', '$mdSidenav', function ($scope, $q, RemoteService, $mdDialog, $mdBottomSheet, $filtera, $mdToast, $timeout, $http, Searchresult, $mdSidenav) {
+    //**************** table ***********************
+
+
+    $scope.Passengerlist = [];
+    $scope.TaxResponseList = [];
+    $scope.totalMSeg = 1;
+    $scope.MsuccesCount = 0;
+    $scope.toggle = {};
+    $scope.ModifySearch = "Myhide";
+    $scope.disableInsurance = true;
+    var req = {
+        method: "GET",
+        url: getpath() + "Content/Script/IntCity.js",
+        dataType: "json",
+        contentType: "application/json; charset=utf-8;html"
+    }
+    $http(req).success(function (citys) {
+        $scope.ICL = citys[0];
+    });
+    var req = {
+        method: "GET",
+        url: getpath() + "Content/Json/PlanCities.json",
+        dataType: "json",
+        contentType: "application/json; charset=utf-8;html"
+    }
+    $http(req).success(function (res) {
+        $scope.InsCityList = res[1].Cities;
+    });
+    $scope.texlist = {}
+    $scope.selected = [];
+    $scope.filter = {
+        visible: false,
+        string: ""
+    };
+    $scope.currentSegment = 0;
+    var searchData = JSON.parse(sessionStorage.getItem("searchData"))
+    $scope.searchData = searchData;
+
+
+    var xhttpss = new XMLHttpRequest();
+    xhttpss.open("GET", getpath() + "Content/Sources/xml/InternationalAirlines.xml", false);
+    xhttpss.send();
+    var airxml = xhttpss.responseXML;
+    var mytimeout;
+    $scope.texlist.searchData = searchData;
+    console.log($scope.texlist.searchData, '$scope.texlist.searchData')
+    //$scope.emailFormat = /^[a-z]+[a-z0-9._]+@[a-z]+\.[a-z.]{2,5}$/;
+    $scope.emailFormat = /^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{1,63}$/;
+
+    $scope.EnableChildDob = false;
+
+    var PPCountry = "INDIA-99,AFGHANISTAN-1,ALBANIA-2,ALGERIA-3,AMERICAN SAMOA-4,ANDORRA-5,ANGOLA-6,ANGUILLA-7,ANTARCTICA-8,ANTIGUA AND BARBUDA-9,ARGENTINA-10,ARMENIA-11,ARUBA-12,AUSTRALIA-13,AUSTRIA-14,AZERBAIJAN-15,BAHAMAS-16,BAHRAIN-17,BANGLADESH-18,BARBADOS-19,BELARUS-20,BELGIUM-21,BELIZE-22,BENIN-23,BERMUDA-24,BHUTAN-25,BOLIVIA-26,BOSNIA AND HERZEGOVINA-27,BOTSWANA-28,BOUVET ISLAND-29,BRAZIL-30,BRITISH INDIAN OCEAN TERRITORY-31,BRUNEI DARUSSALAM-32,BULGARIA-33,BURKINA FASO-34,BURUNDI-35,CAMBODIA-36,CAMEROON-37,CANADA-38,CAPE VERDE-39,CAYMAN ISLANDS-40,CENTRAL AFRICAN REPUBLIC-41,CHAD-42,CHILE-43,CHINA-44,CHRISTMAS ISLAND-45,COCOS  KEELING  ISLANDS-46,COLOMBIA-47,COMOROS-48,CONGO-49,CONGO  THE DEMOCRATIC REPUBLIC-50,COOK ISLANDS-51,COSTA RICA-52,COTE D'IVOIRE-53,CROATIA-54,CUBA-55,CYPRUS-56,CZECH REPUBLIC-57,DENMARK-58,DJIBOUTI-59,DOMINICA-60,DOMINICAN REPUBLIC-61,ECUADOR-62,EGYPT-63,EL SALVADOR-64,EQUATORIAL GUINEA-65,ERITREA-66,ESTONIA-67,ETHIOPIA-68,FAROE ISLANDS-69,FALKLAND ISLANDS  MALVINAS -70,FIJI-71,FINLAND-72,FRANCE-73,FRENCH GUIANA-74,FRENCH POLYNESIA-75,FRENCH SOUTHERN TERRITORIES-76,GABON-77,GAMBIA-78,GEORGIA-79,GERMANY-80,GHANA-81,GIBRALTAR-82,GREECE-83,GREENLAND-84,GRENADA-85,GUADELOUPE-86,GUAM-87,GUATEMALA-88,GUINEA-89,GUINEA BISSAU-90,GUYANA-91,HAITI-92,HEARD ISLAND AND MCDONALD ISLANDS-93,HOLY SEE  VATICAN CITY STATE -94,HONDURAS-95,HONG KONG-96,HUNGARY-97,ICELAND-98,INDONESIA-100,IRAN-101,IRAQ-102,IRELAND-103,ISRAEL-104,ITALY-105,JAMAICA-106,JAPAN-107,JORDAN-108,KAZAKHSTAN-109,KENYA-110,KIRIBATI-111,KOREA  DEMOCRATIC PEOPLE'S REPUBLIC -112,KOREA -113,KUWAIT-114,KYRGYZSTAN-115,LAO PEOPLE'S DEMOCRATIC REPUBLIC-116,LATVIA-117,LEBANON-118,LESOTHO-119,LIBERIA-120,LIBYAN ARAB JAMAHIRIYA-121,LIECHTENSTEIN-122,LITHUANIA-123,LUXEMBOURG-124,MACAO-125,MACEDONIA-126,MADAGASCAR-127,MALAWI-128,MALAYSIA-129,MALDIVES-130,MALI-131,MALTA-132,MARSHALL ISLANDS-133,MARTINIQUE-134,MAURITANIA-135,MAURITIUS-136,MAYOTTE-137,MEXICO-138,MICRONESIA  FEDERATED STATES -139,MOLDOVA  REPUBLIC -140,MONACO-141,MONGOLIA-142,MONTSERRAT-143,MOROCCO-144,MOZAMBIQUE-145,MYANMAR-146,NAMIBIA-147,NAURU-148,NEPAL-149,NETHERLANDS-150,NETHERLANDS ANTILLES-151,NEW CALEDONIA-152,NEW ZEALAND-153,NICARAGUA-154,NIGER-155,NIGERIA-156,NIUE-157,NORFOLK ISLAND-158,NORTHERN MARIANA ISLANDS-159,NORWAY-160,OMAN-161,PAKISTAN-162,PALAU-163,PALESTINIAN TERRITORY  OCCUPIED-164,PANAMA-165,PAPUA NEW GUINEA-166,PARAGUAY-167,PERU-168,PHILIPPINES-169,PITCAIRN-170,POLAND-171,PORTUGAL-172,PUERTO RICO-173,QATAR-174,REUNION-175,ROMANIA-176,RUSSIAN FEDERATION-177,RWANDA-178,SAINT HELENA-179,SAINT KITTS AND NEVIS-180,SAINT LUCIA-181,SAINT PIERRE AND MIQUELON-182,SAINT VINCENT AND THE GRENADINES-183,SAMOA-184,SAN MARINO-185,SAO TOME AND PRINCIPE-186,SAUDI ARABIA-187,SENEGAL-188,SERBIA AND MONTENEGRO-189,SEYCHELLES-190,SIERRA LEONE-191,SINGAPORE-192,SLOVAKIA-193,SLOVENIA-194,SOLOMON ISLANDS-195,SOMALIA-196,SOUTH AFRICA-197,SOUTH GEORGIA AND THE SOUTH SANDWICH ISLANDS-198,SPAIN-199,SRI LANKA-200,SUDAN-201,SURINAME-202,SVALBARD AND JAN MAYEN-203,SWAZILAND-204,SWEDEN-205,SWITZERLAND-206,SYRIAN ARAB REPUBLIC-207,TAIWAN  PROVINCE OF CHINA-208,TAJIKISTAN-209,TANZANIA  UNITED REPUBLIC OF-210,THAILAND-211,TIMOR-LESTE-212,TOGO-213,TOKELAU-214,TONGA-215,TRINIDAD AND TOBAGO-216,TUNISIA-217,TURKEY-218,TURKMENISTAN-219,TURKS AND CAICOS ISLAND-220,TUVALU-221,UGANDA-222,UKRAINE-223,UNITED ARAB EMIRATES-224,UNITED KINGDOM-225,UNITED STATES-226,UNITED STATES MINOR OUTLYING ISLANDS-227,URUGUAY-228,UZBEKISTAN-229,VANUATU-230,VENEZUELA-231,VIET NAM-232,VIRGIN ISLANDS  BRITISH-233,VIRGIN ISLANDS  U S -234,WALLIS AND FUTUNA-235,WESTERN SAHARA-236,YEMEN-237,ZAMBIA-238,ZIMBABWE-239,BERLIN-240,GALILEOINDIA-242";
+
+    $scope.toggleRight = function (componentId) {
+        $mdSidenav('filter').toggle();
+        setTimeout(function () { }, 50);
+    }
+
+    $scope.idtypes = [
+         { id: 1, name: "Barangay Certification" }, { id: 2, name: "Certification From NCWDP" },
+         { id: 3, name: "Company Identification" }, { id: 4, name: "Consular Id" }, { id: 5, name: "DSWD Certification" },
+         { id: 6, name: "Drivers License" }, { id: 7, name: "GSIS e-Card" }, { id: 8, name: "GovtOffice/GOCC ID" },
+         { id: 9, name: "IBP ID" }, { id: 10, name: "NBI Clearence" }, { id: 11, name: "NSO Authenticated Birth Certification" },
+         { id: 13, name: "OFW ID" }, { id: 14, name: "OWWA ID" }, { id: 15, name: "POEA ID" }, { id: 16, name: "PRA Special Resident Retiree Visa ID" }, { id: 17, name: "PRC ID" },
+         { id: 18, name: "Passport" }, { id: 19, name: "Permit to Carry Firearms" }, { id: 20, name: "PhillHealth Card" },
+         { id: 21, name: "Police Clearance" }, { id: 22, name: "Postal ID" }, { id: 23, name: "SSS" }, { id: 24, name: "Seamans Book" },
+         { id: 25, name: "Senior Citizen Card" }, { id: 26, name: "Studetn ID" }, { id: 27, name: "TIN" }, { id: 28, name: "Visa" }, { id: 29, name: "Voter ID" },
+    ];
+    $scope.insurnaceAmountPerPax = 80;
+    $scope.totalInsuranceAmount = 0;
+
+    $scope.InterNationalCity = [];
+    if (sessionStorage.getItem("domSegList")) {
+        $scope.seglist = JSON.parse(sessionStorage.getItem("domSegList")).AvailSegments;
+        if (!$scope.seglist) {
+            $scope.seglist = JSON.parse(sessionStorage.getItem("domSegList")).segment.AvailSegments;
+        }
+    }
+    else {
+        var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent("Something went wrong,Please try again Later")
+                              .ariaLabel('')
+                               //.targetEvent(ev)
+                              .ok('OK')
+                              .cancel('BACK')
+        $mdDialog.show(confirm).then(function () {
+            Searchresult.setResult();
+            sessionStorage.removeItem("result");
+            window.location = getpath() + "#dresult";
+        },
+        function () {
+            Searchresult.setResult();
+            sessionStorage.removeItem("result");
+            window.location = getpath() + "#dresult";
+        });
+        return false;
+    }
+
+    if (searchData.Triptype == "R") {
+        $scope.seglistRt = JSON.parse(sessionStorage.getItem("domSegListRt")).AvailSegments;
+        if (!$scope.seglistRt) {
+            //$scope.seglist = JSON.parse(sessionStorage.getItem("domSegListRt")).segment.AvailSegments;
+        }
+    }
+
+    $scope.fileArray = [searchData.Adult];
+    $scope.uploadFile = function (files, currentData) {
+        var index = currentData.classList[0].split("selectFile")[1];
+        $scope.Booking.Adult[index].attachedFile = files[0].name;
+        $scope.fileArray[index] = null;
+        $scope.fileArray[index] = files[0];
+    };
+
+
+    $scope.setGender = function (index, type) {
+
+        switch (type) {
+            case "Adult":
+                if ($scope.Booking.Adult[index].Title == "MR") {
+                    $scope.Booking.Adult[index].Gender = "M";
+                }
+                else {
+                    $scope.Booking.Adult[index].Gender = "F";
+                }
+                break;
+            case "Child":
+                if ($scope.Booking.Child[index].Title == "MSTR") {
+                    $scope.Booking.Child[index].Gender = "M";
+                }
+                else {
+                    $scope.Booking.Child[index].Gender = "F";
+                }
+                break;
+        }
+    }
+
+    $scope.counter = 900;
+    $scope.toDisplay = "15:00";
+
+    $scope.onTimeout = function () {
+        $scope.counter--;
+        if ($scope.counter > 0) {
+            mytimeout = $timeout($scope.onTimeout, 1000);
+            $scope.toDisplay = getMinutesAndSeconds($scope.counter)
+        }
+        else {
+            //alert("Time is up!");
+
+            var confirm = $mdDialog.confirm()
+                             .title('Alert')
+                             .textContent("Booking session has been expired, Kindly research again.")
+                             .ariaLabel('')
+                            // .targetEvent(ev)
+                             .ok('OK')
+                                .cancel('LOG OUT')
+            $mdDialog.show(confirm).then(function () {
+                sessionStorage.removeItem("result");
+                //sessionStorage.removeItem("domSegList");
+                //sessionStorage.removeItem("domSegListRt");
+                //sessionStorage.removeItem("selectedFlight");
+                //sessionStorage.removeItem("selectedFlightRt");
+                Searchresult.setResult();
+                window.location = getpath();
+                //window.location = getpath();
+            },
+            function () {
+                window.location = getpath() + "#/dresult"
+            });
+        }
+    }
+
+
+    $scope.$on('$routeChangeStart', function (event, next) {
+        if (mytimeout) {
+            $timeout.cancel(mytimeout);
+        }
+    });
+
+    function padTime(t) {
+        return t < 10 ? "0" + t : t;
+    }
+
+    function getMinutesAndSeconds(_seconds) {
+        if (typeof _seconds !== "number" || _seconds < 0)
+            return "00:00";
+
+        var hours = Math.floor(_seconds / 3600),
+            minutes = Math.floor((_seconds % 3600) / 60),
+            seconds = Math.floor(_seconds % 60);
+        return padTime(minutes) + ":" + padTime(seconds);
+    }
+
+    $scope.SetIntCity = function () {
+        var ltempPPCountry = PPCountry.split(",");
+        angular.forEach(ltempPPCountry, function (Item, index) {
+            var lstrCity = Item.split("-")[0];
+            $scope.InterNationalCity.push(lstrCity);
+        })
+    }
+    $scope.SetIntCity()
+
+    $scope.Total = {};
+    $scope.Total.SSRPay = 0.0;
+    $scope.Total.MealAmount = 0;
+    $scope.Total.BaggageAmount = 0;
+    $scope.Total.TotPayAmnt = 0
+
+    if (sessionStorage.getItem("AgLoginData") != null) {
+        $scope.AgentCacheData = JSON.parse(sessionStorage.getItem("AgLoginData"));
+    }
+
+    $scope.PaxList = function (n) {
+        return new Array(n);
+    };
+
+
+    $scope.fnGetPaxDetails = function (ev) {
+        if ($scope.Booking.savePax) {
+            $mdDialog.show(
+                   $mdDialog.alert()
+                   .parent(angular.element(document.querySelector('#popupContainer')))
+                   .clickOutsideToClose(true)
+                   .title("Message")
+                   .textContent("Entered passenger details will be updated for future use")
+                   .ariaLabel('')
+                   .ok('Close')
+                   .targetEvent(ev)
+                   );
+        }
+    }
+
+    $scope.GotoTax = function (FlightId, Type, seg, arg, totalAmt) {
+        $scope.TaxResponseList.push();
+        $scope.ThrdCount = $scope.ThrdCount + 1;
+        $scope.currentSegment = arg;
+        var req = {
+            method: "POST",
+            async: true,
+            url: getpath() + "Domestic/GetTax",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8;html",
+            data: { "FlightId": FlightId.split("|")[0], "TaxType": Type, "Segment": seg, "ThreadId": FlightId.split("|")[1], "arg": arg }
+        }
+
+        RemoteService.FetchData(req).success(function (data, status, headers, config) {
+            var Ressponse = JSON.parse(data)[0];
+            if (Ressponse["Status"] == "1" || Ressponse["Status"] == "3") {
+                
+              
+
+                if (Ressponse["Data"]["TaxType"] == "O") {
+                    console.log("test",$scope.ICL[$scope.searchData.Dest],$scope.ICL["IAO"]);
+                    if ($scope.InsCityList.filter(e => e.Name.toUpperCase() ===$scope.ICL[$scope.searchData.Dest.replace(" ","")].toUpperCase()).length > 0) {
+                        $scope.disableInsurance = false;
+                    }
+                    $timeout($scope.onTimeout, 1000);
+                    $scope.texlist = Ressponse["Data"];
+                    $scope.SetGrossAmount($scope.texlist, $scope.texlistRt);
+                    $scope.SetATaxAmount($scope.texlist, $scope.texlistRt);
+                    $scope.seglist = $scope.texlist.segment.AvailSegments;
+                    $scope.MinorAirlineId = $scope.texlist.MinorAirlineId;
+                    $scope.MinorAirlineFare = $scope.texlist.MinorAirlineExtrCost;
+                    $scope.Booking.DepDate = new Date($scope.texlist.Searchreq.DepDate);
+                    if ($scope.seglist[0].AirlinesId == "6" || $scope.seglist[0].AirlinesId == "9") {
+                        $scope.EnableChildDob = true;
+                    }
+                    if (!searchData.SeniorCtzn) {
+                        $scope.Adultmindate = new Date(
+                                $scope.Booking.DepDate.getFullYear() - 100,
+                                $scope.Booking.DepDate.getMonth() - 0,
+                                $scope.Booking.DepDate.getDate()) - 0;
+                        $scope.Adultmaxdate = new Date(
+                            $scope.Booking.DepDate.getFullYear() - 12,
+                            $scope.Booking.DepDate.getMonth(),
+                            $scope.Booking.DepDate.getDate());
+                    }
+                    else {
+                        $scope.Adultmindate = new Date(
+                                $scope.Booking.DepDate.getFullYear() - 100,
+                                $scope.Booking.DepDate.getMonth() - 0,
+                                $scope.Booking.DepDate.getDate()) - 0;
+                        $scope.Adultmaxdate = new Date(
+                            $scope.Booking.DepDate.getFullYear() - 60,
+                            $scope.Booking.DepDate.getMonth(),
+                            $scope.Booking.DepDate.getDate());
+                    }
+                    $scope.Childmindate = new Date(
+                       $scope.Booking.DepDate.getFullYear() - 12,
+                       $scope.Booking.DepDate.getMonth() - 0,
+                       $scope.Booking.DepDate.getDate());
+                    $scope.Childmaxdate = new Date(
+                        $scope.Booking.DepDate.getFullYear() - 2,
+                        $scope.Booking.DepDate.getMonth(),
+                        $scope.Booking.DepDate.getDate());
+
+                    $scope.Infmindate = new Date(
+                      $scope.Booking.DepDate.getFullYear() - 2,
+                      $scope.Booking.DepDate.getMonth(),
+                      $scope.Booking.DepDate.getDate());
+                    $scope.Infmaxdate = new Date(
+                        $scope.Booking.DepDate.getFullYear(),
+                        $scope.Booking.DepDate.getMonth() - 2,
+                        $scope.Booking.DepDate.getDate());
+
+                    $scope.Booking.Passportexpiry = new Date();
+                    $scope.Passportexpirymin = new Date(
+                       $scope.Booking.DepDate.getFullYear(),
+                       $scope.Booking.DepDate.getMonth(),
+                       $scope.Booking.DepDate.getDate());
+                    $scope.PaxList = function (n) {
+                        return new Array(n);
+                    };
+
+                    sessionStorage.setItem("domSegList", JSON.stringify(Ressponse["Data"]));
+
+                    var crsId = Ressponse["Data"].segment.CrdID;
+                    if (crsId == "3") {
+                        $scope.Blockingflag = true;
+                    }
+                    if (Ressponse["Status"] == "1") {
+                        //  window.location = getpath() + "#dombooking";
+                    } else if (Ressponse["Status"] == "3") {
+                        $mdDialog.show({
+                            //targetEvent: ev,
+                            template:
+                              '<md-dialog aria-label="List dialog">' +
+                              '<div class="md-input-focused label Cur pad10"><b class="errors">FARE ALERT</b></div>' +
+                              '  <md-dialog-content>' +
+                              '<div class="md-padding">Your final pricing amount is changed due to a recent update on airline host server.<br> Showed Fare: <b class="FareOLD"> <span class="Cur"> ₱</span>; ' + Ressponse["Data"].GrossAmount + '</b> <br>Update Fare: <b class="Fare"> &#x20b9; ' + Ressponse["Data"].TaxFare + '</b><br><br> Do you want to continue ?</div>' +
+                              '  </md-dialog-content>' +
+                              '  <md-dialog-actions>' +
+                              '    <md-button ng-click="No()" class="md-raised md-primary">' +
+                              '      NO' +
+                              '    </md-button>' +
+                              '    <md-button ng-click="YES()" class="md-raised md-accent">' +
+                              '      YES' +
+                              '    </md-button>' +
+                              '  </md-dialog-actions>' +
+                              '</md-dialog>',
+                            controller: confirmController
+                        });
+                        function confirmController($scope, $mdDialog) {
+                            $scope.YES = function () {
+                                $mdDialog.hide();
+                                //window.location = getpath() + "#dombooking";
+                            }
+                            $scope.No = function () {
+                                $mdDialog.hide();
+                                window.location = getpath() + "#dresult";
+                            }
+                        }
+                        confirmController.$inject = ['$scope', '$mdDialog'];
+                    }
+                }
+                else if (Ressponse["Data"]["TaxType"] == "M") {
+                    $scope.MsuccesCount += 1;
+                    $scope.TaxResponseList[Ressponse["Data"].arg] = Ressponse["Data"];
+                    $scope.texlist.Searchreq = Ressponse["Data"].Searchreq;
+                    $scope.Booking.DepDate = new Date(Ressponse["Data"].Searchreq.DepDate);
+                    if ($scope.MsuccesCount == $scope.totalMSeg) {
+                        /** /
+                        var ssrDetails = {
+                            MealsInfo: "",
+                            BaggageInfo: ""
+                        };
+                        var paxDetails = {};
+                        for (var i = 0; i < $scope.TaxResponseList.length; i++) {
+                            var test = {};
+                            for (var j = 0; j < $scope.Booking.Adult.length; j++) {
+                            
+                                test.Adult = [];
+                                test.Adult.push(ssrDetails);
+
+                                //$scope.Booking.seg[i].Adult.push(ssrDetails);
+                            }
+                            
+                            for (var j = 0; j < $scope.Booking.Child.length; j++) {
+                                test.Child = [];
+                                test.Child.push(ssrDetails);
+
+                                //$scope.Booking.seg[i].Adult.push(ssrDetails);
+                            }
+                            $scope.Booking.seg.push(test);
+                            console.log("test vfaf", $scope.Booking);
+                        }
+                       /**/
+
+                        $scope.SetGrossAmountM();
+                        $scope.SetATaxAmountM();
+
+                        $scope.Adultmindate = new Date(
+                                $scope.Booking.DepDate.getFullYear() - 100,
+                                $scope.Booking.DepDate.getMonth() - 0,
+                                $scope.Booking.DepDate.getDate()) - 0;
+                        $scope.Adultmaxdate = new Date(
+                            $scope.Booking.DepDate.getFullYear() - 14,
+                            $scope.Booking.DepDate.getMonth(),
+                            $scope.Booking.DepDate.getDate());
+
+
+
+
+                        $scope.Childmindate = new Date(
+                      $scope.Booking.DepDate.getFullYear() - 12,
+                      $scope.Booking.DepDate.getMonth() - 0,
+                      $scope.Booking.DepDate.getDate());
+                        $scope.Childmaxdate = new Date(
+                            $scope.Booking.DepDate.getFullYear() - 2,
+                            $scope.Booking.DepDate.getMonth(),
+                            $scope.Booking.DepDate.getDate());
+
+                        $scope.Infmindate = new Date(
+                          $scope.Booking.DepDate.getFullYear() - 2,
+                          $scope.Booking.DepDate.getMonth(),
+                          $scope.Booking.DepDate.getDate());
+                        $scope.Infmaxdate = new Date(
+                            $scope.Booking.DepDate.getFullYear(),
+                            $scope.Booking.DepDate.getMonth() - 2,
+                            $scope.Booking.DepDate.getDate());
+
+                    }
+                }
+                else {
+                    if ($scope.InsCityList.filter(e => e.Name.toUpperCase() ===$scope.ICL[$scope.searchData.Dest.replace(" ","")].toUpperCase()).length > 0) {
+                        if ($scope.InsCityList.filter(e => e.Name.toUpperCase() ===$scope.ICL[$scope.searchData.Orgin.replace(" ","")].toUpperCase()).length > 0) {
+                            $scope.disableInsurance = false;
+                        }
+                    }
+                    
+
+                    if (Ressponse["Data"]["Segment"] == "O") {
+                        sessionStorage.setItem("domSegList", JSON.stringify(Ressponse["Data"]));
+                        $scope.texlist = Ressponse["Data"];
+                        //if ($scope.texlistRt)
+                        //{
+                        //    if ($scope.texlistRt.Tax)
+                        //    {
+                        //        var taxDetails = $scope.texlistRt.Tax[0].AdultFareDetails.SpecialRequestInfo.PaxInfoEnableFlag;
+
+                        //    }
+                        //}
+
+                        var crsId = Ressponse["Data"].segment.CrdID;
+                        if (crsId == "3") {
+                            if (sessionStorage.getItem("domSegListRt")) {
+                                var returnData = JSON.parse(sessionStorage.getItem("domSegListRt"))
+                                if (returnData) {
+                                    if (returnData.segment.CrdID == "3") {
+                                        $scope.Blockingflag = true;
+                                    }
+                                }
+                            }
+
+                        }
+                        $scope.SetGrossAmount($scope.texlist, $scope.texlistRt);
+                        $scope.SetATaxAmount($scope.texlist, $scope.texlistRt);
+                        $scope.seglist = $scope.texlist.segment.AvailSegments;
+                        $scope.MinorAirlineId = $scope.texlist.MinorAirlineId;
+                        $scope.MinorAirlineFare = $scope.texlist.MinorAirlineExtrCost;
+                        $scope.Booking.DepDate = new Date($scope.texlist.Searchreq.DepDate);
+
+                        if ($scope.seglist[0].AirlinesId == "6" || $scope.seglist[0].AirlinesId == "9") {
+                            $scope.EnableChildDob = true;
+                        }
+
+                        if (!searchData.SeniorCtzn) {
+                            $scope.Adultmindate = new Date(
+                                    $scope.Booking.DepDate.getFullYear() - 100,
+                                    $scope.Booking.DepDate.getMonth() - 0,
+                                    $scope.Booking.DepDate.getDate()) - 0;
+                            $scope.Adultmaxdate = new Date(
+                                $scope.Booking.DepDate.getFullYear() - 12,
+                                $scope.Booking.DepDate.getMonth(),
+                                $scope.Booking.DepDate.getDate());
+                        }
+                        else {
+                            $scope.Adultmindate = new Date(
+                                    $scope.Booking.DepDate.getFullYear() - 100,
+                                    $scope.Booking.DepDate.getMonth() - 0,
+                                    $scope.Booking.DepDate.getDate()) - 0;
+                            $scope.Adultmaxdate = new Date(
+                                $scope.Booking.DepDate.getFullYear() - 60,
+                                $scope.Booking.DepDate.getMonth(),
+                                $scope.Booking.DepDate.getDate());
+                        }
+                        $scope.Childmindate = new Date(
+                           $scope.Booking.DepDate.getFullYear() - 12,
+                           $scope.Booking.DepDate.getMonth() - 0,
+                           $scope.Booking.DepDate.getDate());
+                        $scope.Childmaxdate = new Date(
+                            $scope.Booking.DepDate.getFullYear() - 2,
+                            $scope.Booking.DepDate.getMonth(),
+                            $scope.Booking.DepDate.getDate());
+
+                        $scope.Infmindate = new Date(
+                          $scope.Booking.DepDate.getFullYear() - 2,
+                          $scope.Booking.DepDate.getMonth(),
+                          $scope.Booking.DepDate.getDate());
+                        $scope.Infmaxdate = new Date(
+                            $scope.Booking.DepDate.getFullYear(),
+                            $scope.Booking.DepDate.getMonth() - 2,
+                            $scope.Booking.DepDate.getDate());
+
+                        $scope.Booking.Passportexpiry = new Date();
+                        $scope.Passportexpirymin = new Date(
+                           $scope.Booking.DepDate.getFullYear(),
+                           $scope.Booking.DepDate.getMonth(),
+                           $scope.Booking.DepDate.getDate());
+                        $scope.PaxList = function (n) {
+                            return new Array(n);
+                        };
+                    }
+                    else {
+                        $scope.texlistRt = Ressponse["Data"];
+                        console.log("res is", $scope.texlistRt);
+                        sessionStorage.setItem("domSegListRt", JSON.stringify(Ressponse["Data"]));
+                        $timeout($scope.onTimeout, 1000);
+                        var crsId = Ressponse["Data"].segment.CrdID;
+                        if (crsId == "3") {
+                            if (sessionStorage.getItem("domSegList")) {
+                                var returnData = JSON.parse(sessionStorage.getItem("domSegList"))
+                                if (returnData) {
+                                    if (returnData.segment.CrdID == "3") {
+                                        $scope.Blockingflag = true;
+                                    }
+                                }
+                            }
+
+                        }
+
+                        $scope.seglistRt = Ressponse["Data"].segment.AvailSegments;
+
+                        if ($scope.seglistRt[0].AirlinesId == "6" || $scope.seglistRt[0].AirlinesId == "9") {
+                            $scope.EnableChildDob = true;
+                        }
+
+                        $scope.SetGrossAmount($scope.texlist, $scope.texlistRt);
+                        $scope.SetATaxAmount($scope.texlist, $scope.texlistRt);
+                    }
+                    if (arg == 1) {
+                        $scope.ThrdCount = $scope.ThrdCount + 1;
+                        $scope.roundTripTaxFare = parseInt($scope.roundTripTaxFare) + parseInt(Ressponse["Data"].TaxFare);
+                    }
+                    if (arg == 2) {
+                        $scope.ThrdCount = $scope.ThrdCount + 1;
+                        $scope.roundTripTaxFare = parseInt($scope.roundTripTaxFare) + parseInt(Ressponse["Data"].TaxFare);
+                    }
+                    if ($scope.roundTripTaxFare != totalAmt && $scope.ThrdCount == 2) {
+                        $mdDialog.show({
+                            //targetEvent: ev,
+                            template:
+                              '<md-dialog aria-label="List dialog">' +
+                              '<div class="md-input-focused label pad5"><b class="errors">FARE ALERT</b></div>' +
+                              '  <md-dialog-content>' +
+                              '<div class="md-padding">Your final pricing amount is changed due to a recent update on airline host server.<br> Showed Fare: <b class="FareOLD"> &#x20b9; ' + totalAmt + '</b> <br>Update Fare: <b class="Fare"> &#x20b9; ' + $scope.roundTripTaxFare + '</b><br><br> Do you want to continue ?</div>' +
+                              '  </md-dialog-content>' +
+                              '  <md-dialog-actions>' +
+                              '    <md-button ng-click="No()" class="md-raised md-warn">' +
+                              '      NO' +
+                              '    </md-button>' +
+                              '    <md-button ng-click="YES()" class="md-raised md-primary">' +
+                              '      YES' +
+                              '    </md-button>' +
+                              '  </md-dialog-actions>' +
+                              '</md-dialog>',
+                            controller: confirmController
+                        });
+                        function confirmController($scope, $mdDialog) {
+                            $scope.YES = function () {
+                                $mdDialog.hide();
+                                console.log(1);
+                                // window.location = getpath() + "#dombooking";
+                            }
+                            $scope.No = function () {
+                                $mdDialog.hide();
+                                window.location = getpath() + "#dresult";
+                            }
+                        }
+                        confirmController.$inject = ['$scope', '$mdDialog'];
+                    }
+                    else if ($scope.ThrdCount == 2) {
+                        console.log(2);
+                        //window.location = getpath() + "#dombooking";
+                    }
+                }
+            }
+            else if (Ressponse["Status"] == "0") {
+
+
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(Ressponse["StatusDesc"])
+                              .ariaLabel('')
+                             // .targetEvent(ev)
+                              .ok('OK')
+                                .cancel('BACK')
+                $mdDialog.show(confirm).then(function () {
+                    Searchresult.setResult();
+                    sessionStorage.removeItem("result");
+                    window.location = getpath() + "#dresult";
+                },
+                function () {
+                    window.location = getpath() + "#dresult";
+                });
+
+            }
+            else if (Ressponse["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(Ressponse["StatusDesc"])
+                              .ariaLabel('')
+                             // .targetEvent(ev)
+                             .ok('OK')
+                                .cancel('LOG OUT')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                function () {
+                    window.location = getpath();
+                });
+            }
+        }).error(function (data, status, headers, config) {
+
+        });
+    };
+    //$scope.GotoTax(2, ev, 'O', 'O', 1, 0);
+
+
+
+    $scope.fnSetAirLogo = function (AirlineCode) {
+
+        var lstrAirLogo = getImage(AirlineCode);
+
+        if (lstrAirLogo == "0") {
+            $(airxml).find('airlines').each(function () {
+                if ($(this).attr('IATACode') == AirlineCode) {
+                    lstrAirLogo = "<img class='airlogowidth Airimg' src='http://biyaheko.com/images/logos/A" + $(this).attr("AirlinesId") + ".bmp' alt='" + $(this).attr("AirlinesName") + "'/>";
+                }
+            });
+        }
+        return lstrAirLogo;
+
+    }
+    function getImage(psrtAirLineCode) {
+        try {
+            var lstrAirIMG = "";
+            if ('2P' == psrtAirLineCode) {
+                //Airphilexpress
+                lstrAirIMG = " class='airsprite airlogowidth  A1 Airimg' alt='Airphilexpress'";
+            }
+            else if ('JQ' == psrtAirLineCode) {
+                //Jetstar
+                lstrAirIMG = " class='airsprite airlogowidth  A2 Airimg' alt='Jetstar'";
+            }
+            else if ('3K' == psrtAirLineCode) { //Jetstar Asia
+                lstrAirIMG = " class='airsprite airlogowidth  A3 Airimg' alt='Jetstar Asia'";
+            }
+            else if ('5J' == psrtAirLineCode) { //CebupacificAir
+
+                lstrAirIMG = " class='airsprite airlogowidth  A9 Airimg' alt='CebupacificAir'";
+            }
+            else if ('PR' == psrtAirLineCode) {   //Philippine Airlines
+                lstrAirIMG = " class='airsprite airlogowidth  A6 Airimg' alt='Philippine Airlines'";
+            }
+            else if ('Z2' == psrtAirLineCode) {
+                //Zest Air
+                lstrAirIMG = " class='airsprite airlogowidth  A10 Airimg' alt='Zest Air'";
+            }
+            else if ('DG' == psrtAirLineCode) {
+                //Zest Air
+                lstrAirIMG = " class='airsprite airlogowidth  A620 Airimg' alt='Cebgo'";
+            }
+            else if ('M8' == psrtAirLineCode) {
+                //Zest Air
+                lstrAirIMG = " class='airsprite airlogowidth  A892 Airimg' alt='Sky Jet'";
+            }
+            else {
+                return "0";
+            }
+            return "<img   src='" + getpath() + "Content/Images/sp_trans.gif' " + lstrAirIMG + " />"
+
+        }
+        catch (e) {
+            console.log('Error in getImage() - ' + e.toString());
+        }
+    }
+
+
+    $scope.fnAutoFillContact = function () {
+        if ($scope.Booking.FillContact) {
+            $scope.Booking.Contact.Firstname = $scope.AgentCacheData.OPERATORUSERID
+            $scope.Booking.Contact.Mailid = $scope.AgentCacheData.EMAIL
+            $scope.Booking.Contact.Mobilenumber = $scope.AgentCacheData.MOBILE
+            $scope.Booking.Contact.Address = $scope.AgentCacheData.ADDRESS1;
+            $scope.Booking.Contact.CountryId = "169";
+            $scope.Booking.Contact.CityName = $scope.AgentCacheData.Cityname;
+        }
+        else {
+            $scope.Booking.Contact.Firstname = "";
+            $scope.Booking.Contact.Mailid = "";
+            $scope.Booking.Contact.Mobilenumber = "";
+            $scope.Booking.Contact.CityName = "Philippines";
+            $scope.Booking.Contact.Address = "Philippines";
+            $scope.Booking.Contact.CountryId = "169";
+        }
+
+    }
+
+    $scope.AddFilter = function () {
+        $scope.filter.visible = true;
+    };
+    $scope.removeFilter = function () {
+        $scope.filter.visible = false;
+        $scope.filter.string = "";
+    };
+
+    $scope.MinorAdult = {};
+    $scope.MinorAdult.MinorAdultCount = 0;
+    $scope.MinorAdult.MinorAdultOnGoFare = 0;
+    $scope.MinorAdult.MinorAdultRetFare = 0;
+
+    //**************** table ***********************
+
+    if (sessionStorage.getItem("selectedFlight") == null) {
+        window.location = getpath();
+    }
+    else {
+        if (searchData.Triptype == "O") {
+            $scope.GotoTax(sessionStorage.getItem("selectedFlight"), 'O', 'O', 0, 0.00);
+        }
+        else if (searchData.Triptype == "M") {
+
+            console.log("Executed");
+            if (!sessionStorage.getItem("SelectedMFilghtDetails")) {
+                window.location = getpath();
+            }
+            else {
+                var lstrSelectedMFlight = sessionStorage.getItem("SelectedMFilghtDetails");
+                $scope.totalMSeg = JSON.parse(sessionStorage.getItem("SelectedMFilghtDetails")).length;
+                for (var i = 0; i < $scope.totalMSeg; i++) {
+                    $scope.GotoTax(JSON.parse(sessionStorage.getItem("SelectedMFilghtDetails"))[i].selectedFlight, 'M', 'O', i, 0.00);
+
+                }
+            }
+
+
+        }
+    }
+    $scope.Blockingflag = false;
+    $scope.Bookingflag = true;
+
+    if (sessionStorage.getItem("selectedFlightRt") != null) {
+        if (searchData.Triptype == "R") {
+            $scope.GotoTax(sessionStorage.getItem("selectedFlight"), 'R', 'O', 1, 0.00);
+            $scope.GotoTax(sessionStorage.getItem("selectedFlightRt"), 'R', 'R', 2, 0.00);
+        }
+        //$scope.texlistRt = JSON.parse(sessionStorage.getItem("selectedFlightRt"));
+        //$scope.seglistRt = $scope.texlistRt.segment.AvailSegments;
+    }
+
+    $scope.Booking = {};
+    $scope.Booking.Adult = [];
+    $scope.Booking.seg = [];
+    $scope.Booking.Contact = {};
+    $scope.Booking.Child = [];
+    $scope.Booking.Infant = [];
+    $scope.Booking.Adult = [];
+
+    $scope.Booking.Adult[0] = {}
+
+
+    $scope.SetGrossAmountM = function () {
+        $scope.GrossAmount = 0.0;
+        $scope.CGrossAmount = 0.0;
+        $scope.IGrossAmount = 0.0;
+
+        $scope.OngoGrossAmnt = 0.0;
+        $scope.TransactionFee = 0.0;
+        $scope.BasicAmount = 0;
+        for (var i = 0; i < $scope.TaxResponseList.length; i++) {
+            $scope.GrossAmount += parseFloat($scope.TaxResponseList[i].Searchreq.Adult * $scope.TaxResponseList[i].Tax[0].AdultFareDetails.BasicAmount) + parseFloat($scope.TaxResponseList[i].Searchreq.Adult * $scope.TaxResponseList[i].Tax[0].AdultFareDetails.TransactionFee);
+            $scope.BasicAmount += parseFloat($scope.TaxResponseList[i].Searchreq.Adult * $scope.TaxResponseList[i].Tax[0].AdultFareDetails.BasicAmount);
+            $scope.TransactionFee += parseFloat($scope.TaxResponseList[i].Searchreq.Adult * $scope.TaxResponseList[i].Tax[0].AdultFareDetails.TransactionFee);
+            if ($scope.TaxResponseList[i].Tax[0].ChildFareDetails.AvailTaxItem) {
+                $scope.CGrossAmount += parseFloat($scope.TaxResponseList[i].Searchreq.Child * $scope.TaxResponseList[i].Tax[0].ChildFareDetails.BasicAmount) + parseFloat($scope.TaxResponseList[i].Searchreq.Child * $scope.TaxResponseList[i].Tax[0].ChildFareDetails.TransactionFee);
+                $scope.BasicAmount += parseFloat($scope.TaxResponseList[i].Searchreq.Child * $scope.TaxResponseList[i].Tax[0].ChildFareDetails.BasicAmount);
+                $scope.TransactionFee += parseFloat($scope.TaxResponseList[i].Searchreq.Child * $scope.TaxResponseList[i].Tax[0].ChildFareDetails.TransactionFee);
+            }
+            if ($scope.TaxResponseList[i].Tax[0].InfantFareDetails.AvailTaxItem) {
+                $scope.IGrossAmount += parseFloat($scope.TaxResponseList[i].Searchreq.Infant * $scope.TaxResponseList[i].Tax[0].InfantFareDetails.BasicAmount) + parseFloat($scope.TaxResponseList[i].Searchreq.Infant * $scope.TaxResponseList[i].Tax[0].InfantFareDetails.TransactionFee);
+                $scope.TransactionFee += parseFloat($scope.TaxResponseList[i].Searchreq.Infant * $scope.TaxResponseList[i].Tax[0].InfantFareDetails.TransactionFee);
+                $scope.BasicAmount += parseFloat($scope.TaxResponseList[i].Searchreq.Infant * $scope.TaxResponseList[i].Tax[0].InfantFareDetails.BasicAmount);
+            }
+        }
+        $scope.TotOngoGrossAmnt = $scope.GrossAmount + $scope.CGrossAmount + $scope.IGrossAmount + $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount;
+
+        // $scope.TotPayAmnt = ($scope.TotOngoGrossAmnt);
+
+    };
+
+    $scope.SetATaxAmountM = function () {
+        $scope.ATaxamount = 0.0;
+        $scope.CTaxamount = 0.0;
+        $scope.ITaxamount = 0.0;
+
+        $scope.AServiceTax = 0.0;
+        $scope.CServiceTax = 0.0;
+        $scope.IServiceTax = 0.0;
+
+        $scope.totalTAx = 0.0;
+        for (var i = 0; i < $scope.TaxResponseList.length; i++) {
+            angular.forEach($scope.TaxResponseList[i].Tax[0].AdultFareDetails.AvailTaxItem, function (Item, index) {
+
+                $scope.AServiceTax += parseFloat($scope.TaxResponseList[i].Tax[0].AdultFareDetails.ServiceTaxFee * $scope.TaxResponseList[i].Searchreq.Adult);
+                $scope.CServiceTax += parseFloat($scope.TaxResponseList[i].Tax[0].ChildFareDetails.ServiceTaxFee * $scope.TaxResponseList[i].Searchreq.Child);
+                $scope.IServiceTax += parseFloat($scope.TaxResponseList[i].Tax[0].InfantFareDetails.ServiceTaxFee * $scope.TaxResponseList[i].Searchreq.Infant);
+
+                $scope.ATaxamount += parseFloat($scope.TaxResponseList[i].Searchreq.Adult * Item.Amount);
+            });
+            if ($scope.TaxResponseList[i].Tax[0].ChildFareDetails.AvailTaxItem) {
+                angular.forEach($scope.TaxResponseList[i].Tax[0].ChildFareDetails.AvailTaxItem, function (Item, index) {
+                    $scope.CTaxamount += parseFloat($scope.TaxResponseList[i].Searchreq.Child * Item.Amount);
+                });
+            }
+            if ($scope.TaxResponseList[i].Tax[0].InfantFareDetails.AvailTaxItem) {
+                angular.forEach($scope.TaxResponseList[i].Tax[0].InfantFareDetails.AvailTaxItem, function (Item, index) {
+                    $scope.ITaxamount += parseFloat($scope.TaxResponseList[i].Searchreq.Infant * Item.Amount);
+                });
+            }
+        }
+        $scope.TotOngoGrossAmnt = $scope.GrossAmount + $scope.CGrossAmount + $scope.IGrossAmount + $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount;
+
+        $scope.TotPayAmnt = ($scope.TotOngoGrossAmnt) + $scope.Total.SSRPay;
+
+        $scope.Total.TotPayAmnt = $scope.TotPayAmnt;
+        $scope.totalTAx = $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount;
+    };
+
+    $scope.SetGrossAmount = function (texlist, texlistRt) {
+        $scope.GrossAmount = 0.0;
+        $scope.CGrossAmount = 0.0;
+        $scope.IGrossAmount = 0.0;
+
+        $scope.RtnGrossAmount = 0.0;
+        $scope.RtnCGrossAmount = 0.0;
+        $scope.RtnIGrossAmount = 0.0;
+
+        $scope.OngoGrossAmnt = 0.0;
+        $scope.RtnGrossAmnt = 0.0;
+
+        $scope.TransactionFee = 0.0;
+
+        $scope.GrossAmount = parseFloat(texlist.Searchreq.Adult * texlist.Tax[0].AdultFareDetails.BasicAmount) + parseFloat(texlist.Searchreq.Adult * texlist.Tax[0].AdultFareDetails.TransactionFee) + parseFloat($scope.GrossAmount);
+        $scope.TransactionFee = parseFloat(texlist.Searchreq.Adult * texlist.Tax[0].AdultFareDetails.TransactionFee);
+        if (texlist.Tax[0].ChildFareDetails.AvailTaxItem) {
+            $scope.CGrossAmount = parseFloat(texlist.Searchreq.Child * texlist.Tax[0].ChildFareDetails.BasicAmount) + parseFloat(texlist.Searchreq.Child * texlist.Tax[0].ChildFareDetails.TransactionFee) + parseFloat($scope.CGrossAmount);
+            $scope.TransactionFee += parseFloat(texlist.Searchreq.Child * texlist.Tax[0].ChildFareDetails.TransactionFee);
+        }
+        if (texlist.Tax[0].InfantFareDetails.AvailTaxItem) {
+            $scope.IGrossAmount = parseFloat(texlist.Searchreq.Infant * texlist.Tax[0].InfantFareDetails.BasicAmount) + parseFloat(texlist.Searchreq.Infant * texlist.Tax[0].InfantFareDetails.TransactionFee) + parseFloat($scope.IGrossAmount);
+            $scope.TransactionFee += parseFloat(texlist.Searchreq.Infant * texlist.Tax[0].InfantFareDetails.TransactionFee);
+        }
+        if (texlistRt != null) {
+            $scope.RtnGrossAmount = parseFloat(texlistRt.Searchreq.Adult * texlistRt.Tax[0].AdultFareDetails.BasicAmount) + parseFloat(texlistRt.Searchreq.Adult * texlistRt.Tax[0].AdultFareDetails.TransactionFee) + parseFloat($scope.RtnGrossAmount);
+            $scope.TransactionFee += parseFloat(texlist.Searchreq.Adult * texlistRt.Tax[0].AdultFareDetails.TransactionFee);
+            if (texlistRt.Tax[0].ChildFareDetails.AvailTaxItem) {
+                $scope.RtnCGrossAmount = parseFloat(texlistRt.Searchreq.Child * texlistRt.Tax[0].ChildFareDetails.BasicAmount) + parseFloat(texlistRt.Searchreq.Child * texlistRt.Tax[0].ChildFareDetails.TransactionFee) + parseFloat($scope.RtnCGrossAmount);
+                $scope.TransactionFee += parseFloat(texlist.Searchreq.Child * texlistRt.Tax[0].ChildFareDetails.TransactionFee);
+            }
+            if (texlistRt.Tax[0].InfantFareDetails.AvailTaxItem) {
+                $scope.RtnIGrossAmount = parseFloat(texlistRt.Searchreq.Infant * texlistRt.Tax[0].InfantFareDetails.BasicAmount) + parseFloat(texlistRt.Searchreq.Infant * texlistRt.Tax[0].InfantFareDetails.TransactionFee) + parseFloat($scope.RtnIGrossAmount);
+                $scope.TransactionFee += parseFloat(texlist.Searchreq.Infant * texlistRt.Tax[0].InfantFareDetails.TransactionFee);
+            }
+        }
+        $scope.TotOngoGrossAmnt = $scope.GrossAmount + $scope.CGrossAmount + $scope.IGrossAmount + $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount;
+        $scope.TotRtnGrossAmnt = $scope.RtnGrossAmount + $scope.RtnCGrossAmount + $scope.RtnIGrossAmount + $scope.RtnATaxamount + $scope.RtnCTaxamount + $scope.RtnITaxamount;
+
+        $scope.TotPayAmnt = ($scope.TotOngoGrossAmnt) + ($scope.TotRtnGrossAmnt) + $scope.Total.SSRPay;
+        $scope.Total.TotPayAmnt = $scope.TotPayAmnt;
+    };
+
+
+
+    //$scope.GotoTax = function (FlightId, Type, seg, arg, totalAmt) {
+    //    $scope.ThrdCount = $scope.ThrdCount + 1;
+    //    var req = {
+    //        method: "POST",
+    //        async: true,
+    //        url: getpath() + "Domestic/GetTax",
+    //        dataType: "json",
+    //        contentType: "application/json; charset=utf-8;html",
+    //        data: { "FlightId": FlightId, "TaxType": Type, "Segment": seg }
+    //    }
+
+    //    RemoteService.FetchData(req).success(function (data, status, headers, config) {
+    //        var Ressponse = JSON.parse(data)[0];
+    //        if (Ressponse["Status"] == "1" || Ressponse["Status"] == "3") {
+    //            if (Ressponse["Data"]["TaxType"] == "O") {
+
+    //                $scope.texlist = JSON.stringify(Ressponse["Data"]);
+    //                if (Ressponse["Status"] == "1") {
+    //                    //window.location = getpath() + "#dombooking";
+    //                } else if (Ressponse["Status"] == "3") {
+    //                    $mdDialog.show({
+    //                        //targetEvent: ev,
+    //                        template:
+    //                          '<md-dialog aria-label="List dialog">' +
+    //                          '<div class="md-input-focused label Cur pad10"><b class="errors">FARE ALERT</b></div>' +
+    //                          '  <md-dialog-content>' +
+    //                          '<div class="md-padding">Your final pricing amount is changed due to a recent update on airline host server.<br> Showed Fare: <b class="FareOLD"> &#x20b9; ' + Ressponse["Data"].GrossAmount + '</b> <br>Update Fare: <b class="Fare"> &#x20b9; ' + Ressponse["Data"].TaxFare + '</b><br><br> Do you want to continue ?</div>' +
+    //                          '  </md-dialog-content>' +
+    //                          '  <md-dialog-actions>' +
+    //                          '    <md-button ng-click="No()" class="md-raised md-primary">' +
+    //                          '      NO' +
+    //                          '    </md-button>' +
+    //                          '    <md-button ng-click="YES()" class="md-raised md-accent">' +
+    //                          '      YES' +
+    //                          '    </md-button>' +
+    //                          '  </md-dialog-actions>' +
+    //                          '</md-dialog>',
+    //                        controller: confirmController
+    //                    });
+    //                    function confirmController($scope, $mdDialog) {
+    //                        $scope.YES = function () {
+    //                            $mdDialog.hide();
+    //                            // window.location = getpath() + "#dombooking";
+    //                        }
+    //                        $scope.No = function () {
+    //                            $mdDialog.hide();
+    //                        }
+    //                    }
+    //                    confirmController.$inject = ['$scope', '$mdDialog'];
+    //                }
+    //            }
+    //            else {
+    //                if (Ressponse["Data"]["Segment"] == "O") {
+    //                    sessionStorage.setItem("DomSegmentlist", JSON.stringify(Ressponse["Data"]));
+
+    //                }
+    //                else {
+    //                    sessionStorage.setItem("DomSegmentlistRt", JSON.stringify(Ressponse["Data"]));
+    //                }
+    //                if (arg == 1) {
+    //                    $scope.ThrdCount = $scope.ThrdCount + 1;
+    //                    $scope.roundTripTaxFare = parseInt($scope.roundTripTaxFare) + parseInt(Ressponse["Data"].TaxFare);
+    //                }
+    //                if (arg == 2) {
+    //                    $scope.ThrdCount = $scope.ThrdCount + 1;
+    //                    $scope.roundTripTaxFare = parseInt($scope.roundTripTaxFare) + parseInt(Ressponse["Data"].TaxFare);
+    //                }
+    //                if ($scope.roundTripTaxFare != totalAmt && $scope.ThrdCount == 4) {
+    //                    $mdDialog.show({
+    //                        //targetEvent: ev,
+    //                        template:
+    //                          '<md-dialog aria-label="List dialog">' +
+    //                          '<div class="md-input-focused label pad5"><b class="errors">FARE ALERT</b></div>' +
+    //                          '  <md-dialog-content>' +
+    //                          '<div class="md-padding">Your final pricing amount is changed due to a recent update on airline host server.<br> Showed Fare: <b class="FareOLD"> &#x20b9; ' + totalAmt + '</b> <br>Update Fare: <b class="Fare"> &#x20b9; ' + $scope.roundTripTaxFare + '</b><br><br> Do you want to continue ?</div>' +
+    //                          '  </md-dialog-content>' +
+    //                          '  <md-dialog-actions>' +
+    //                          '    <md-button ng-click="No()" class="md-raised md-warn">' +
+    //                          '      NO' +
+    //                          '    </md-button>' +
+    //                          '    <md-button ng-click="YES()" class="md-raised md-primary">' +
+    //                          '      YES' +
+    //                          '    </md-button>' +
+    //                          '  </md-dialog-actions>' +
+    //                          '</md-dialog>',
+    //                        controller: confirmController
+    //                    });
+    //                    function confirmController($scope, $mdDialog) {
+    //                        $scope.YES = function () {
+    //                            $mdDialog.hide();
+    //                            console.log(1);
+    //                            //window.location = getpath() + "#dombooking";
+    //                        }
+    //                        $scope.No = function () {
+    //                            $mdDialog.hide();
+    //                        }
+    //                    }
+    //                    confirmController.$inject = ['$scope', '$mdDialog'];
+    //                }
+    //                else if ($scope.ThrdCount == 4) {
+    //                    console.log(2);
+    //                    // window.location = getpath() + "#dombooking";
+    //                }
+    //            }
+    //        }
+    //        else if (Ressponse["Status"] == "0") {
+    //            $mdDialog.show(
+    //                $mdDialog.alert()
+    //                .parent(angular.element(document.querySelector('#popupContainer')))
+    //                .clickOutsideToClose(true)
+    //                .title('Message')
+    //                .textContent(Ressponse["StatusDesc"])
+    //                .ariaLabel('')
+    //                .ok('Close')
+    //                .targetEvent(ev));
+    //        }
+    //        else if (Ressponse["Status"] == "2") {
+    //            var confirm = $mdDialog.confirm()
+    //                          .title('Alert')
+    //                          .textContent(Ressponse["StatusDesc"])
+    //                          .ariaLabel('')
+    //                         // .targetEvent(ev)
+    //                          .ok('Close')
+    //            $mdDialog.show(confirm).then(function () {
+    //                window.location = getpath();
+    //            });
+    //        }
+    //    }).error(function (data, status, headers, config) {
+
+    //    });
+    //};
+
+    $scope.GotoTaxRt = function (FlightId, FlightIdRt, Type, seg, arg, totalAmt) {
+        $(".md-dialog-backdrop").removeClass("hide");
+        $scope.roundTripTaxFare = 0.00;
+        $scope.taxCount = 2;
+        $scope.ThrdCount = 0;
+        $scope.GotoTax(FlightId, 'R', 'O', 1, totalAmt);
+        $scope.GotoTax(FlightIdRt, 'R', 'R', 2, totalAmt);
+    };
+
+
+    $scope.SetATaxAmount = function (texlist, texlistRt) {
+        $scope.ATaxamount = 0.0;
+        $scope.CTaxamount = 0.0;
+        $scope.ITaxamount = 0.0;
+
+        $scope.AServiceTax = 0.0;
+        $scope.CServiceTax = 0.0;
+        $scope.IServiceTax = 0.0;
+
+        $scope.RtnATaxamount = 0.0;
+        $scope.RtnCTaxamount = 0.0;
+        $scope.RtnITaxamount = 0.0;
+
+        $scope.totalTAx = 0.0;
+
+        angular.forEach(texlist.Tax[0].AdultFareDetails.AvailTaxItem, function (Item, index) {
+
+            $scope.AServiceTax = parseFloat(texlist.Tax[0].AdultFareDetails.ServiceTaxFee * texlist.Searchreq.Adult);
+            $scope.CServiceTax = parseFloat(texlist.Tax[0].ChildFareDetails.ServiceTaxFee * texlist.Searchreq.Child);
+            $scope.IServiceTax = parseFloat(texlist.Tax[0].InfantFareDetails.ServiceTaxFee * texlist.Searchreq.Infant);
+
+            $scope.ATaxamount = parseFloat(texlist.Searchreq.Adult * Item.Amount) + parseFloat($scope.ATaxamount);
+        });
+        if (texlist.Tax[0].ChildFareDetails.AvailTaxItem) {
+            angular.forEach(texlist.Tax[0].ChildFareDetails.AvailTaxItem, function (Item, index) {
+                $scope.CTaxamount = parseFloat(texlist.Searchreq.Child * Item.Amount) + parseFloat($scope.CTaxamount);
+            });
+        }
+        if (texlist.Tax[0].InfantFareDetails.AvailTaxItem) {
+            angular.forEach(texlist.Tax[0].InfantFareDetails.AvailTaxItem, function (Item, index) {
+                $scope.ITaxamount = parseFloat(texlist.Searchreq.Infant * Item.Amount) + parseFloat($scope.ITaxamount);
+            });
+        }
+        if (texlistRt != null) {
+
+            $scope.AServiceTax = parseFloat(texlistRt.Tax[0].AdultFareDetails.ServiceTaxFee * texlist.Searchreq.Adult) + parseFloat($scope.AServiceTax);
+            $scope.CServiceTax = parseFloat(texlistRt.Tax[0].ChildFareDetails.ServiceTaxFee * texlist.Searchreq.Child) + parseFloat($scope.CServiceTax);
+            $scope.IServiceTax = parseFloat(texlistRt.Tax[0].InfantFareDetails.ServiceTaxFee * texlist.Searchreq.Infant) + parseFloat($scope.IServiceTax);
+            angular.forEach(texlistRt.Tax[0].AdultFareDetails.AvailTaxItem, function (Item, index) {
+                $scope.RtnATaxamount = parseFloat(texlistRt.Searchreq.Adult * Item.Amount) + parseFloat($scope.RtnATaxamount);
+            });
+            if (texlistRt.Tax[0].ChildFareDetails.AvailTaxItem) {
+                angular.forEach(texlistRt.Tax[0].ChildFareDetails.AvailTaxItem, function (Item, index) {
+                    $scope.RtnCTaxamount = parseFloat(texlistRt.Searchreq.Child * Item.Amount) + parseFloat($scope.RtnCTaxamount);
+                });
+            }
+            if (texlistRt.Tax[0].InfantFareDetails.AvailTaxItem) {
+                angular.forEach(texlistRt.Tax[0].InfantFareDetails.AvailTaxItem, function (Item, index) {
+                    $scope.RtnITaxamount = parseFloat(texlistRt.Searchreq.Infant * Item.Amount) + parseFloat($scope.RtnITaxamount);
+                });
+            }
+        }
+        $scope.TotOngoGrossAmnt = $scope.GrossAmount + $scope.CGrossAmount + $scope.IGrossAmount + $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount;
+        $scope.TotRtnGrossAmnt = $scope.RtnGrossAmount + $scope.RtnCGrossAmount + $scope.RtnIGrossAmount + $scope.RtnATaxamount + $scope.RtnCTaxamount + $scope.RtnITaxamount;
+        $scope.TotPayAmnt = ($scope.TotOngoGrossAmnt) + ($scope.TotRtnGrossAmnt) + $scope.Total.SSRPay;
+        $scope.Total.TotPayAmnt = $scope.TotPayAmnt;
+        $scope.totalTAx = $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount + $scope.RtnATaxamount + $scope.RtnCTaxamount + $scope.RtnITaxamount;
+    };
+
+    $scope.ConfirmBooking = function (ev, Arg) {
+
+        $scope.validater = true;
+        //if ($scope.Booking.LPONumber) {
+        //    if (!$scope.SelectedFileForUpload) {
+        //        return false;
+        //    }
+        //}
+        //if ($scope.SelectedFileForUpload) {
+        //    if (!$scope.Booking.LPONumber) {
+        //        return false;
+        //    }
+        //}
+        var pattern = /^[a-zA-Z]*$/i;
+        var isneedAttachement = false;
+        if (searchData.SeniorCtzn) {
+            if (searchData.Triptype == "R") {
+                if ($scope.seglistRt[0].AirlinesId == '6' || $scope.seglist[0].AirlinesId == '6') {
+
+                    isneedAttachement = true;
+                }
+            }
+            else {
+                if ($scope.seglist[0].AirlinesId == '6') {
+                    isneedAttachement = true;
+                }
+
+            }
+        }
+        if (isneedAttachement) {
+            if ($scope.fileArray.length > 0) {
+                for (var i = 0; i < searchData.Adult; i++) {
+                    if (!$scope.Booking.Adult[i].attachedFile) {
+                        return false;
+                    }
+                }
+            }
+            else {
+                return false;
+            }
+        }
+
+        //if (!pattern.test($scope.Booking.Contact.Firstname)) {
+        //    $mdDialog.show(
+        //               $mdDialog.alert()
+        //               .parent(angular.element(document.querySelector('#popupContainer')))
+        //               .clickOutsideToClose(true)
+        //               .title('Message')
+        //               .textContent("Kindly Remove Number or Special characters from Name")
+        //               .ariaLabel('')
+        //               .ok('Close')
+        //               .targetEvent(ev));
+        //    return false;
+        //}
+
+
+        if ((!$scope.Booking.Contact.Gender) || (!$scope.Booking.Contact.Firstname) || (!$scope.Booking.Contact.Mailid) || (!$scope.Booking.Contact.Mobilenumber)) {
+            // $mdToast.show($mdToast.simple()
+            //.textContent('Please fill all mandatory fileds')
+            //.hideDelay(3000)
+            //.toastClass('toaster-over toaster-fade-close')
+            // );
+
+            $mdDialog.show(
+                       $mdDialog.alert()
+                       .parent(angular.element(document.querySelector('#popupContainer')))
+                       .clickOutsideToClose(true)
+                       .title('Message')
+                       .textContent("Please fill all mandatory fileds")
+                       .ariaLabel('')
+                       .ok('Close')
+                       .targetEvent(ev));
+            return false;
+        }
+
+
+
+        if (!$scope.emailFormat.test($scope.Booking.Contact.Mailid)) {
+            return false;
+        }
+
+        var retval = false;
+
+        var i = 0;
+        angular.forEach($scope.Booking.Adult, function (Item) {
+            angular.forEach(Item, function (value, key) {
+
+                if ((key == "Firstname") && (!value)) {
+                    Item.Firstname = value.replace(/[^a-zA-Z ]/g, "")
+                    retval = true;
+                }
+                if ((key == "Lastname") && (!value)) {
+                    Item.Lastname = value.replace(/[^a-zA-Z ]/g, "")
+                    retval = true;
+                }
+                if (searchData.Triptype != "M") {
+                    if ($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB && (key == "DOB") && (!value)) {
+                        retval = true;
+                    }
+                    if ($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber && (!value)) {
+                        return false;
+                    }
+                    if (searchData.Triptype == "R") {
+                        if ($scope.texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB && (key == "DOB") && (!value)) {
+                            retval = true;
+                        }
+                        if ($scope.texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber && (!value)) {
+                            return false;
+                        }
+                    }
+
+                    if ($scope.Booking.insurance == "1" && $scope.Booking.Adult[i].isEligible) {
+                        if (!$scope.Booking.Adult[i].DOB || !$scope.Booking.Adult[i].IDType || !$scope.Booking.Adult[i].idnumber) {
+                            retval = true;
+                            return false;
+                        }
+
+                    }
+                }
+                else {
+                    if ((key == "DOB") && (!value)) {
+                        retval = true;
+                    }
+                }
+
+                //if (($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Age) && (key == "Age") && (!value)) {
+                //    retval = true;
+                //}
+                //if (($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof) && (key == "IDProof") && (!value)) {
+                //    retval = true;
+                //}
+                //if (($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof) && (key == "IDProofNo") && (!value)) {
+                //    retval = true;
+                //}
+                //if (($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber) && (key == "PassportNo") && (!value)) {
+                //    retval = true;
+                //}
+                //if (($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate) && (key == "Passportexpiry") && (!value)) {
+                //    retval = true;
+                //}
+                //if (($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry) && (key == "PassportIssuedby") && (!value)) {
+                //    retval = true;
+                //}
+                //if (($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality) && (key == "Nationality") && (!value)) {
+                //    retval = true;
+                //}
+            });
+            i++;
+        });
+        i = 0;
+        angular.forEach($scope.Booking.Child, function (Item) {
+            angular.forEach(Item, function (value, key) {
+                if ((key == "Firstname") && (!value)) {
+                    Item.Firstname = value.replace(/[^a-zA-Z ]/g, "")
+                    retval = true;
+                }
+                if ((key == "Lastname") && (!value)) {
+                    retval = true;
+                }
+                if (searchData.Triptype != "M") {
+                    if (($scope.texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB) && (key == "DOB") && (!value)) {
+                        retval = true;
+                    }
+                    if (searchData.Triptype == "R") {
+                        if ($scope.texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB && (key == "DOB") && (!value)) {
+                            retval = true;
+                        }
+                    }
+
+                    if ($scope.Booking.insurance == "1") {
+                        if (!$scope.Booking.Child[i].DOB || !$scope.Booking.Child[i].IDType || !$scope.Booking.Child[i].idnumber) {
+                            retval = true;
+                            return false;
+                        }
+                    }
+                }
+                else {
+                    if ((key == "DOB") && (!value)) {
+                        retval = true;
+                    }
+                }
+
+            });
+            i++;
+        });
+        i = 0;
+        angular.forEach($scope.Booking.Infant, function (Item) {
+            console.log("Item", Item);
+            angular.forEach(Item, function (value, key) {
+                if ((key == "Firstname") && (!value)) {
+                    Item.Firstname = value.replace(/[^a-zA-Z ]/g, "")
+                    retval = true;
+                }
+                if ((key == "Lastname") && (!value)) {
+                    Item.Lastname = value.replace(/[^a-zA-Z ]/g, "")
+                    retval = true;
+                }
+                if ((key == "DOB") && (!value)) {
+                    retval = true;
+                }
+                if (searchData.Triptype == "R") {
+                    if ((key == "DOB") && (!value)) {
+                        retval = true;
+                    }
+                }
+
+                if ($scope.Booking.insurance == "1") {
+                    if (!$scope.Booking.Infant[i].DOB || !$scope.Booking.Infant[i].IDType || !$scope.Booking.Infant[i].idnumber) {
+
+                        retval = true;
+                        return false;
+                    }
+                }
+                //    retval = true;
+                //}
+            });
+            i++;
+        });
+        if (searchData.Triptype == "M") {
+            $scope.Booking.ssrList = [];
+            angular.forEach($scope.TaxResponseList, function (value, key) {
+                console.log("value is", value);
+                var test = {};
+                var ssrDetails = {
+                    MealsInfo: "",
+                    BaggageInfo: ""
+                };
+                test.Adult = [];
+                test.Child = [];
+                if ($scope.Booking.seg[key] != null) {
+
+                    if ($scope.Booking.seg[key].Adult && $scope.Booking.seg[key].Adult != null) {
+                        var lobjAdults = $scope.Booking.seg[key].Adult;
+                        test.Adult = [];
+                        angular.forEach(lobjAdults, function (value, key) {
+
+                            test.Adult.push(value)
+
+                        });
+                        //$scope.Booking.seg.push(test);
+                    }
+                    else {
+                        test.Adult.push(ssrDetails);
+                        test.Child.push(ssrDetails);
+                    }
+
+                    if ($scope.Booking.seg[key].Child && $scope.Booking.seg[key].Child != null) {
+                        var lobjChilds = $scope.Booking.seg[key].Child;
+                        test.Child = [];
+                        angular.forEach(lobjChilds, function (value, key) {
+
+                            test.Child.push(value);
+                        });
+
+                    }
+                    else {
+                        test.Adult.push(ssrDetails);
+                        test.Child.push(ssrDetails);
+                    }
+                }
+                else {
+                    test.Adult.push(ssrDetails);
+                    test.Child.push(ssrDetails);
+                }
+
+                $scope.Booking.ssrList.push(test);
+
+            });
+        }
+
+
+
+
+        if (retval || !$scope.TandC) {
+
+            // $mdToast.show($mdToast.simple()
+            //.textContent('Please fill all mandatory fileds')
+            //.hideDelay(3000)
+            //.toastClass('toaster-over toaster-fade-close')
+            // );
+
+            $mdDialog.show(
+                       $mdDialog.alert()
+                       .parent(angular.element(document.querySelector('#popupContainer')))
+                       .clickOutsideToClose(true)
+                       .title('Message')
+                       .textContent("Please fill all mandatory fileds")
+                       .ariaLabel('')
+                       .ok('Close')
+                       .targetEvent(ev));
+
+            return false;
+        }
+
+
+        $scope.Booking.Bookingflag = Arg;
+        $scope.Booking.SerinorCtzn = 0;
+
+
+        if ($scope.SelectedFileForUpload && $scope.Booking.LPONumber) {
+            var formData = new FormData();
+            formData.append("file", $scope.SelectedFileForUpload);
+            var req = {
+                method: "POST",
+                url: getpath() + "Dombooking/UploadLOP",
+                data: formData,
+                withCredentials: true,
+                headers: { 'Content-Type': undefined },
+                transformRequest: angular.identity
+            }
+            RemoteService.FetchData(req).success(function (data, status, headers, config) {
+                var Ressponse = JSON.parse(data)[0];
+                if (Ressponse["Status"] == "1") {
+                    $scope.book(ev);
+                }
+                else if (Ressponse["Status"] == "0") {
+                    $mdDialog.show(
+                        $mdDialog.alert()
+                        .parent(angular.element(document.querySelector('#popupContainer')))
+                        .clickOutsideToClose(true)
+                        .title('Message')
+                        .textContent(Ressponse["StatusDesc"])
+                        .ariaLabel('')
+                        .ok('Close')
+                        .targetEvent(ev));
+                } else if (Ressponse["Status"] == "2") {
+                    var confirm = $mdDialog.confirm()
+                                  .title('Alert')
+                                  .textContent(Ressponse["StatusDesc"])
+                                  .ariaLabel('')
+                                  .targetEvent(ev)
+                                  .ok('OK')
+                                .cancel('LOG OUT')
+                    $mdDialog.show(confirm).then(function () {
+                        window.location = getpath();
+                    },
+                    function () {
+                        window.location = getpath();
+                    });
+                }
+            }).error(function (data, status, headers, config) { });
+        }
+        else {
+            //$scope.book(ev);
+            $scope.BookingSummary();
+        }
+    };
+
+    /**/
+    $scope.GetTraveler = function (ev) {
+
+
+        if (!$scope.Booking.Contact.Mobilenumber) {
+            $mdDialog.show(
+                                $mdDialog.alert()
+                                .parent(angular.element(document.querySelector('#popupContainer')))
+                                .clickOutsideToClose(true)
+                                .title("Message")
+                                .textContent("Enter valid mobile number to reterive passanger details")
+                                .ariaLabel('')
+                                .ok('Close')
+                                .targetEvent(ev)
+                                );
+            return false;
+        }
+        if ($scope.Booking.Contact.Mobilenumber.length < 11) {
+            $mdDialog.show(
+                                $mdDialog.alert()
+                                .parent(angular.element(document.querySelector('#popupContainer')))
+                                .clickOutsideToClose(true)
+                                .title("Message")
+                                .textContent("Enter valid mobile number to reterive passanger details")
+                                .ariaLabel('')
+                                .ok('Close')
+                                .targetEvent(ev)
+                                );
+            return false;
+        }
+
+        var req = {
+            method: "POST",
+            url: getpath() + "Dombooking/GetTravelerClick",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8",
+            data: { "Mobileno": $scope.Booking.Contact.Mobilenumber }
+        }
+        $http(req).success(function (data, status, headers, config) {
+            var res = JSON.parse(data)[0];
+
+            $scope.paxList = [];
+            $scope.res = JSON.parse(data)[0];
+            if (res["Status"] == "1") {
+                $scope.paxList = res.Data;
+                //$mdDialog.show({
+                //    templateUrl: 'GetPassenger.tmpl.html',
+                //    clickOutsideToClose: false,
+                //    locals: $scope,
+                //    preserveScope: true,
+                //    bindToController: true,
+                //    controller: ViewCtrl,
+                //    controllerAs: 'Ctrl'
+
+                //});
+                //toggleRight('filter');
+                $mdSidenav('filter').toggle();
+                setTimeout(function () { }, 50);
+
+                //function ViewCtrl($mdDialog, $scope) {
+                //    $scope.Passengerlist = [];
+                //    $scope.dgcancel = function () {
+                //        $mdDialog.hide();
+                //    }
+                //    $scope.SelectPass = function (value, index, val) {
+                //        console.log("value is", value, "Index is", index, "val is", val);
+                //        if (val) {
+                //            $scope.Passengerlist.push(value)
+                //            console.log('push', $scope.Passengerlist)
+                //        }
+                //        else {
+                //            $scope.Passengerlist.splice(index, 1);
+                //            console.log('splice', $scope.Passengerlist)
+                //        }
+
+
+                //    }
+                //    $scope.AddPassenger = function (Ctrl) {
+
+                //        var adultCount = 0, childCount = 0; infantCount = 0;
+                //        $mdDialog.hide();
+                //        for (var i = 0; i < $scope.Passengerlist.length; i++) {
+                //            if ($scope.Passengerlist[i].PaxType.toUpperCase() == "ADULT" && Ctrl.texlist.Searchreq.Adult > 0) {
+                //                if (adultCount < Ctrl.texlist.Searchreq.Adult) {
+                //                    Ctrl.Booking.Adult[adultCount].Firstname = $scope.Passengerlist[i].FirstName;
+                //                    Ctrl.Booking.Adult[adultCount].Title = $scope.Passengerlist[i].Title;
+                //                    Ctrl.Booking.Adult[adultCount].Lastname = $scope.Passengerlist[i].LastName;
+                //                    if ($scope.Passengerlist[i].Gender.toUpperCase() == "FEMALE") {
+                //                        Ctrl.Booking.Adult[adultCount].Gender = "F";
+                //                    }
+                //                    else {
+                //                        Ctrl.Booking.Adult[adultCount].Gender = "M";
+                //                    }
+                //                    adultCount += 1;
+                //                }
+                //            }
+
+                //            else if ($scope.Passengerlist[i].PaxType.toUpperCase() == "CHILD" && Ctrl.texlist.Searchreq.Child > 0) {
+                //                if (childCount < Ctrl.texlist.Searchreq.Child) {
+                //                    Ctrl.Booking.Child[childCount].Firstname = $scope.Passengerlist[i].FirstName;
+                //                    Ctrl.Booking.Child[childCount].Title = $scope.Passengerlist[i].Title;
+                //                    Ctrl.Booking.Child[childCount].Lastname = $scope.Passengerlist[i].LastName;
+                //                    if ($scope.Passengerlist[i].Gender.toUpperCase() == "FEMALE") {
+                //                        Ctrl.Booking.Child[childCount].Gender = "F";
+                //                    }
+                //                    else {
+                //                        Ctrl.Booking.Child[childCount].Gender = "M";
+                //                    }
+                //                    childCount += 1;
+                //                }
+
+
+                //            }
+                //            else if ($scope.Passengerlist[i].PaxType.toUpperCase() == "INFANT" && Ctrl.texlist.Searchreq.Infant > 0) {
+                //                if (infantCount < Ctrl.texlist.Searchreq.Infant) {
+                //                    Ctrl.Booking.Infant[infantCount].Firstname = $scope.Passengerlist[i].FirstName;
+                //                    Ctrl.Booking.Infant[infantCount].Lastname = $scope.Passengerlist[i].LastName;
+                //                    Ctrl.Booking.Infant[infantCount].Gender = $scope.Passengerlist[i].Gender;
+                //                    if ($scope.Passengerlist[i].Gender.toUpperCase() == "FEMALE") {
+                //                        Ctrl.Booking.Infant[infantCount].Gender = "F";
+                //                    }
+                //                    else {
+                //                        Ctrl.Booking.Infant[infantCount].Gender = "M";
+                //                    }
+                //                    infantCount += 1;
+                //                }
+                //            }
+                //        }
+                //    }
+                //}
+            }
+            else if (res["Status"] == "0") {
+                $mdDialog.show(
+                        $mdDialog.alert()
+                        .parent(angular.element(document.querySelector('#popupContainer')))
+                        .clickOutsideToClose(true)
+                        .title('Message')
+                        .textContent(res["StatusDesc"])
+                        .ariaLabel('')
+                        .ok('Close')
+                        .targetEvent(ev));
+            }
+            else if (Ressponse["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(res["StatusDesc"])
+                              .ariaLabel('')
+                              .targetEvent(ev)
+                              .ok('OK')
+                            .cancel('LOG OUT')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                function () {
+                    window.location = getpath();
+                });
+            }
+        }).error(function (data, status, headers, config) { });
+
+    }
+    /**/
+    $scope.SelectPass = function (value, index, val) {
+        console.log("value is", value, "Index is", index, "val is", val);
+        if (!val) {
+            $scope.Passengerlist.push(value)
+            console.log('push', $scope.Passengerlist)
+        }
+        else {
+            $scope.Passengerlist.splice(index, 1);
+            console.log('splice', $scope.Passengerlist)
+        }
+
+
+    }
+
+    $scope.AddPassenger = function () {
+
+        var adultCount = 0, childCount = 0; infantCount = 0;
+
+        for (var i = 0; i < $scope.Passengerlist.length; i++) {
+            if ($scope.Passengerlist[i].PaxType.toUpperCase() == "ADULT" && $scope.texlist.Searchreq.Adult > 0) {
+                if (adultCount < $scope.texlist.Searchreq.Adult) {
+                    $scope.Booking.Adult[adultCount].Firstname = $scope.Passengerlist[i].FirstName;
+                    $scope.Booking.Adult[adultCount].Title = $scope.Passengerlist[i].Title;
+                    $scope.Booking.Adult[adultCount].Lastname = $scope.Passengerlist[i].LastName;
+                    if ($scope.Passengerlist[i].Gender.toUpperCase() == "FEMALE") {
+                        $scope.Booking.Adult[adultCount].Gender = "F";
+                    }
+                    else {
+                        $scope.Booking.Adult[adultCount].Gender = "M";
+                    }
+                    adultCount += 1;
+                }
+            }
+
+            else if ($scope.Passengerlist[i].PaxType.toUpperCase() == "CHILD" && $scope.texlist.Searchreq.Child > 0) {
+                if (childCount < $scope.texlist.Searchreq.Child) {
+                    $scope.Booking.Child[childCount].Firstname = $scope.Passengerlist[i].FirstName;
+                    $scope.Booking.Child[childCount].Title = $scope.Passengerlist[i].Title;
+                    $scope.Booking.Child[childCount].Lastname = $scope.Passengerlist[i].LastName;
+                    if ($scope.Passengerlist[i].Gender.toUpperCase() == "FEMALE") {
+                        $scope.Booking.Child[childCount].Gender = "F";
+                    }
+                    else {
+                        $scope.Booking.Child[childCount].Gender = "M";
+                    }
+                    childCount += 1;
+                }
+
+
+            }
+            else if ($scope.Passengerlist[i].PaxType.toUpperCase() == "INFANT" && $scope.texlist.Searchreq.Infant > 0) {
+                if (infantCount < $scope.texlist.Searchreq.Infant) {
+                    $scope.Booking.Infant[infantCount].Firstname = $scope.Passengerlist[i].FirstName;
+                    $scope.Booking.Infant[infantCount].Lastname = $scope.Passengerlist[i].LastName;
+                    $scope.Booking.Infant[infantCount].Gender = $scope.Passengerlist[i].Gender;
+                    if ($scope.Passengerlist[i].Gender.toUpperCase() == "FEMALE") {
+                        $scope.Booking.Infant[infantCount].Gender = "F";
+                    }
+                    else {
+                        $scope.Booking.Infant[infantCount].Gender = "M";
+                    }
+                    infantCount += 1;
+                }
+            }
+        }
+        $scope.toggleRight('filter');
+    }
+
+    $scope.ShowTicketDetails = function () {
+        $scope.BookTicket = {
+            Ongoing: "",
+            Return: "",
+        }
+        $scope.Showticket = true;
+        var Data = JSON.parse(sessionStorage.getItem("Tickets"));
+        //if (Data.Ongoing[0] != null && Data.Ongoing.length > 0) {
+        //    $scope.BookTicket.Ongoing = Data.Ongoing;
+        //}
+        //if (Data.Return != null && Data.Return[0] != null && Data.Return.length > 0) {
+        //    $scope.BookTicket.Return = Data.Return;
+        //}
+
+        //return false;
+        if (Data[0].Return != null && Data[0].Return.length > 0) {
+
+
+            //if (Data[0].Ongoing[0] != null && Data[0].Ongoing[0].length > 0) {
+            //    $scope.BookTicket.Ongoing = Data[0].Ongoing;
+            //}
+            //if (Data[0].Return != null && Data[0].Return[0] != null && Data[0].Return[0].length > 0) {
+            //    $scope.BookTicket.Return = Data.Return;
+            //}
+            $scope.BookTicket = Data[0];
+
+
+            $mdDialog.show({
+                templateUrl: getpath() + 'Templates/Airline/TravelDetails.html?' + new Date(),
+                locals: $scope,
+                controller: TravelDetailsCtrl,
+                controllerAs: 'ctrl',
+                bindToController: true,
+                clickOutsideToClose: false
+
+            });
+
+            function TravelDetailsCtrl($scope, $mdDialog) {
+                $scope.Close = function () {
+                    $mdDialog.hide();
+                    $scope.ctrl.clearSession();
+
+                    window.location = getpath() + "#/home"
+                }
+                $scope.View = function (ViewPnr) {
+                    $scope.printTicket(ViewPnr);
+                }
+
+                $scope.printTicket = function (pnr) {
+
+                    var req = {
+                        method: "POST",
+                        url: getpath() + "AirHistory/Reprint",
+                        dataType: "json",
+                        contentType: "application/json; charset=utf-8;html",
+                        data: { "PNR": pnr }
+                    }
+
+                    RemoteService.FetchData(req).success(function (data, status, headers, config) {
+                        var Response = JSON.parse(data)[0];
+                        if (Response["Status"] == "1") {
+                            $scope.Ticket = null;
+                            $scope.Ticket = Response["Data"];
+
+
+
+                            var path = "Templates/Airlinehistory/AirlineTicket.html?";
+
+                            $mdDialog.show({
+                                templateUrl: getpath() + path + new Date(),
+                                controller: ReprintController,
+                                locals: $scope,
+                                controllerAs: 'ctrl',
+                                preserveScope: true,
+                                bindToController: true,
+                                clickOutsideToClose: false,
+                                skipHide: true,
+                                multiple: true
+                            });
+                            function ReprintController($scope, $mdDialog) {
+                                //$("#Reprint").html($scope.ReprintContent);
+                                $scope.Close = function () {
+                                    $mdDialog.hide();
+                                }
+
+                                $scope.printDiv = function () {
+                                    var printContents = document.getElementById('tblTicketDetails').innerHTML;
+                                    var originalContents = document.body.innerHTML;
+                                    if (navigator.userAgent.toLowerCase().indexOf('chrome') > -1) {
+                                        var popupWin = window.open('', '_blank', 'width=600,height=600,scrollbars=no,menubar=no,toolbar=no,location=no,status=no,titlebar=no');
+                                        popupWin.window.focus();
+                                        popupWin.document.write('<!DOCTYPE html><html><head>' +
+                                            '<link rel="stylesheet" type="text/css" href="Content/Css/angular-material.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" />' +
+                                            '</head>');
+                                        setTimeout(function () {
+                                            popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                                            popupWin.document.close();
+
+                                        }, 100);
+
+                                    } else {
+                                        try {
+                                            var popupWin = window.open();
+
+                                            popupWin.document.open();
+
+                                            popupWin.document.write('<html><head><link rel="stylesheet" type="text/css" href="Content/Css/angular-material.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" /></head>');
+                                            setTimeout(function () {
+                                                popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                                                popupWin.document.close();
+
+                                            }, 100);
+
+                                        }
+                                        catch (e) {
+
+                                        }
+                                    }
+                                    setTimeout(function () { popupWin.window.close(); }, 1000);
+                                    return true;
+                                }
+                            }
+
+                        }
+                        else if (Response["Status"] == "0") {
+                            $mdDialog.show(
+                                $mdDialog.alert()
+                                .parent(angular.element(document.querySelector('#popupContainer')))
+                                .clickOutsideToClose(true)
+                                .title("Message")
+                                .textContent(Response["StatusDesc"])
+                                .ariaLabel('')
+                                .ok('Close')
+                                //.targetEvent(ev)
+                                );
+
+                            //$mdToast.show($mdToast.simple().textContent(Response["StatusDesc"]).position("bottom right").hideDelay(3000));
+                        }
+                        else if (Response["Status"] == "2") {
+                            var confirm = $mdDialog.confirm()
+                                            .title('Alert')
+                                            .textContent(Response["StatusDesc"])
+                                            .ariaLabel('')
+                                            .targetEvent(ev)
+                                            .ok('OK')
+                                            .cancel('Cancel')
+                            $mdDialog.show(confirm).then(function () {
+                                window.location = getpath();
+                            });
+                        }
+                    }).error(function (data, status, headers, config) { });
+                };
+
+                $scope.issueInsurance = function () {
+                    var req = {
+                        method: "POST",
+
+                        url: getpath() + "Dombooking/issueInsurance",
+                        dataType: "json",
+                        contentType: "application/json; charset=utf-8;html",
+                        data: $scope.ctrl.Booking
+                    }
+
+                    RemoteService.FetchData(req).success(function (data, status, headers, config) {
+                        var Ressponse = JSON.parse(data)[0];
+
+
+                        if (Ressponse["Status"] == "1") {
+                            $scope.insuranceDetails = Ressponse["Data"];
+
+                            //$mdDialog.show({
+                            //    templateUrl: getpath() + 'Templates/Insurance/TravelDetails.html?' + new Date(),
+                            //    locals: $scope,
+                            //    controller: TravelDetailsCtrl,
+                            //    controllerAs: 'ctrl',
+                            //    bindToController: true,
+                            //    clickOutsideToClose: false
+
+                            //});
+
+                            //function TravelDetailsCtrl($scope, $mdDialog) {
+                            //    $scope.Close = function () {
+                            //        $mdDialog.hide();
+                            //        //$scope.ctrl.clearSession();
+
+                            //        window.location = getpath() + "#/home"
+                            //    }
+                            //    $scope.View = function (ViewPnr) {
+                            //        $scope.printTicket(ViewPnr);
+                            //    }
+                            //}
+
+
+
+                            //window.location = getpath() + "#airsticket";
+                        }
+                        else if (Ressponse["Status"] == "0") {
+                            //$mdDialog.show(
+                            //    $mdDialog.alert()
+                            //    .parent(angular.element(document.querySelector('#popupContainer')))
+                            //    .clickOutsideToClose(true)
+                            //    .title('Message')
+                            //    .textContent(Ressponse["StatusDesc"])
+                            //    .ariaLabel('')
+                            //    .ok('Close')
+                            //    .targetEvent(ev));
+
+                            var confirm = $mdDialog.confirm()
+                                         .title('Alert')
+                                         .textContent(Ressponse["StatusDesc"])
+                                         .ariaLabel('')
+                                         .targetEvent(ev)
+
+                            .ok('OK')
+                            .cancel('Close')
+                            $mdDialog.show(confirm).then(function () {
+
+                                window.location = getpath() + "#/home";
+                            },
+                                function () {
+
+                                    window.location = getpath() + "#/home";
+                                });
+
+                        }
+                        else if (Ressponse["Status"] == "2") {
+                            var confirm = $mdDialog.confirm()
+                                          .title('Alert')
+                                          .textContent(Ressponse["StatusDesc"])
+                                          .ariaLabel('')
+                                          .targetEvent(ev)
+                                          .ok('OK')
+                            .cancel('CLOSE')
+                            $mdDialog.show(confirm).then(function () {
+                                window.location = getpath();
+                            },
+                                function () {
+                                    window.location = getpath();
+                                });
+                        }
+
+                    }).error(function (data, status, headers, config) { });
+                }
+
+                if ($scope.ctrl.Booking.insurance == "1") {
+                    $scope.issueInsurance();
+
+                }
+            }
+        }
+        else {
+
+            var Response = $scope.BookTicket
+            $scope.Ticket = Data
+            $mdDialog.show({
+                templateUrl: getpath() + 'Templates/Airlinehistory/AirlineTicket.html?' + new Date(),
+                controller: ReprintController,
+                locals: $scope,
+                controllerAs: 'ctrl',
+                bindToController: true,
+                clickOutsideToClose: false
+
+
+            });
+            function ReprintController($scope, $mdDialog) {
+                $scope.Close = function () {
+                    $mdDialog.hide();
+                    $scope.ctrl.clearSession();
+
+                    window.location = getpath() + "#/home"
+                }
+                $scope.printDiv = function () {
+                    var printContents = document.getElementById('tblTicketDetails').innerHTML;
+                    var originalContents = document.body.innerHTML;
+                    if (navigator.userAgent.toLowerCase().indexOf('chrome') > -1) {
+                        var popupWin = window.open('', '_blank', 'width=600,height=600,scrollbars=no,menubar=no,toolbar=no,location=no,status=no,titlebar=no');
+                        popupWin.window.focus();
+                        popupWin.document.write('<!DOCTYPE html><html><head>' +
+                            '<link rel="stylesheet" type="text/css" href="Content/Css/angular-material.min.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" />' +
+                            '</head>');
+                        setTimeout(function () {
+                            popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                            popupWin.document.close();
+
+                        }, 100);
+
+                    } else {
+                        try {
+                            var popupWin = window.open();
+
+                            popupWin.document.open();
+
+                            popupWin.document.write('<html><head><link rel="stylesheet" type="text/css" href="Content/Css/angular-material.min.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" /></head>');
+                            setTimeout(function () {
+                                popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                                popupWin.document.close();
+
+                            }, 100);
+
+                        }
+                        catch (e) {
+
+                        }
+                    }
+                    setTimeout(function () { popupWin.window.close(); }, 1000);
+                    return true;
+                }
+
+
+                $scope.issueInsurance = function () {
+                    var req = {
+                        method: "POST",
+
+                        url: getpath() + "Dombooking/issueInsurance",
+                        dataType: "json",
+                        contentType: "application/json; charset=utf-8;html",
+                        data: $scope.ctrl.Booking
+                    }
+
+                    RemoteService.FetchData(req).success(function (data, status, headers, config) {
+                        var Ressponse = JSON.parse(data)[0];
+
+
+                        if (Ressponse["Status"] == "1") {
+                            $scope.insuranceDetails = Ressponse["Data"];
+
+                            //$mdDialog.show({
+                            //    templateUrl: getpath() + 'Templates/Insurance/TravelDetails.html?' + new Date(),
+                            //    locals: $scope,
+                            //    controller: TravelDetailsCtrl,
+                            //    controllerAs: 'ctrl',
+                            //    bindToController: true,
+                            //    clickOutsideToClose: false
+
+                            //});
+
+                            //function TravelDetailsCtrl($scope, $mdDialog) {
+                            //    $scope.Close = function () {
+                            //        $mdDialog.hide();
+                            //        //$scope.ctrl.clearSession();
+
+                            //        window.location = getpath() + "#/home"
+                            //    }
+                            //    $scope.View = function (ViewPnr) {
+                            //        $scope.printTicket(ViewPnr);
+                            //    }
+                            //}
+
+
+
+                            //window.location = getpath() + "#airsticket";
+                        }
+                        else if (Ressponse["Status"] == "0") {
+                            //$mdDialog.show(
+                            //    $mdDialog.alert()
+                            //    .parent(angular.element(document.querySelector('#popupContainer')))
+                            //    .clickOutsideToClose(true)
+                            //    .title('Message')
+                            //    .textContent(Ressponse["StatusDesc"])
+                            //    .ariaLabel('')
+                            //    .ok('Close')
+                            //    .targetEvent(ev));
+
+                            var confirm = $mdDialog.confirm()
+                                         .title('Alert')
+                                         .textContent(Ressponse["StatusDesc"])
+                                         .ariaLabel('')
+                                         .targetEvent(ev)
+
+                            .ok('OK')
+                            .cancel('Close')
+                            $mdDialog.show(confirm).then(function () {
+
+                                window.location = getpath() + "#/home";
+                            },
+                                function () {
+
+                                    window.location = getpath() + "#/home";
+                                });
+
+                        }
+                        else if (Ressponse["Status"] == "2") {
+                            var confirm = $mdDialog.confirm()
+                                          .title('Alert')
+                                          .textContent(Ressponse["StatusDesc"])
+                                          .ariaLabel('')
+                                          .targetEvent(ev)
+                                          .ok('OK')
+                            .cancel('CLOSE')
+                            $mdDialog.show(confirm).then(function () {
+                                window.location = getpath();
+                            },
+                                function () {
+                                    window.location = getpath();
+                                });
+                        }
+
+                    }).error(function (data, status, headers, config) { });
+                }
+
+                if ($scope.ctrl.Booking.insurance == "1") {
+                    $scope.issueInsurance();
+                }
+            }
+        }
+    }
+
+    $scope.ShowTicketMDetails = function () {
+        $mdDialog.show({
+            templateUrl: getpath() + 'Templates/Airline/TravelDetailsM.html?' + new Date(),
+            locals: $scope,
+            controller: TravelDetailsCtrl,
+            controllerAs: 'ctrl',
+            bindToController: true,
+            clickOutsideToClose: false
+
+        });
+
+        function TravelDetailsCtrl($scope, $mdDialog) {
+            $scope.Close = function () {
+                $mdDialog.hide();
+                $scope.ctrl.clearSession();
+
+                window.location = getpath() + "#/home"
+            }
+            $scope.View = function (ViewPnr) {
+                $scope.printTicket(ViewPnr);
+            }
+
+            $scope.printTicket = function (pnr) {
+
+                var req = {
+                    method: "POST",
+                    url: getpath() + "AirHistory/Reprint",
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8;html",
+                    data: { "PNR": pnr }
+                }
+
+                RemoteService.FetchData(req).success(function (data, status, headers, config) {
+                    var Response = JSON.parse(data)[0];
+                    if (Response["Status"] == "1") {
+                        $scope.Ticket = null;
+                        $scope.Ticket = Response["Data"];
+
+
+
+                        var path = "Templates/Airlinehistory/AirlineTicket.html?";
+
+                        $mdDialog.show({
+                            templateUrl: getpath() + path + new Date(),
+                            controller: ReprintController,
+                            locals: $scope,
+                            controllerAs: 'ctrl',
+                            preserveScope: true,
+                            bindToController: true,
+                            clickOutsideToClose: false,
+                            skipHide: true,
+                            multiple: true
+                        });
+                        function ReprintController($scope, $mdDialog) {
+                            //$("#Reprint").html($scope.ReprintContent);
+                            $scope.Close = function () {
+                                $mdDialog.hide();
+                            }
+
+                            $scope.printDiv = function () {
+                                var printContents = document.getElementById('tblTicketDetails').innerHTML;
+                                var originalContents = document.body.innerHTML;
+                                if (navigator.userAgent.toLowerCase().indexOf('chrome') > -1) {
+                                    var popupWin = window.open('', '_blank', 'width=600,height=600,scrollbars=no,menubar=no,toolbar=no,location=no,status=no,titlebar=no');
+                                    popupWin.window.focus();
+                                    popupWin.document.write('<!DOCTYPE html><html><head>' +
+                                        '<link rel="stylesheet" type="text/css" href="Content/Css/angular-material.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" />' +
+                                        '</head>');
+                                    setTimeout(function () {
+                                        popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                                        popupWin.document.close();
+
+                                    }, 100);
+
+                                } else {
+                                    try {
+                                        var popupWin = window.open();
+
+                                        popupWin.document.open();
+
+                                        popupWin.document.write('<html><head><link rel="stylesheet" type="text/css" href="Content/Css/angular-material.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" /></head>');
+                                        setTimeout(function () {
+                                            popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                                            popupWin.document.close();
+
+                                        }, 100);
+
+                                    }
+                                    catch (e) {
+
+                                    }
+                                }
+                                setTimeout(function () { popupWin.window.close(); }, 1000);
+                                return true;
+                            }
+                        }
+
+                    }
+                    else if (Response["Status"] == "0") {
+                        $mdDialog.show(
+                            $mdDialog.alert()
+                            .parent(angular.element(document.querySelector('#popupContainer')))
+                            .clickOutsideToClose(true)
+                            .title("Message")
+                            .textContent(Response["StatusDesc"])
+                            .ariaLabel('')
+                            .ok('Close')
+                            //.targetEvent(ev)
+                            );
+
+                        //$mdToast.show($mdToast.simple().textContent(Response["StatusDesc"]).position("bottom right").hideDelay(3000));
+                    }
+                    else if (Response["Status"] == "2") {
+                        var confirm = $mdDialog.confirm()
+                                        .title('Alert')
+                                        .textContent(Response["StatusDesc"])
+                                        .ariaLabel('')
+                                        .targetEvent(ev)
+                                        .ok('OK')
+                                        .cancel('Cancel')
+                        $mdDialog.show(confirm).then(function () {
+                            window.location = getpath();
+                        });
+                    }
+                }).error(function (data, status, headers, config) { });
+            };
+
+
+        }
+    }
+
+    $scope.fnProof = function (pstrpnr) {
+        console.log($scope.Insres);
+
+
+        var req = {
+            method: "POST",
+            url: getpath() + "Insurance/Insuranceinvoice",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8;html",
+            data: { "hpnr": pstrpnr }
+        }
+        // console.log(FerryObj);
+        RemoteService.FetchData(req).success(function (data, status, headers, config) {
+            var Response = JSON.parse(data)[0];
+            $scope.Insinv = [];
+            $scope.Insinv = Response["Data"];
+            if (Response["Status"] == "1") {
+                $mdDialog.show({
+                    templateUrl: getpath() + 'Templates/Insurance/Proof.html?' + new Date(),
+                    clickOutsideToClose: true,
+                    locals: $scope,
+                    bindToController: true,
+                    controller: ViewCtrll,
+                    controllerAs: 'Ctrl',
+                    skipHide: true,
+                    multiple: true,
+                    preserveScope: true
+                });
+
+            }
+            else if (Response["Status"] == "0") {
+                $scope.showMod = false;
+                var confirm = $mdDialog.alert()
+                                      .title('Alert')
+                                      .textContent(Response["StatusDesc"])
+                                      .ariaLabel('')
+                                      .ok('Close')
+                $mdDialog.show(confirm)
+
+            }
+
+            console.log($scope.Insinv);
+
+            function ViewCtrll($scope, $mdDialog) {
+                $scope.Print = function () {
+
+                    try {
+                        var printWindow;
+                        var Transactionid = document.getElementById('InsuranceCont');
+                        var windowUrl = 'about:blank';
+                        var uniqueName = new Date();
+                        var windowName = 'Print' + uniqueName.getTime();
+                        var strbroname = navigator.appName;
+                        if (strbroname == "Microsoft Internet Explorer") {
+                            var printWindow = window.open(windowUrl, windowName, 'left=0,top=0,width=0,height=0');
+                            printWindow.document.write("<link rel='stylesheet' type='text/css' href='Content/Css/angular-material.css' media='print'>");
+                            printWindow.document.write(Transactionid.innerHTML);
+                        }
+                        else {
+                            var printWindow = window.open(windowUrl, windowName, 'left=30000,top=40000,width=0,height=0');
+                            printWindow.document.write("<link rel='stylesheet' type='text/css' href='Content/Css/angular-material.css' media='print'>");
+                            printWindow.document.write(Transactionid.innerHTML);
+                        }
+                        printWindow.document.close();
+                        printWindow.focus();
+                        $timeout(function () {
+                            printWindow.print();
+                            printWindow.close();
+                        }, 200);
+                        return false;
+                    } catch (err) { alert("InsurancePrint" + err); }
+                }
+
+                $scope.dgcancel = function () {
+                    $mdDialog.hide();
+                }
+
+
+            }
+
+        });
+    }
+
+    $scope.clearSession = function () {
+        sessionStorage.removeItem("domSegList");
+        sessionStorage.removeItem("domSegListRt");
+        sessionStorage.removeItem("selectedFlight");
+        sessionStorage.removeItem("selectedFlightRt");
+    };
+
+
+    $scope.book = function (ev) {
+        //var confirm = $mdDialog.confirm()
+        //           .title('Confirm')
+        //           .textContent('Are you sure want to book a ticket')
+        //           .ariaLabel('go Back')
+        //           .ok('Ok')
+        //            .targetEvent(ev)
+        //           .cancel('Cancel')
+        //$mdDialog.show(confirm).then(function () {
+        //    $scope.CallBook();
+        //}, function () {
+        //    $mdDialog.hide();
+        //});
+        $mdDialog.hide();
+
+        $timeout.cancel(mytimeout);
+        var isneedAttachement = false;
+        if (searchData.SeniorCtzn) {
+            if (searchData.Triptype == "R") {
+                if ($scope.seglistRt[0].AirlinesId == '6' || $scope.seglist[0].AirlinesId == '6') {
+                    isneedAttachement = true;
+                }
+            }
+            else {
+                if ($scope.seglist[0].AirlinesId == '6') {
+
+                    isneedAttachement = true;
+                }
+
+            }
+        }
+
+        if (isneedAttachement) {
+            if (searchData.Adult == $scope.fileArray.length) {
+                var formData = new FormData();
+                for (var i = 0; i < $scope.fileArray.length; i++) {
+                    formData.append("file", $scope.fileArray[i]);
+                }
+
+                var req = {
+                    method: "POST",
+                    url: getpath() + "Dombooking/UploadDocuments",
+                    data: formData,
+                    withCredentials: true,
+                    headers: { 'Content-Type': undefined },
+                    transformRequest: angular.identity
+                }
+                RemoteService.FetchData(req).success(function (data, status, headers, config) {
+                    var Ressponse = JSON.parse(data)[0];
+                    if (Ressponse["Status"] == "1") {
+                        //$scope.BookingSummary();
+                        $scope.CallBook();
+                    }
+                    else if (Ressponse["Status"] == "0") {
+                        $mdDialog.show(
+                            $mdDialog.alert()
+                            .parent(angular.element(document.querySelector('#popupContainer')))
+                            .clickOutsideToClose(true)
+                            .title('Message')
+                            .textContent(Ressponse["StatusDesc"])
+                            .ariaLabel('')
+                            .ok('Close')
+                            .targetEvent(ev));
+                    } else if (Ressponse["Status"] == "2") {
+                        var confirm = $mdDialog.confirm()
+                                      .title('Alert')
+                                      .textContent(Ressponse["StatusDesc"])
+                                      .ariaLabel('')
+                                      .targetEvent(ev)
+                                      .ok('OK')
+                                    .cancel('LOG OUT')
+                        $mdDialog.show(confirm).then(function () {
+                            window.location = getpath();
+                        },
+                        function () {
+                            window.location = getpath();
+                        });
+                    }
+                }).error(function (data, status, headers, config) { });
+            }
+        }
+        else {
+            $scope.CallBook();
+        }
+
+
+    }
+
+    $scope.CallBook = function (ev) {
+        $scope.Booking.Total = $scope.Total.TotPayAmnt;
+        $scope.Booking.MinorAdultCount = $scope.MinorAdult.MinorAdultCount;
+        $scope.Booking.Triptype = searchData.Triptype;
+        console.log("testest", JSON.stringify($scope.Booking));
+        $scope.Booking.seg = [];
+        var req = {
+            method: "POST",
+            url: getpath() + "Dombooking/Booking",
+            //url: getpath() + "Dombooking/issueInsurance",
+            dataType: "json",
+            contentType: "application/json; charset=utf-8;html",
+            data: $scope.Booking
+        }
+        RemoteService.FetchData(req).success(function (data, status, headers, config) {
+            var Ressponse = JSON.parse(data)[0];
+            if (Ressponse["Status"] == "1") {
+                if ($scope.Booking.Triptype == "M") {
+                    $scope.TicketM = Ressponse["Data"]
+                    $scope.ShowTicketMDetails();
+                }
+                else {
+                    $scope.Ticket = Ressponse["Data"];
+                    sessionStorage.setItem("Tickets", JSON.stringify($scope.Ticket));
+                    $scope.ShowTicketDetails();
+                }
+                //window.location = getpath() + "#airsticket";
+            }
+            else if (Ressponse["Status"] == "0") {
+                //$mdDialog.show(
+                //    $mdDialog.alert()
+                //    .parent(angular.element(document.querySelector('#popupContainer')))
+                //    .clickOutsideToClose(true)
+                //    .title('Message')
+                //    .textContent(Ressponse["StatusDesc"])
+                //    .ariaLabel('')
+                //    .ok('Close')
+                //    .targetEvent(ev));
+
+                var confirm = $mdDialog.confirm()
+                             .title('Alert')
+                             .textContent(Ressponse["StatusDesc"])
+                             .ariaLabel('')
+                             .targetEvent(ev)
+
+                .ok('OK')
+                .cancel('Close')
+                $mdDialog.show(confirm).then(function () {
+
+                    window.location = getpath() + "#/home";
+                },
+                    function () {
+
+                        window.location = getpath() + "#/home";
+                    });
+
+            }
+            else if (Ressponse["Status"] == "2") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(Ressponse["StatusDesc"])
+                              .ariaLabel('')
+                              .targetEvent(ev)
+                              .ok('OK')
+                .cancel('CLOSE')
+                $mdDialog.show(confirm).then(function () {
+                    window.location = getpath();
+                },
+                    function () {
+                        window.location = getpath();
+                    });
+            }
+            else if (Ressponse["Status"] == "3") {
+                var confirm = $mdDialog.confirm()
+                              .title('Alert')
+                              .textContent(Ressponse["StatusDesc"])
+                              .ariaLabel('')
+                              .targetEvent(ev)
+                              .ok('OK')
+                .cancel('CLOSE')
+
+                $mdDialog.show(confirm).then(function () {
+                    //window.location = getpath();
+
+                    window.location = getpath() + "#/home"
+                },
+                    function () {
+
+                        window.location = getpath() + "#/home"
+                    });
+            }
+        }).error(function (data, status, headers, config) { });
+
+    }
+
+
+
+
+    $scope.Back = function (Mode, ev) {
+        var confirm = $mdDialog.confirm()
+                       .title('Alert')
+                       .textContent('Are you sure want to go back?')
+                       .ariaLabel('go Back')
+                       .ok('Ok')
+                        .targetEvent(ev)
+                       .cancel('Cancel')
+        $mdDialog.show(confirm).then(function () {
+            sessionStorage.removeItem("domSegList");
+            sessionStorage.removeItem("domSegListRt");
+            sessionStorage.setItem("TempDomSearch", "DomesticBack");
+            if (searchData.Triptype == "M") {
+                sessionStorage.removeItem("result");
+            }
+            if (Mode == "BK") {
+                window.location = getpath() + "#/dresult"
+            }
+            else {
+                window.location = getpath() + "#/airline"
+            }
+        }, function () {
+            $mdDialog.hide();
+        });
+
+    };
+
+    $scope.clickUpload = function (ev, ctrl) {
+        angular.element('#upload').trigger('click');
+        angular.element(document.querySelector('#upload')).off('change').on('change', handleFileSelect);
+    };
+    var handleFileSelect = function (evt) {
+        $scope.SelectedFileForUpload = evt.currentTarget.files[0];
+        $scope.SelectedFileName = evt.currentTarget.files[0].name;
+    }
+    $scope.BookingSummary = function () {
+        console.log("Booking", $scope.Booking);
+        $mdDialog.show({
+            templateUrl: getpath() + 'Templates/Airline/Summary.html?' + new Date(),
+            locals: $scope,
+            controller: BookingSummaryModal,
+            controllerAs: 'ctrl',
+            bindToController: true,
+            clickOutsideToClose: false
+        });
+
+    }
+    function BookingSummaryModal($scope, $mdDialog) {
+        $scope.ParseBaggageInfo = function (arg) {
+            if (arg) {
+                var BaggageInfo = JSON.parse(arg);
+                return BaggageInfo.BaggageDescription
+            }
+        }
+
+        $scope.ParseMealsInfo = function (arg) {
+
+            if (arg) {
+                var MealsInfo = JSON.parse(arg);
+                return MealsInfo.MealDescription
+            }
+        }
+        $scope.Close = function () {
+            $mdDialog.hide();
+        }
+    }
+
+    /**/
+    $scope.CalculateSSR = function () {
+        $scope.Total = {};
+        var lintTotAdultMeal = 0;
+        var lintTotChildMeal = 0;
+
+        var lintTotAdultBag = 0;
+        var lintTotChildBag = 0;
+
+        var lobjAdults = $scope.Booking.Adult;
+        var lobjChilds = $scope.Booking.Child;
+
+        angular.forEach(lobjAdults, function (value, key) {
+        
+            angular.forEach(value, function (Data, subkey) {
+                if (subkey == "MealsInfo") {
+                    var lobjMealsInfo = JSON.parse(value[subkey]);
+                    if (lobjMealsInfo != 0) {
+                        lintTotAdultMeal += (lobjMealsInfo["MealAmount"] * 1);
+                    }
+                }
+                if (subkey == "BaggageInfo") {
+                    var lobjMealsInfo = JSON.parse(value[subkey]);
+                    if (lobjMealsInfo != 0) {
+                        lintTotAdultBag += (lobjMealsInfo["BaggageAmount"] * 1);
+                    }
+                }
+                if (subkey == "MealsInfoRtn") {
+                    var lobjMealsInfo = JSON.parse(value[subkey]);
+                    if (lobjMealsInfo != 0) {
+                        lintTotAdultMeal += (lobjMealsInfo["MealAmount"] * 1);
+                    }
+                }
+                if (subkey == "BaggageInfoRtn") {
+                    var lobjMealsInfo = JSON.parse(value[subkey]);
+                    if (lobjMealsInfo != 0) {
+                        lintTotAdultBag += (lobjMealsInfo["BaggageAmount"] * 1);
+                    }
+                }
+            });
+        });
+
+        angular.forEach(lobjChilds, function (value, key) {
+            angular.forEach(value, function (Data, subkey) {
+                if (subkey == "MealsInfo") {
+                    var lobjMealsInfo = JSON.parse(value[subkey]);
+                    if (lobjMealsInfo != 0) {
+                        lintTotChildMeal += (lobjMealsInfo["MealAmount"] * 1);
+                    }
+                }
+                if (subkey == "BaggageInfo") {
+                    var lobjMealsInfo = JSON.parse(value[subkey]);
+                    if (lobjMealsInfo != 0) {
+                        lintTotChildBag += (lobjMealsInfo["BaggageAmount"] * 1);
+                    }
+                }
+                if (subkey == "MealsInfoRtn") {
+                    var lobjMealsInfo = JSON.parse(value[subkey]);
+                    if (lobjMealsInfo != 0) {
+                        lintTotAdultMeal += (lobjMealsInfo["MealAmount"] * 1);
+                    }
+                }
+                if (subkey == "BaggageInfoRtn") {
+                    var lobjMealsInfo = JSON.parse(value[subkey]);
+                    if (lobjMealsInfo != 0) {
+                        lintTotAdultBag += (lobjMealsInfo["BaggageAmount"] * 1);
+                    }
+                }
+            });
+        });
+
+        $scope.GrossAmount = 0.0;
+        $scope.CGrossAmount = 0.0;
+        $scope.IGrossAmount = 0.0;
+
+        $scope.RtnGrossAmount = 0.0;
+        $scope.RtnCGrossAmount = 0.0;
+        $scope.RtnIGrossAmount = 0.0;
+
+        $scope.OngoGrossAmnt = 0.0;
+        $scope.RtnGrossAmnt = 0.0;
+        $scope.SetGrossAmount($scope.texlist, $scope.texlistRt);
+
+
+        $scope.ATaxamount = 0.0;
+        $scope.CTaxamount = 0.0;
+        $scope.ITaxamount = 0.0;
+
+        $scope.RtnATaxamount = 0.0;
+        $scope.RtnCTaxamount = 0.0;
+        $scope.RtnITaxamount = 0.0;
+        $scope.SetATaxAmount($scope.texlist, $scope.texlistRt);
+
+
+        //$scope.TotPayAmnt = $scope.GrossAmount + $scope.CGrossAmount + $scope.IGrossAmount + $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount + lintTotAdultMeal + lintTotChildMeal + lintTotAdultBag + lintTotChildBag;
+
+
+
+        $scope.Total.SSRPay = lintTotAdultMeal + lintTotChildMeal + lintTotAdultBag + lintTotChildBag;
+        $scope.Total.MealAmount = lintTotAdultMeal + lintTotChildMeal;
+        $scope.Total.BaggageAmount = lintTotAdultBag + lintTotChildBag;
+        $scope.TotOngoGrossAmnt = $scope.GrossAmount + $scope.CGrossAmount + $scope.IGrossAmount + $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount;
+        $scope.TotRtnGrossAmnt = $scope.RtnGrossAmount + $scope.RtnCGrossAmount + $scope.RtnIGrossAmount + $scope.RtnATaxamount + $scope.RtnCTaxamount + $scope.RtnITaxamount;
+        $scope.TotPayAmnt = ($scope.TotOngoGrossAmnt) + ($scope.TotRtnGrossAmnt) + $scope.Total.SSRPay;
+        //Calculate Minor Adult Fare
+        $scope.TotPayAmnt = $scope.TotPayAmnt + ($scope.MinorAdult.MinorAdultOnGoFare * $scope.MinorAdult.MinorAdultCount) + ($scope.MinorAdult.MinorAdultRetFare * $scope.MinorAdult.MinorAdultCount)
+    }
+    /**/
+    $scope.ChckAdultMinor = function (AdlutDOB, index) {
+
+        if ($scope.MinorAirlineId != "") {
+            $scope.adultIndex = index;
+            var MinorAirID = $scope.MinorAirlineId;
+            var OngoCurrAirID = $scope.seglist[0].AirlinesId;
+            var RtnCurrAirID = "";
+            if ($scope.seglistRt) {
+                RtnCurrAirID = $scope.seglistRt[0].AirlinesId;
+            }
+            var RtnCurrAirID = "";
+            if (sessionStorage.getItem("domSegListRt") != null) {
+                RtnCurrAirID = $scope.seglistRt[0].AirlinesId;
+            }
+            var AdultCount = $scope.texlist.Searchreq.Adult;
+            $scope.MinorAdult.MinorAdultCount = 0;
+            if (AdlutDOB) {
+                if (MinorAirID.indexOf(OngoCurrAirID) > -1 || MinorAirID.indexOf(RtnCurrAirID) > -1) {
+                    var currDate = $scope.Booking.DepDate;
+                    var AdultAge = moment(currDate).diff(AdlutDOB, 'years', true);
+                    AdultAge = Math.ceil(AdultAge);
+
+                    var MinorCheck = false;
+                    for (var i = 0; i < AdultCount; i++) {
+                        var CurrADOB = $scope.Booking.Adult[i].DOB;
+                        var CurrAge = moment(currDate).diff(CurrADOB, 'years', true);
+                        CurrAge = Math.ceil(CurrAge);
+                        console.log("CurrAge is", CurrAge);
+                        if (CurrAge < 17 && CurrAge > 11) //If adult is Minor
+                        {
+                            MinorCheck = true;
+                            $scope.MinorAdult.MinorAdultCount = $scope.MinorAdult.MinorAdultCount + 1;
+                            if (MinorAirID.indexOf(OngoCurrAirID) > -1) {
+                                if ($scope.MinorAdult.MinorAdultOnGoFare == 0) {
+                                    var objMinorAirID = MinorAirID.split("*")
+                                    var MinorFare = $scope.MinorAirlineFare;
+                                    MinorFare = MinorFare.split("*");
+                                    for (var j = 0; j < objMinorAirID.length; j++) {
+                                        if (objMinorAirID[j].toString().trim() == OngoCurrAirID.toString().trim()) {
+                                            $scope.MinorAdult.MinorAdultOnGoFare = MinorFare[j];
+                                        }
+                                    }
+                                }
+                            }
+                            if (RtnCurrAirID != "") {
+                                if (MinorAirID.indexOf(RtnCurrAirID) > -1) {
+                                    if ($scope.MinorAdult.MinorAdultRetFare == 0) {
+                                        var objRtnMinorAirID = MinorAirID.split("*")
+                                        var MinorFare = $scope.MinorAirlineFare;
+                                        MinorFare = MinorFare.split("*");
+                                        for (var j = 0; j < objRtnMinorAirID.length; j++) {
+                                            if (objRtnMinorAirID[j].toString().trim() == RtnCurrAirID.toString().trim()) {
+                                                $scope.MinorAdult.MinorAdultRetFare = MinorFare[j];
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    if (MinorCheck) {
+                        if (AdultAge < 17 && AdultAge > 11) //If adult is Minor
+                        {
+                            if (AdultCount == $scope.MinorAdult.MinorAdultCount) // if Last Adult  is minor
+                            {
+                                var returnText = "";
+                                if ($scope.MinorAdult.MinorAdultRetFare) {
+                                    if ($scope.MinorAdult.MinorAdultRetFare > 0) {
+                                        returnText = '<div class="pad5">Return UNMR Fee <span class="Cur ">PHP</span> <span class="txtDetails md-headline"> ' + $scope.MinorAdult.MinorAdultRetFare + '</span></div>'
+                                    }
+                                }
+                                //$scope.MinorAdult.MinorAdultCount = $scope.MinorAdult.MinorAdultCount + 1;
+                                var lstrAdultMinorTemplate = '<md-dialog aria-label="List dialog" style="min-height:50%;width:50%;">' +
+                                           '<div class="md-input-focused Model-FullScrn-Head"><b class="errors">INFORMATION</b></div>' +
+                                           '  <md-dialog-content>' +
+                                           '<div class="md-padding">' +
+                                           '<div class="Minor-Head">UNACCOMPANIED MINOR RESTRICTION.</div>' +
+                                           '<div class="pad5">Unaccompanied minor should be <b>7-15 years old</b>.</div>' +
+                                           '<div class="pad5">Please note that they may be accommodated on the flight provided that they pay the UM Handling Fee at point of booking and furnish us with the complete necessary documents.</div> ' +
+                                           '<div class="pad5">* Fare difference applicable, Extra fare will be included in Gross amount </div>' +
+                                           '<div class="pad5">Ongoing UNMR Fee <span class="Cur">PHP</span> <span class="txtDetails md-headline"> ' + $scope.MinorAdult.MinorAdultOnGoFare + '</span></div>' + returnText +
+
+                                           '<div class="Minor-Head">Do you want to continue booking? </div>' +
+
+                                           '</div>' +
+                                           '  </md-dialog-content>' +
+                                           '  <md-dialog-actions layout="row" flex layout-align="end center"><div flex="20">' +
+                                           '    <md-button ng-click="YES(AdultMinor)" class="md-raised md-accent"  style="margin:0px">' +
+                                           '      Yes' +
+                                           '    </md-button></div><div flex="5"></div>' +
+                                           '    <div flex="20"><md-button ng-click="CANCEL(AdultMinor)" class="md-raised md-primary" style="margin:0px">' +
+                                           '      Cancel' +
+                                           '    </md-button></div>' +
+                                           '  </md-dialog-actions>' +
+                                           '</md-dialog>';
+
+                                $timeout(
+                                    function () {
+                                        $mdDialog.show({
+                                            //targetEvent: ev,
+                                            locals: $scope,
+                                            template: lstrAdultMinorTemplate,
+                                            controllerAs: 'AdultMinor',
+                                            controller: AdultMinorBtnController,
+                                            bindToController: true,
+                                            clickOutsideToClose: false,
+
+                                        });
+                                    }, 200);
+                                function AdultMinorBtnController($scope, $mdDialog) {
+                                    $scope.YES = function (AdultMNrctrl) {
+                                        $("body").removeClass('setBodyabsolute');
+                                        AdultMNrctrl.CalculateSSR();
+                                        $mdDialog.hide();
+                                    }
+                                    $scope.CANCEL = function (AdultMNrctrl) {
+                                        AdultMNrctrl.MinorAdult.MinorAdultRetFare = 0;
+                                        AdultMNrctrl.MinorAdult.MinorAdultOnGoFare = 0;
+                                        AdultMNrctrl.Booking.Adult[AdultMNrctrl.adultIndex].DOB = ""
+                                        AdultMNrctrl.CalculateSSR();
+                                        $mdDialog.hide();
+
+                                    }
+                                }
+                                AdultMinorBtnController.$inject = ['$scope', '$mdDialog'];
+                            }
+                        }
+                        else {
+                            if (AdlutDOB != "") {
+                                $scope.MinorAdult.MinorAdultCount = 0;
+                                $scope.CalculateSSR();
+                            }
+                        }
+                    }
+                    else {
+                        $scope.MinorAdult.MinorAdultCount = 0;
+                        $scope.MinorAdult.MinorAdultOnGoFare = 0;
+                        $scope.MinorAdult.MinorAdultRetFare = 0;
+                        $scope.CalculateSSR();
+                    }
+                }
+            }
+        }
+    }
+    $scope.ShowTaxSplit = function (ev, trip) {
+        console.log(trip);
+        $scope.ATaxamount = 0.0;
+        $scope.CTaxamount = 0.0;
+        $scope.ITaxamount = 0.0;
+
+        $scope.RtnATaxamount = 0.0;
+        $scope.RtnCTaxamount = 0.0;
+        $scope.RtnITaxamount = 0.0;
+
+        $scope.TaxSplitType = trip;
+        var texlist = $scope.texlist;
+        var texlistRt = $scope.texlistRt;
+        angular.forEach(texlist.Tax[0].AdultFareDetails.AvailTaxItem, function (Item, index) {
+            $scope.ATaxamount = parseFloat(texlist.Searchreq.Adult * Item.Amount) + parseFloat($scope.ATaxamount);
+        });
+        if (texlist.Tax[0].ChildFareDetails.AvailTaxItem) {
+            angular.forEach(texlist.Tax[0].ChildFareDetails.AvailTaxItem, function (Item, index) {
+                $scope.CTaxamount = parseFloat(texlist.Searchreq.Child * Item.Amount) + parseFloat($scope.CTaxamount);
+            });
+        }
+        if (texlist.Tax[0].InfantFareDetails.AvailTaxItem) {
+            angular.forEach(texlist.Tax[0].InfantFareDetails.AvailTaxItem, function (Item, index) {
+                $scope.ITaxamount = parseFloat(texlist.Searchreq.Infant * Item.Amount) + parseFloat($scope.ITaxamount);
+            });
+        }
+        if (texlistRt != null) {
+            angular.forEach(texlistRt.Tax[0].AdultFareDetails.AvailTaxItem, function (Item, index) {
+                $scope.RtnATaxamount = parseFloat(texlistRt.Searchreq.Adult * Item.Amount) + parseFloat($scope.RtnATaxamount);
+            });
+            if (texlistRt.Tax[0].ChildFareDetails.AvailTaxItem) {
+                angular.forEach(texlistRt.Tax[0].ChildFareDetails.AvailTaxItem, function (Item, index) {
+                    $scope.RtnCTaxamount = parseFloat(texlistRt.Searchreq.Child * Item.Amount) + parseFloat($scope.RtnCTaxamount);
+                });
+            }
+            if (texlistRt.Tax[0].InfantFareDetails.AvailTaxItem) {
+                angular.forEach(texlistRt.Tax[0].InfantFareDetails.AvailTaxItem, function (Item, index) {
+                    $scope.RtnITaxamount = parseFloat(texlistRt.Searchreq.Infant * Item.Amount) + parseFloat($scope.RtnITaxamount);
+                });
+            }
+        }
+        $scope.TotOngoTaxAmnt = $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount;
+        $scope.TotRtnTaxAmnt = $scope.RtnATaxamount + $scope.RtnCTaxamount + $scope.RtnITaxamount;
+        $scope.TotTaxAmnt = ($scope.TotOngoTaxAmnt) + ($scope.TotRtnTaxAmnt);
+
+
+        $mdDialog.show({
+            templateUrl: getpath() + 'Templates/Domestic/TaxSplit.html?' + new Date().getTime(),
+            locals: $scope,
+            controller: TaxSplitModal,
+            controllerAs: 'TaxSplitctrl',
+            bindToController: true,
+            clickOutsideToClose: false,
+            targetEvent: ev
+        });
+
+        function TaxSplitModal($scope, $mdDialog) {
+
+            $scope.Close = function () {
+                $mdDialog.hide();
+            }
+        }
+
+        TaxSplitModal.$inject = ['$scope', '$mdDialog'];
+    }
+
+    $scope.calculateInsuranceFee = function () {
+
+        $scope.totalInsuranceAmount = 0;
+        if ($scope.Booking.insurance == "1") {
+
+            var currDate = $scope.Booking.DepDate;
+            var i = 0;
+            var totalPaxCount = 0;
+            var CurrDOB;
+            var CurrAge;
+            angular.forEach($scope.Booking.Adult, function (Item) {
+                CurrDOB = $scope.Booking.Adult[i].DOB;
+
+                if (CurrDOB) {
+                    CurrAge = moment(currDate).diff(CurrDOB, 'years', true);
+                    console.log("CurrAge is", CurrAge);
+                    if (CurrAge > 85) {
+                        $mdDialog.show(
+                  $mdDialog.alert()
+                  .parent(angular.element(document.querySelector('#popupContainer')))
+                  .clickOutsideToClose(true)
+                  .title("Message")
+                  .textContent("Insurance Not available,If age is greater than 85 Years")
+                  .ariaLabel('')
+                  .ok('Close')
+                  //.targetEvent(ev)
+                  );
+
+                        $scope.Booking.Adult[i].isEligible = false;
+
+                    }
+                    else {
+                        $scope.Booking.Adult[i].isEligible = true;
+                        $scope.totalInsuranceAmount += insuranceAmountPerPax(CurrAge)
+                    }
+                }
+                else {
+                    $scope.Booking.Adult[i].isEligible = true;
+                    $scope.totalInsuranceAmount += 80;
+                }
+                i++;
+                totalPaxCount++;
+            });
+            i = 0;
+            if ($scope.Booking.Child) {
+                angular.forEach($scope.Booking.Child, function (Item) {
+                    i++;
+                    totalPaxCount++;
+                    $scope.totalInsuranceAmount += 80;
+                });
+            }
+            i = 0;
+            if ($scope.Booking.Infant) {
+                angular.forEach($scope.Booking.Infant, function (Item) {
+                    i++;
+                    totalPaxCount++;
+                    $scope.totalInsuranceAmount += 80;
+
+                });
+            }
+        }
+    }
+
+    $scope.GetSSRDetails = function (ev) {
+
+        $scope.validater = true;
+
+        //if ((!$scope.Booking.Contact.Gender) || (!$scope.Booking.Contact.Firstname) || (!$scope.Booking.Contact.Lastname) || (!$scope.Booking.Contact.Mailid) || (!$scope.Booking.Contact.Mobilenumber)) {
+        //    return false;
+        //}
+        var retval = false;
+        console.log('$scope.Booking.Adultee',$scope.Booking.Adult)
+        angular.forEach($scope.Booking.Adult, function (Item) { 
+           
+            angular.forEach(Item, function (value, key) {
+                if ((key == "Firstname") && (!value)) {
+                    retval = true;
+                }
+                if ((key == "Lastname") && (!value)) {
+                    retval = true;
+                }
+            });
+        });
+        angular.forEach($scope.Booking.Child, function (Item) {
+            angular.forEach(Item, function (value, key) {
+                if ((key == "Firstname") && (!value)) {
+                    retval = true;
+                }
+                if ((key == "Lastname") && (!value)) {
+                    retval = true;
+                }
+
+            });
+        });
+        angular.forEach($scope.Booking.Infant, function (Item) {
+            angular.forEach(Item, function (value, key) {
+                if ((key == "Firstname") && (!value)) {
+                    retval = true;
+                }
+                if ((key == "Lastname") && (!value)) {
+                    retval = true;
+                }
+
+            });
+        });
+        if (retval) {
+            return false;
+        }
+
+
+        $mdDialog.show({
+            controller: SSRPopController,
+            controllerAs: 'SSRPopCtrl',
+            locals: $scope,
+            templateUrl: getpath() + 'Templates/Airline/SSRDialog.html?' + new Date(),
+            parent: angular.element(document.body),
+            targetEvent: ev,
+            bindToController: true,
+            clickOutsideToClose: false
+        })
+
+
+        function SSRPopController($scope, $mdDialog) {
+
+
+            $scope.Close = function (ctrl) {
+                $mdDialog.cancel();
+            }
+
+            $scope.Confirm = function () {
+                $mdDialog.cancel();
+            }
+
+            $scope.CalculateSSRM = function (ctrl) {
+                $scope.Total = {};
+
+                var lintTotAdultMeal = 0;
+                var lintTotChildMeal = 0;
+
+                var lintTotAdultBag = 0;
+                var lintTotChildBag = 0;
+
+                angular.forEach(ctrl.TaxResponseList, function (value, key) {
+                    console.log('ctrl.TaxResponseList',ctrl.TaxResponseList)
+                    if (ctrl.Booking.seg) {
+                        if (ctrl.Booking.seg[key] != null) {
+                            if (ctrl.Booking.seg[key].Adult && ctrl.Booking.seg[key].Adult != null) {
+                                var lobjAdults = ctrl.Booking.seg[key].Adult;
+                                angular.forEach(lobjAdults, function (value, key) {
+                                    if (value.MealsInfo) {
+                                        var currentObj = JSON.parse(value.MealsInfo)
+                                        lintTotAdultMeal += (currentObj.MealAmount * 1);
+                                    }
+                                    if (value.BaggageInfo) {
+                                        var currentObj = JSON.parse(value.BaggageInfo)
+                                        lintTotAdultBag += (currentObj.BaggageAmount * 1);
+                                    }
+                                });
+                            }
+
+
+                            if (ctrl.Booking.seg[key].Child && ctrl.Booking.seg[key].Child != null) {
+                                var lobjChilds = ctrl.Booking.seg[key].Child;
+                                angular.forEach(lobjChilds, function (value, key) {
+                                    if (value.MealsInfo) {
+                                        var currentObj = JSON.parse(value.MealsInfo)
+                                        lintTotChildMeal += (currentObj.MealAmount * 1);
+                                    }
+                                    if (value.BaggageInfo) {
+                                        var currentObj = JSON.parse(value.BaggageInfo)
+                                        lintTotChildBag += (currentObj.BaggageAmount * 1);
+                                    }
+                                });
+                            }
+                        }
+                    }
+                });
+
+                ctrl.Total.SSRPay = lintTotAdultMeal + lintTotChildMeal + lintTotAdultBag + lintTotChildBag;
+                ctrl.Total.MealAmount = lintTotAdultMeal + lintTotChildMeal;
+                ctrl.Total.BaggageAmount = lintTotAdultBag + lintTotChildBag;
+                ctrl.TotPayAmnt = (ctrl.TotOngoGrossAmnt);
+                ctrl.Total.TotPayAmnt = ctrl.TotPayAmnt + ctrl.Total.SSRPay;
+                //Calculate Minor Adult Fare
+
+                console.log("Total", ctrl.Total, "ctrl.TotPayAmnt ", ctrl.TotPayAmnt);
+            }
+
+            $scope.CalculateSSR = function (ctrl) {
+
+                $scope.Total = {};
+
+                var lintTotAdultMeal = 0;
+                var lintTotChildMeal = 0;
+
+                var lintTotAdultBag = 0;
+                var lintTotChildBag = 0;
+
+                var lobjAdults = ctrl.Booking.Adult;
+                var lobjChilds = ctrl.Booking.Child;
+
+                angular.forEach(lobjAdults, function (value, key) {
+
+                    angular.forEach(value, function (Data, subkey) {
+                        if (subkey == "MealsInfo") {
+                            var lobjMealsInfo = JSON.parse(value[subkey]);
+                            if (lobjMealsInfo != 0) {
+                                lintTotAdultMeal += (lobjMealsInfo["MealAmount"] * 1);
+                            }
+                        }
+                        if (subkey == "BaggageInfo") {
+                            var lobjMealsInfo = JSON.parse(value[subkey]);
+                            if (lobjMealsInfo != 0) {
+                                lintTotAdultBag += (lobjMealsInfo["BaggageAmount"] * 1);
+                            }
+                        }
+                        if (subkey == "MealsInfoRtn") {
+                            var lobjMealsInfo = JSON.parse(value[subkey]);
+                            if (lobjMealsInfo != 0) {
+                                lintTotAdultMeal += (lobjMealsInfo["MealAmount"] * 1);
+                            }
+                        }
+                        if (subkey == "BaggageInfoRtn") {
+                            var lobjMealsInfo = JSON.parse(value[subkey]);
+                            if (lobjMealsInfo != 0) {
+                                lintTotAdultBag += (lobjMealsInfo["BaggageAmount"] * 1);
+                            }
+                        }
+                    });
+                });
+
+                angular.forEach(lobjChilds, function (value, key) {
+                    angular.forEach(value, function (Data, subkey) {
+                        if (subkey == "MealsInfo") {
+                            var lobjMealsInfo = JSON.parse(value[subkey]);
+                            if (lobjMealsInfo != 0) {
+                                lintTotChildMeal += (lobjMealsInfo["MealAmount"] * 1);
+                            }
+                        }
+                        if (subkey == "BaggageInfo") {
+                            var lobjMealsInfo = JSON.parse(value[subkey]);
+                            if (lobjMealsInfo != 0) {
+                                lintTotChildBag += (lobjMealsInfo["BaggageAmount"] * 1);
+                            }
+                        }
+                        if (subkey == "MealsInfoRtn") {
+                            var lobjMealsInfo = JSON.parse(value[subkey]);
+                            if (lobjMealsInfo != 0) {
+                                lintTotAdultMeal += (lobjMealsInfo["MealAmount"] * 1);
+                            }
+                        }
+                        if (subkey == "BaggageInfoRtn") {
+                            var lobjMealsInfo = JSON.parse(value[subkey]);
+                            if (lobjMealsInfo != 0) {
+                                lintTotAdultBag += (lobjMealsInfo["BaggageAmount"] * 1);
+                            }
+                        }
+                    });
+                });
+                /** /
+                ctrl.GrossAmount = 0.0;
+                ctrl.CGrossAmount = 0.0;
+                ctrl.IGrossAmount = 0.0;
+
+                ctrl.RtnGrossAmount = 0.0;
+                ctrl.RtnCGrossAmount = 0.0;
+                ctrl.RtnIGrossAmount = 0.0;
+
+                ctrl.OngoGrossAmnt = 0.0;
+                ctrl.RtnGrossAmnt = 0.0;
+                ctrl.SetGrossAmount(ctrl.texlist, ctrl.texlistRt);
+
+
+                ctrl.ATaxamount = 0.0;
+                ctrl.CTaxamount = 0.0;
+                ctrl.ITaxamount = 0.0;
+
+                ctrl.RtnATaxamount = 0.0;
+                ctrl.RtnCTaxamount = 0.0;
+                ctrl.RtnITaxamount = 0.0;
+                ctrl.SetATaxAmount(ctrl.texlist, ctrl.texlistRt);
+                /**/
+
+                //$scope.TotPayAmnt = $scope.GrossAmount + $scope.CGrossAmount + $scope.IGrossAmount + $scope.ATaxamount + $scope.CTaxamount + $scope.ITaxamount + lintTotAdultMeal + lintTotChildMeal + lintTotAdultBag + lintTotChildBag;
+
+
+
+                ctrl.Total.SSRPay = lintTotAdultMeal + lintTotChildMeal + lintTotAdultBag + lintTotChildBag;
+                ctrl.Total.MealAmount = lintTotAdultMeal + lintTotChildMeal;
+                ctrl.Total.BaggageAmount = lintTotAdultBag + lintTotChildBag;
+                ctrl.TotOngoGrossAmnt = ctrl.GrossAmount + ctrl.CGrossAmount + ctrl.IGrossAmount + ctrl.ATaxamount + ctrl.CTaxamount + ctrl.ITaxamount;
+                ctrl.TotRtnGrossAmnt = ctrl.RtnGrossAmount + ctrl.RtnCGrossAmount + ctrl.RtnIGrossAmount + ctrl.RtnATaxamount + ctrl.RtnCTaxamount + ctrl.RtnITaxamount;
+                ctrl.TotPayAmnt = (ctrl.TotOngoGrossAmnt) + (ctrl.TotRtnGrossAmnt) + ctrl.Total.SSRPay;
+                //Calculate Minor Adult Fare
+                ctrl.TotPayAmnt = ctrl.TotPayAmnt + (ctrl.MinorAdult.MinorAdultOnGoFare * ctrl.MinorAdult.MinorAdultCount) + (ctrl.MinorAdult.MinorAdultRetFare * ctrl.MinorAdult.MinorAdultCount)
+                $scope.TotPayAmnt = ctrl.TotPayAmnt;
+                ctrl.Total.TotPayAmnt = ctrl.TotPayAmnt;
+                console.log("Executed", ctrl.Total);
+            }
+
+            $scope.Reset = function (ctrl) {
+                var confirm = $mdDialog.confirm().title("Alert").textContent("Do you want to Reset Selected Services ?").ok('Yes').cancel('No');
+                $mdDialog.show(confirm).then(function () {
+                    ctrl.Booking.seg = [];
+                    ctrl.TotPayAmnt = ctrl.TotPayAmnt - ctrl.Total.SSRPay;
+                    ctrl.Total.TotPayAmnt = ctrl.TotPayAmnt;
+                    ctrl.Total.SSRPay = 0;
+                    ctrl.Total.MealAmount = 0;
+                    ctrl.Total.BaggageAmount = 0;
+                    $mdDialog.hide();
+                }, function () {
+                    $mdDialog.hide();
+                });
+            }
+
+
+        }
+        SSRPopController.$inject = ['$scope', '$mdDialog'];
+
+    }
+
+    function insuranceAmountPerPax(age) {
+        var insurnaceAmount = 80;
+        if (age <= 75) {
+            insurnaceAmount = 80;
+        }
+        else if (age > 75 && age <= 80) {
+            insurnaceAmount = 160;
+        }
+        else if (age > 80 && age <= 85) {
+            insurnaceAmount = 240;
+        }
+        else {
+            insurnaceAmount = 0;
+        }
+        return insurnaceAmount;
+    }
+
+
+
+}]);
+
