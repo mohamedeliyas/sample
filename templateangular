@@ -1,0 +1,199 @@
+
+<md-dialog class="SSR-Popup" aria-label="SSR-Popup" layout="column" style="width:100%">
+    <div layout="column">
+        <div>
+            <div class="md-toolbar-tools Dialog-head">
+                <h2>Special Service Request</h2>
+                <span flex></span>
+                <md-button class="md-icon-button" ng-click="Close(SSRPopCtrl)">
+                    <ng-md-icon size="25" icon="clear" style="fill: rgb(225, 225, 225); position: relative; top: 2px; "></ng-md-icon>
+                </md-button>
+            </div>
+        </div>
+        
+        <md-dialog-content >
+
+            <md-tabs md-dynamic-height md-border-bottom ng-if="SSRPopCtrl.searchData.Triptype=='M'" ng-init="CalculateSSRM(SSRPopCtrl)">
+
+                <div ng-repeat="SSRTab in SSRPopCtrl.TaxResponseList track by $index" ng-init="segIndex=$index">
+
+                    <md-tab label="{{SSRTab.Searchreq.Orgin}}-{{SSRTab.Searchreq.Dest}}">
+                        <md-content class="md-padding">
+                            <div ng-repeat="Adult in SSRPopCtrl.Booking.Adult track by $index" layout="row" style="padding: 6px 0px;">
+                                <div flex="15">
+
+                                    <b style="float: left; padding: 7px 0px;"> {{Adult.Title}} {{Adult.Firstname}} {{Adult.Lastname}}</b>
+                                </div>
+                                <div flex="20" flex-xs="100" ng-if="SSRTab.Tax[0].SSRInfo.MealsInfo.length >0">
+                                    <md-input-container flex-gt-sm>
+                                        <label>Meals Info Adult {{$index+1}}</label>
+                                        <md-select ng-model="SSRPopCtrl.Booking.seg[segIndex].Adult[$index].MealsInfo" ng-init="(SSRPopCtrl.Booking.seg[segIndex].Adult[$index].MealsInfo ? SSRPopCtrl.Booking.seg[segIndex].Adult[$index].MealsInfo = SSRPopCtrl.Booking.seg[segIndex].Adult[$index].MealsInfo : '')" md-on-close="CalculateSSRM(SSRPopCtrl)">
+                                            <md-option value="0">--Select--</md-option>
+                                            <md-option ng-repeat="MealsInfo in SSRTab.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                                        </md-select>
+
+                                    </md-input-container>
+                                </div>
+                                <div flex="20" flex-xs="100" ng-if="SSRTab.Tax[0].SSRInfo.BaggageInfo.length >0">
+                                    <md-input-container flex-gt-sm>
+                                        <label>Baggage Info Adult {{$index+1}}</label>
+                                        <md-select ng-model="SSRPopCtrl.Booking.seg[segIndex].Adult[$index].BaggageInfo" ng-init="(SSRPopCtrl.Booking.seg[segIndex].Adult[$index].BaggageInfo ? SSRPopCtrl.Booking.seg[segIndex].Adult[$index].BaggageInfo = SSRPopCtrl.Booking.seg[segIndex].Adult[$index].BaggageInfo : '')" md-on-close="CalculateSSRM(SSRPopCtrl)">
+                                            <md-option value="0">--Select--</md-option>
+                                            <md-option ng-repeat="BaggageInfo in SSRTab.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                                        </md-select>
+                                    </md-input-container>
+                                </div>
+
+                            </div>
+                            <div ng-repeat="Child in SSRPopCtrl.Booking.Child track by $index" layout="row" style="padding: 6px 0px;">
+                                <div flex="15">
+                                    <b style="float: left; padding: 7px 0px;"> {{Child.Title}} {{Child.Firstname}} {{Child.Lastname}}</b>
+                                </div>
+                                <div flex="20" flex-xs="100" ng-if="SSRTab.Tax[0].SSRInfo.MealsInfo.length >0">
+                                    <md-input-container flex-gt-sm>
+                                        <label>Meals Info Child {{$index+1}}</label>
+                                        <md-select ng-model="SSRPopCtrl.Booking.seg[segIndex].Child[$index].MealsInfo" ng-init="(SSRPopCtrl.Booking.seg[segIndex].Child[$index].MealsInfo ? SSRPopCtrl.Booking.seg[segIndex].Child[$index].MealsInfo = SSRPopCtrl.Booking.seg[segIndex].Child[$index].MealsInfo : '')" md-on-close="CalculateSSRM(SSRPopCtrl)">
+                                            <md-option value="0">--Select--</md-option>
+                                            <md-option ng-repeat="MealsInfo in SSRTab.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                                        </md-select>
+
+                                    </md-input-container>
+                                </div>
+                                <div flex="20" flex-xs="100" ng-if="SSRTab.Tax[0].SSRInfo.BaggageInfo.length >0">
+                                    <md-input-container flex-gt-sm>
+                                        <label>Baggage Info Child {{$index+1}}</label>
+                                        <md-select ng-model="SSRPopCtrl.Booking.seg[segIndex].Child[$index].BaggageInfo" ng-init="(SSRPopCtrl.Booking.seg[segIndex].Child[$index].BaggageInfo ? SSRPopCtrl.Booking.seg[segIndex].Child[$index].BaggageInfo = SSRPopCtrl.Booking.seg[segIndex].Child[$index].BaggageInfo : '')" md-on-close="CalculateSSRM(SSRPopCtrl)">
+                                            <md-option value="0">--Select--</md-option>
+                                            <md-option ng-repeat="BaggageInfo in SSRTab.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                                        </md-select>
+                                    </md-input-container>
+                                </div>
+                            </div>
+                        </md-content>
+                    </md-tab>
+                </div>
+
+            </md-tabs>
+            <div ng-if="SSRPopCtrl.searchData.Triptype!='M'" ng-init="CalculateSSR(SSRPopCtrl)" layout-padding>
+                <div ng-repeat="Adult in SSRPopCtrl.Booking.Adult track by $index" layout="row" style="padding: 6px 0px;">
+                    <div flex="15">
+
+                        <b style="float: left; padding: 7px 0px;"> {{Adult.Title}} {{Adult.Firstname}} {{Adult.Lastname}}</b>
+                    </div>
+                    <div flex="20" flex-xs="100" ng-if="SSRPopCtrl.texlist.Tax[0].SSRInfo.MealsInfo.length >0">
+                        <md-input-container flex-gt-sm>
+                            <label>Meals Info Adult {{$index+1}}</label>
+                            <md-select ng-model="SSRPopCtrl.Booking.Adult[$index].MealsInfo" md-on-close="CalculateSSR(SSRPopCtrl)">
+                                <md-option value="0">--Select--</md-option>
+                                <md-option ng-repeat="MealsInfo in SSRPopCtrl.texlist.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                            </md-select>
+
+                        </md-input-container>
+                    </div>
+                    <div flex="20" flex-xs="100" ng-if="SSRPopCtrl.texlist.Tax[0].SSRInfo.BaggageInfo.length >0">
+                        <md-input-container flex-gt-sm>
+                            <label>Baggage Info Adult {{$index+1}}</label>
+                            <md-select ng-model="SSRPopCtrl.Booking.Adult[$index].BaggageInfo" md-on-close="CalculateSSR(SSRPopCtrl)">
+                                <md-option value="0">--Select--</md-option>
+                                <md-option ng-repeat="BaggageInfo in SSRPopCtrl.texlist.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                            </md-select>
+                        </md-input-container>
+                    </div>
+                    <div flex="20" flex-xs="100" ng-if="SSRPopCtrl.texlistRt.Tax[0].SSRInfo.MealsInfo.length >0">
+                        <md-input-container flex-gt-sm>
+                            <label>Return Meals Info Adult {{$index+1}}</label>
+                            <md-select ng-model="SSRPopCtrl.Booking.Adult[$index].MealsInfoRtn" md-on-close="CalculateSSR(SSRPopCtrl)">
+                                <md-option value="0">--Select--</md-option>
+                                <md-option ng-repeat="MealsInfo in SSRPopCtrl.texlistRt.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                            </md-select>
+                        </md-input-container>
+                    </div>
+                    <div flex="20" flex-xs="100" ng-if="SSRPopCtrl.texlistRt.Tax[0].SSRInfo.BaggageInfo.length >0">
+                        <md-input-container flex-gt-sm>
+                            <label>Return Baggage Info Adult {{$index+1}}</label>
+                            <md-select ng-model="SSRPopCtrl.Booking.Adult[$index].BaggageInfoRtn" md-on-close="CalculateSSR(SSRPopCtrl)">
+                                <md-option value="0">--Select--</md-option>
+                                <md-option ng-repeat="BaggageInfo in SSRPopCtrl.texlistRt.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                            </md-select>
+                        </md-input-container>
+                    </div>
+                </div>
+                <div ng-repeat="Child in SSRPopCtrl.Booking.Child track by $index" layout="row" style="padding: 6px 0px;">
+                    <div flex="15">
+                        <b style="float: left; padding: 7px 0px;"> {{Child.Title}} {{Child.Firstname}} {{Child.Lastname}}</b>
+                    </div>
+                    <div flex="20" flex-xs="100" ng-if="SSRPopCtrl.texlist.Tax[0].SSRInfo.MealsInfo.length >0">
+                        <md-input-container flex-gt-sm>
+                            <label>Meals Info Child {{$index+1}}</label>
+                            <md-select ng-model="SSRPopCtrl.Booking.Child[$index].MealsInfo" md-on-close="CalculateSSR(SSRPopCtrl)">
+                                <md-option value="0">--Select--</md-option>
+                                <md-option ng-repeat="MealsInfo in SSRPopCtrl.texlist.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                            </md-select>
+
+                        </md-input-container>
+                    </div>
+                    <div flex="20" flex-xs="100" ng-if="SSRPopCtrl.texlist.Tax[0].SSRInfo.BaggageInfo.length >0">
+                        <md-input-container flex-gt-sm>
+                            <label>Baggage Info Child {{$index+1}}</label>
+                            <md-select ng-model="SSRPopCtrl.Booking.Child[$index].BaggageInfo" md-on-close="CalculateSSR(SSRPopCtrl)">
+                                <md-option value="0">--Select--</md-option>
+                                <md-option ng-repeat="BaggageInfo in SSRPopCtrl.texlist.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                            </md-select>
+                        </md-input-container>
+                    </div>
+                    <div flex="20" flex-xs="100" ng-if="texlistRt.Tax[0].SSRInfo.MealsInfo.length >0">
+                        <md-input-container flex-gt-sm>
+                            <label>Return Meals Info Child {{$index+1}}</label>
+                            <md-select ng-model="Booking.Child[$index].MealsInfoRtn" md-on-close="CalculateSSR(SSRPopCtrl)">
+                                <md-option value="0">--Select--</md-option>
+                                <md-option ng-repeat="MealsInfo in SSRPopCtrl.texlistRt.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                            </md-select>
+                        </md-input-container>
+                    </div>
+                    <div flex="20" flex-xs="100" ng-if="SSRPopCtrl.texlistRt.Tax[0].SSRInfo.BaggageInfo.length >0">
+                        <md-input-container flex-gt-sm>
+                            <label>Return Baggage Info Child {{$index+1}}</label>
+                            <md-select ng-model="SSRPopCtrl.Booking.Child[$index].BaggageInfoRtn" md-on-close="CalculateSSR(SSRPopCtrl)">
+                                <md-option value="0">--Select--</md-option>
+                                <md-option ng-repeat="BaggageInfo in SSRPopCtrl.texlistRt.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                            </md-select>
+                        </md-input-container>
+                    </div>
+
+                </div>
+            </div>
+        </md-dialog-content>
+    </div>
+
+    <div layout-padding layout-align="space-around start" style="margin: 12px;border: 1px solid rgb(221, 221, 221);">
+
+        <div flex><h3>SUMMARY DETAILS</h3></div>
+        <div layout="row">
+            <div flex>Total Meals</div>
+            <div flex class="SSR-Fare">PHP {{SSRPopCtrl.Total.MealAmount}}</div>
+        </div>
+        <div layout="row">
+            <div flex>Total Baggage</div>
+            <div flex class="SSR-Fare">PHP {{SSRPopCtrl.Total.BaggageAmount}}</div>
+        </div>
+
+
+
+        <br />
+
+    </div>
+    <div layout="row" style="margin: 12px; padding: 0px 14px;">
+        <div flex style="padding: 10px 0px; font-size: 20px; font-weight: bold;">
+            Total Payable &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   <span class="SSR-Fare"> PHP {{SSRPopCtrl.Total.SSRPay}}</span>
+        </div>
+        <div layout="row" flex="20">
+            <md-button flex-100 class="md-raised md-warn" ng-click="Reset(SSRPopCtrl)">Reset</md-button>
+            <md-button flex-100 class="md-raised md-primary" ng-click="Confirm()">Confirm</md-button>
+        </div>
+
+
+    </div>
+
+</md-dialog>
+
+
