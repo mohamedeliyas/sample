@@ -196,4 +196,33 @@
 
 </md-dialog>
 
+master page ----layout
+
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Find best deals at Biyaheko for Flight Tickets, Hotels, Holiday Packages and Bus Reservations for Philippines &amp; International travel. Book cheap air tickets online for Domestic &amp; International airlines, customized holiday packages and special deals on Hotel Bookings.">
+    <meta name="keywords" content="Philippines,Philippines travel,B2B, Cebu Pacific, ZestAir, Philippines Airlines, Airphil Express,cheap air tickets, cheap flights, flight, hotels, hotel, holidays, bus tickets, air travel, air tickets, holiday packages, travel packages,hnI-5OkMOvjiZwsaxf2-dsQ_lOg">
+    <title> BIYAHE KO Cheap Air Tickets, Hotels and Holidays Online </title>
+    <link href="~/Content/Images/BiyaheKo.ico" rel="shortcut icon" type="image/x-icon" />
+    <link href="https://fonts.googleapis.com/css?family=Open+Sans:600" rel="stylesheet">
+    @Styles.Render(ConfigurationManager.AppSettings["ContentStyle"].ToString())
+    <link href="~/Content/Css/md-data-table.css" rel="stylesheet" />
+</head>
+
+
+  <md-menu-item aria-label>
+                                    <md-button ng-click="Gotomenu('accountstatement')"><b style="color: #2FCCD9;">Account Statement</b></md-button>
+                                </md-menu-item>
+                                <md-menu-item aria-label>
+                                    <md-button ng-click="Gotomenu('profile')"><b style="color: #2FCCD9;">My Profile</b></md-button>
+                                </md-menu-item>
+
+
+
+
+
+
+
 
