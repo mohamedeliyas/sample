@@ -1,0 +1,1185 @@
+import {Injectable, Component, OnInit, Input, Output, trigger, transition, ComponentFactoryResolver, Compiler, ComponentRef, ViewChild, ViewContainerRef} from '@angular/core';
+import {BrowserModule} from '@angular/platform-browser'
+import {Http, Response} from '@angular/http';
+import {Search, FareRuleReq} from '../Model/Airline.Model';
+import {Router} from '@angular/router';
+import { CommonModule } from '@angular/common';
+import {IMyDpOptions, IMyDateModel} from 'mydatepicker';
+import {DynamicContentComponent} from '../Lib/DynamicModalPopup/dynamic-modal-popup';
+import {IonRangeSliderComponent } from "../Lib/RangeSlider/js/ion-range-slider.component";
+
+declare function ShowMSG(title, Message): any;
+declare function ShowFareRule(Message): any;
+declare var componentHandler: any;
+declare function getpath(): any;
+declare function TravelTimeDiff(From, To, Compare): any;
+declare function HideProcBar(): any;
+declare function ShowHideDynamicModal(Hide): any;
+
+
+let CarrierList = [
+    { 'Name': 'PALExpress', 'Id': '6', 'Group': 'LCC' },
+    { 'Name': 'SkyJet', 'Id': '982', 'Group': 'LCC' },
+    { 'Name': 'AirAsiaZest', 'Id': '10', 'Group': 'FSCLTC' },
+    { 'Name': 'AirAsiaPhillipines', 'Id': '869', 'Group': 'LCC' },
+    { 'Name': 'Cebupacific', 'Id': '9', 'Group': 'LCC' },
+    { 'Name': 'Cebgo', 'Id': '620', 'Group': 'LCC' }
+
+];
+let CarouselOptn = {
+    nav: true,
+    pagination: true,
+    rewindNav: false,
+    navText: ['<i class="material-icons">keyboard_arrow_left</i>', '<i class="material-icons">keyboard_arrow_right</i>'],
+    slideBy: 6,
+    margin: 0,
+    stagePadding: 10,
+    items: 6
+}
+
+
+@Injectable()
+@Component({
+    selector: 'layout',
+    templateUrl: "Templates/Domestic/Results.html"
+})
+
+
+export class DomesticComponent implements OnInit {
+    showFilter: boolean;
+    dynamicHeight: any;
+    today: any;
+    selectedCheckBox: any;
+    validator: boolean;
+    searchPror: string;
+    private Url: string;
+    From: string;
+    To: string;
+    Onward: Date;
+    Return: Date;
+    Class: number;
+    ACount: number;
+    CCount: number;
+    ICount: number;
+    UserTrackID: string;
+    SenizorCitizen: boolean;
+    ChkDirectFliter: boolean;
+    ChkConnectFliter: boolean;
+    OnwardSortType: string;
+    OnwardSortMode: string;
+
+    ReturnSortType: string;
+    ReturnSortMode: string;
+
+    ShowMoreOnwardDtls: any;
+    ShowMoreReturnDtls: any;
+
+    MoreSegOnward: any;
+    MoreSegReturn: any;
+
+    SelectFligthOnward: any;
+    SelectFligthReturn: any;
+
+    SelectFligthOnwardDtls: any;
+    SelectFligthReturnDtls: any;
+
+    airlineId: any;
+
+    ShowRtnElm: boolean;
+
+    startDate: Date;
+    returnStartDate: Date;
+    endDate: Date;
+
+    showModSrch: any;
+
+    @ViewChild('Fare') FareSlider: IonRangeSliderComponent;
+    @ViewChild('OnwardDep') OnwardDepSlider: IonRangeSliderComponent;
+    @ViewChild('OnwardArrv') OnwardArrvSlider: IonRangeSliderComponent;
+    @ViewChild('ReturnDep') ReturnDepSlider: IonRangeSliderComponent;
+    @ViewChild('RetunrArrv') RetunrArrvSlider: IonRangeSliderComponent;
+
+    @Input() testRangeDate: Date;
+    private SearchCls: Search;
+    private SearchClsInt: Search;
+    private FareRuleCls: FareRuleReq;
+    AvailFligth: AvailableFligth = new AvailableFligth();
+    CarrierDtls: any;
+    ActiveTab: string; //Value D or I
+
+    //Airline Details
+    lobjCarrierList: IAirlineDtls[] = CarrierList;
+    AllCarrierChkBox: any;
+
+
+
+    /*Filter*/
+    time: any = ["0:00", "0:30", "1", "1:30", "2", "2:30", "3", "3:30", "4", "4:30", "5", "5:30", "6", "6:30", "7", "7:30", "8", "8:30", "9", "9:30", "10", "10:30", "11", "11:30", "12", "12:30", "13", "13:30", "14", "14:30", "15", "15:30", "16", "16:30", "17", "17:30", "18", "18:30", "19", "19:30", "20", "20:30", "21", "21:30", "22", "22:30", "23", "23:30", "23:59"];
+    DefalutCarouselOptn: ICarouselOptn = CarouselOptn;
+    lobjFareFliter: FareFliter;
+    lobjTimeFliter: TimeFliter;
+    OnwardCheapFlightList: any;
+    ReturnCheapFlightList: any;
+    AirlineList: any;
+    AirlineListRtn: any;
+    /*EndFilter*/
+
+
+    cityName: string;
+
+    citySource: any[];
+
+    selectedCity: any = "{ Code='MNL',  value='Manila-Ninoy Aquino [MNL]'}";
+
+
+    public selectOrgin(obj) {
+        this.SearchClsInt.orgin = obj;
+
+        this.cityName = obj ? obj.value : 'none';
+        if (obj) {
+            this.SearchClsInt.From = obj.Code;
+        }
+        else {
+            this.SearchClsInt.From = "";
+        }
+    }
+    public selectDest(obj) {
+        this.SearchClsInt.dest = obj;
+        this.cityName = obj ? obj.value : 'none';
+        if (obj) {
+            this.SearchClsInt.To = obj.Code;
+        }
+        else {
+            this.SearchClsInt.To = "";
+        }
+    }
+
+
+    @ViewChild('container', { read: ViewContainerRef })
+    container: ViewContainerRef;
+    @Input()
+    context: any;
+    private componentRef: ComponentRef<{}>;
+    OnwardDate: IMyDpOptions;
+    ReturnDate: IMyDpOptions;
+
+    constructor(private _http: Http, private router: Router, private componentFactoryResolver: ComponentFactoryResolver,
+        private compiler: Compiler) {
+    }
+
+    // onSelect(Selected: any, Type: string, TripType: string) {
+
+    //if (TripType == 'D') {
+    //    if (Type == 'O') {
+    //        this.SearchCls.Onward = new Date(Selected.jsdate);
+    //    }
+    //    else {
+    //        this.SearchCls.Return = new Date(Selected.jsdate);
+    //    }
+    //}
+    //else {
+    //    if (Type == 'O') {
+    //        this.SearchClsInt.Onward = new Date(Selected.jsdate);
+    //    }
+    //    else {
+    //        this.SearchClsInt.Return = new Date(Selected.jsdate);
+    //    }
+    //}
+    //}
+    onSelect(date: any, dtype:any) {
+        if (dtype == "O") {
+            this.returnStartDate = date;
+            this.SearchCls.Return = date;
+        }
+    }
+
+    ngOnInit() {
+        this.showFilter = false;
+        this.today = new Date();
+        this.airlineId = "";
+        this.Url = getpath();
+        this.searchPror = "value";
+        /*Default Search Value*/
+        this.SearchCls = new Search();
+        this.FareRuleCls = new FareRuleReq();
+        this.SearchCls.From = "MNL";
+        this.SearchCls.To = 'CEB';
+        this.SearchCls.TripType = 'O';
+        this.SearchCls.Onward = new Date();
+        this.SearchCls.Return = new Date();
+        this.SearchCls.ClassType = 2;
+        this.SearchCls.SeniorCitizenFlag = false;
+        this.SearchCls.DirectAccess = false;
+        this.SearchCls.AdultCount = 1;
+        this.SearchCls.ChildCount = 0;
+        this.SearchCls.InfantCount = 0;
+
+
+        this.endDate = new Date(new Date().setFullYear(new Date().getFullYear() + 1));
+        this.startDate = new Date();
+        this.returnStartDate = new Date();
+
+        this.OnwardDate = {
+            // other options...
+            dateFormat: 'dd mmm yyyy',
+            disableUntil: { year: this.SearchCls.Onward.getFullYear(), month: this.SearchCls.Onward.getMonth() + 1, day: this.SearchCls.Onward.getDate() },
+            disableSince: { year: this.SearchCls.Onward.getFullYear(), month: this.SearchCls.Onward.getMonth() + 12, day: this.SearchCls.Onward.getDate() }
+        };
+
+        this.ReturnDate = {
+            // other options...
+            dateFormat: 'dd mmm yyyy',
+            disableUntil: { year: this.SearchCls.Onward.getFullYear(), month: this.SearchCls.Onward.getMonth() + 1, day: this.SearchCls.Onward.getDate() },
+            disableSince: { year: this.SearchCls.Onward.getFullYear(), month: this.SearchCls.Onward.getMonth() + 12, day: this.SearchCls.Onward.getDate() }
+        };
+
+        //International 
+        sessionStorage.setItem("IntSearch", "");
+
+        this.showModSrch = true;
+
+
+        this.ShowRtnElm = false;
+        this.ActiveTab = "D";
+        this.UserTrackID = "";
+        this.CarrierDtls = {
+            All: true,
+            PALExpress: true,
+            SkyJet: true,
+            AirAsiaZest: true,
+            AirAsia: true,
+            Cebupacific: true,
+            Cebgo: true
+        }
+        sessionStorage.setItem("DomFligthsDetails", null);
+
+        this.testRangeDate = new Date();
+        this.Onward = new Date();
+        this.Return = new Date();
+        this.lobjFareFliter = {
+            MaxFare: 0,
+            MinFare: 0,
+            HighFare: 0,
+            LowFare: 0
+        }
+        this.lobjTimeFliter = {
+            OnwardDeptMin: 0,
+            OnwardDeptMax: 48,
+            OnwardArvlMin: 0,
+            OnwardArvlMax: 48,
+            ReturnDeptMin: 0,
+            ReturnDeptMax: 48,
+            ReturnArvlMin: 0,
+            ReturnArvlMax: 48
+        }
+        this.ChkDirectFliter = false;
+        this.ChkConnectFliter = false;
+        this.OnwardSortType = "Fare";
+        this.OnwardSortMode = "";
+
+        this.ReturnSortType = "Fare";
+        this.ReturnSortMode = "";
+
+
+
+
+
+        this.AvailFligth.Onward = {};
+        this.AvailFligth.Return = {};
+
+        this.ShowMoreOnwardDtls = {};
+        this.ShowMoreReturnDtls = {};
+        this.MoreSegOnward = {};
+        this.MoreSegReturn = {};
+
+        this.SelectFligthOnward = {};
+        this.SelectFligthReturn = {};
+        var searchData = sessionStorage.getItem("DomSearch");
+
+        this.SelectFligthOnwardDtls = {};
+        this.SelectFligthReturnDtls = {};
+        console.log("Search data is", searchData);
+        var DomLoadType = sessionStorage.getItem("DomLoadType");
+        console.log("DomLoadType is", DomLoadType);
+        if (DomLoadType !== undefined && DomLoadType !== null && DomLoadType !== "null" && DomLoadType.toLowerCase() == "back") {
+            this.showFilter = true;
+            var lobjDomSearch = JSON.parse(sessionStorage.getItem("DomSearch"));
+            this.SearchCls.From = lobjDomSearch.From;
+            this.SearchCls.To = lobjDomSearch.To;
+            this.SearchCls.TripType = lobjDomSearch.TripType;
+            this.SearchCls.Onward = new Date(lobjDomSearch.Onward);
+            this.SearchCls.Return = new Date(lobjDomSearch.Return);
+            this.SearchCls.ClassType = lobjDomSearch.ClassType;
+            this.SearchCls.SeniorCitizenFlag = lobjDomSearch.SeniorCitizenFlag;
+            this.SearchCls.DirectAccess = lobjDomSearch.DirectAccess;
+            this.SearchCls.AdultCount = lobjDomSearch.AdultCount;
+            this.SearchCls.ChildCount = lobjDomSearch.ChildCount;
+            this.SearchCls.InfantCount = lobjDomSearch.InfantCount;
+            this.returnStartDate = new Date(lobjDomSearch.Return);
+            if (localStorage["DomAvailFligth"] !== undefined && localStorage.hasOwnProperty("DomAvailFligth") && window.localStorage.getItem("DomAvailFligth") !== null) {
+
+                this.showModSrch = false;
+                var lobjSearchRslt = JSON.parse(window.localStorage.getItem("DomAvailFligth"));
+                this.AvailFligth.Onward = lobjSearchRslt.Onward;
+                this.SelectFligthOnward = {};
+                this.SelectFligthOnwardDtls = {};
+
+                if (this.SearchCls.TripType == "R") {
+                    this.AvailFligth.Return = lobjSearchRslt.Return;
+                }
+                for (let Flight in this.AvailFligth.Onward.Flights) {
+                    this.SelectFligthOnward[this.AvailFligth.Onward.Flights[Flight].FligthUnique] = "false";
+                }
+                if (this.SearchCls.TripType == 'R') {
+                    for (let Flight in this.AvailFligth.Return.Flights) {
+                        this.SelectFligthReturn[this.AvailFligth.Return.Flights[Flight].FligthUnique] = "false";
+                    }
+                }
+                this.cheapeastFare(this.AvailFligth.Onward.Flights);
+                if (this.SearchCls.TripType == 'R') {
+                    this.cheapeastFareRtn(this.AvailFligth.Return.Flights);
+                }
+                this.OnwardFligthFliter();
+            }
+        }
+        else if (searchData && searchData !== "null" && searchData !== null) {
+
+            searchData = JSON.parse(searchData);
+
+            this.SearchCls.From = searchData.From;
+            this.SearchCls.To = searchData.To;
+            this.SearchCls.TripType = searchData.TripType;
+            this.SearchCls.Onward = new Date(searchData.Onward);
+            this.SearchCls.Return = new Date(searchData.Return);
+            this.SearchCls.ClassType = searchData.ClassType;
+            this.SearchCls.SeniorCitizenFlag = searchData.SeniorCitizenFlag;
+            this.SearchCls.DirectAccess = searchData.DirectAccess;
+            this.SearchCls.AdultCount = searchData.AdultCount;
+            this.SearchCls.ChildCount = searchData.ChildCount;
+            this.SearchCls.InfantCount = searchData.InfantCount;
+            if (DomLoadType != "replan") {
+                this.fnSearch();
+            }
+        }
+        else {
+            sessionStorage.setItem("DomSearch", null);
+            window.localStorage.setItem("DomAvailFligth", null);
+        }
+        window.onscroll = function () {
+            if (this.AvailFligth.Onward.Flights) {
+                if (this.AvailFligth.Onward.Flights.length > 0) {
+                    var Scrollelm = document.getElementById('DomSetScroll');
+                    var Fixedelm = document.getElementById('DomsetFixedLeft');
+                    var Cheapelm = document.getElementById('DomsetFixedCheap');
+                    var TotWindowHeight = document.documentElement.clientHeight;
+                    //Get 70% from TotWindowHeigth For set Fixed Class
+                    //var SetFixedClsPos = (TotWindowHeight * 70) / 100;
+                    var SetFixedClsPos = TotWindowHeight;
+                    var SetFixedClsPos = TotWindowHeight;
+                    this.dynamicHeight = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight || 0;
+
+                    if (Math.round(SetFixedClsPos) <= window.pageYOffset) {
+                        (!jQuery(Fixedelm).hasClass('Fligth-Fliter-Fixed')) ? (jQuery(Fixedelm).addClass('Fligth-Fliter-Fixed')) : "";
+                        (!jQuery(Scrollelm).hasClass('Fligth-List-Scroll')) ? (jQuery(Scrollelm).addClass('Fligth-List-Scroll')) : "";
+                        (!jQuery(Cheapelm).hasClass('Fligth-Ceap-Fixed')) ? (jQuery(Cheapelm).addClass('Fligth-Ceap-Fixed')) : "";
+                    }
+                    else {
+                        (jQuery(Fixedelm).hasClass('Fligth-Fliter-Fixed')) ? (jQuery(Fixedelm).removeClass('Fligth-Fliter-Fixed')) : "";
+                        (jQuery(Scrollelm).hasClass('Fligth-List-Scroll')) ? (jQuery(Scrollelm).removeClass('Fligth-List-Scroll')) : "";
+                        (jQuery(Cheapelm).hasClass('Fligth-Ceap-Fixed')) ? (jQuery(Cheapelm).removeClass('Fligth-Ceap-Fixed')) : "";
+                    }
+                }
+            }
+        }.bind(this);
+
+        this.loadCitites();
+
+
+    }
+
+    public ChangeSearchProp(Data: any) {
+
+        if (Data.target.value.length < 3) {
+            this.searchPror = "Code";
+        }
+        else {
+            this.searchPror = "value"
+        }
+    }
+
+
+
+    loadCitites() {
+
+        this.Url = getpath();
+        this._http.get(this.Url + "/Content/Json/InternationalAirline.json").subscribe((res: Response) => {
+
+            this.citySource = res.json();
+
+
+        });
+    }
+
+
+
+    public fnSearch() {
+
+        this.showFilter = false;
+        this.SearchCls.TheardNo = 1;
+        this.UserTrackID = "";
+        var lobjSearchInput = this.SearchCls;
+        sessionStorage.setItem("DomFligthsDetails", null);
+        sessionStorage.setItem("DomSearch", JSON.stringify(this.SearchCls));
+        var todayDate = this.SearchCls.Onward;
+        //this.SearchCls.Onward = (todayDate.getFullYear() + '-' + ((todayDate.getMonth() + 1)) + '-' + todayDate.getDate() + ' ' + todayDate.getHours() + ':' + todayDate.getMinutes() + ':' + todayDate.getSeconds());
+        //this.SearchCls.Onward = this.SearchCls.Onward.toLocaleString();
+
+        //this.SearchCls.Return = this.SearchCls.Return.toLocaleString();
+        //console.log("date is", this.SearchCls.Onward);
+        //console.log("obj is", JSON.stringify(this.SearchCls));
+        if (this.SearchCls.TripType == 'R') {
+            this.ShowRtnElm = true;
+
+        }
+        else {
+            this.ShowRtnElm = false;
+        }
+
+        this.AvailFligth.Onward = {};
+        this.AvailFligth.Return = {};
+        //return false;
+        var Response = this._http.post(this.Url + "api/Domestic/Search", this.SearchCls).subscribe((res: Response) => {
+            HideProcBar();
+            var loutputSearchResp = res.json();
+            if (loutputSearchResp.Status == 1) {
+                this.showFilter = true;
+                this.showModSrch = false;
+                this.UserTrackID = loutputSearchResp.Data.UserTrackId;
+                this.AvailFligth.Onward = loutputSearchResp.Data.AvailabilityOutput.OutBoundFlights.AvailableFlights;
+                
+                var lFlightIndex = 0;
+                for (let Flight in this.AvailFligth.Onward.Flights) {
+                    if (Flight) {
+                        this.AvailFligth.Onward.Flights[lFlightIndex].FligthUnique = loutputSearchResp.Data.TheardNo + Flight;
+                        this.SelectFligthOnward[this.AvailFligth.Onward.Flights[lFlightIndex].FligthUnique] = "false";
+                        lFlightIndex++;
+                    }
+                }
+                if (this.SearchCls.TripType == 'R') {
+                    this.AvailFligth.Return = loutputSearchResp.Data.AvailabilityOutput.InBoundFlights.AvailableFlights;
+                    lFlightIndex = 0;
+                    for (let Flight in this.AvailFligth.Return.Flights) {
+                        if (Flight) {
+                            
+                            this.AvailFligth.Return.Flights[lFlightIndex].FligthUnique = "R"+loutputSearchResp.Data.TheardNo + Flight;
+                            //console.log("i am executed", this.AvailFligth.Return.Flights[lFlightIndex].FligthUnique);
+                            this.SelectFligthReturn[this.AvailFligth.Return.Flights[lFlightIndex].FligthUnique] = "false";
+                            lFlightIndex++;
+                        }
+                    }
+                }
+                console.log("i am executed", this.AvailFligth);
+                window.localStorage.setItem("DomAvailFligth", JSON.stringify(this.AvailFligth));
+                this.cheapeastFare(this.AvailFligth.Onward.Flights);
+                if (this.SearchCls.TripType == 'R') {
+                    this.ShowRtnElm = true;
+                    this.cheapeastFareRtn(this.AvailFligth.Return.Flights);
+                }
+
+                //this.OnwardFligthFliter();
+                //console.log("ShowRtnElm", this.ShowRtnElm);
+            }
+        });
+    }
+
+    public fnSetActiveTab(Type: string) {
+        this.ActiveTab = Type;
+    }
+
+    SelectCarrier(Type: boolean) {
+        this.AllCarrierChkBox = document.querySelectorAll('.carrier-Chk');
+        for (let checkbox of this.AllCarrierChkBox) {
+            if (Type == false) {
+                checkbox.MaterialCheckbox.check();
+            }
+            else { checkbox.MaterialCheckbox.uncheck(); }
+        }
+        if (!Type) {
+            this.CarrierDtls = {
+                All: true,
+                PALExpress: true,
+                SkyJet: true,
+                AirAsiaZest: true,
+                AirAsia: true,
+                Cebupacific: true,
+                Cebgo: true
+            }
+        }
+        else {
+            this.CarrierDtls = {
+                All: false,
+                PALExpress: false,
+                SkyJet: false,
+                AirAsiaZest: false,
+                AirAsia: false,
+                Cebupacific: false,
+                Cebgo: false
+            }
+
+            this.SearchCls.SeniorCitizenFlag = false;
+        }
+    }
+
+    cheapeastFare(Flights: any) {
+        this.OnwardCheapFlightList = {};
+        this.AirlineList = {};
+        var TempFlightDtls = {};
+        for (let Flight of Flights) {
+            var TempFare = Flight.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount;
+            var tempItem = {
+                Airlinename: "",
+                AirlineId: "",
+                Cost: ""
+            };
+            tempItem.Airlinename = Flight.AvailSegments[0].AirlineName;
+            tempItem.AirlineId = Flight.AvailSegments[0].AirlinesId;
+            tempItem.Cost = TempFare;
+
+            if (!this.OnwardCheapFlightList[tempItem.Airlinename]) {
+                this.OnwardCheapFlightList[tempItem.Airlinename] = {};
+                this.OnwardCheapFlightList[tempItem.Airlinename] = tempItem;
+
+            }
+            else {
+                if (this.OnwardCheapFlightList[tempItem.Airlinename].Cost > tempItem.Cost) {
+                    this.OnwardCheapFlightList[tempItem.Airlinename] = tempItem;
+                    // $scope.showLLow = true;
+                }
+            }
+            this.AirlineList[this.OnwardCheapFlightList[tempItem.Airlinename].Airlinename] = true
+
+            if (this.lobjFareFliter.HighFare == 0) {
+                this.lobjFareFliter.HighFare = TempFare;
+            }
+            else if (TempFare > this.lobjFareFliter.HighFare) {
+                this.lobjFareFliter.HighFare = TempFare;
+            }
+        }
+    }
+
+    cheapeastFareRtn(Flights: any) {
+        this.ReturnCheapFlightList = {};
+        this.AirlineListRtn = {};
+        var TempFlightDtls = {};
+        for (let Flight of Flights) {
+            var TempFare = Flight.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount;
+            var tempItem = {
+                Airlinename: "",
+                AirlineId: "",
+                Cost: ""
+            };
+            tempItem.Airlinename = Flight.AvailSegments[0].AirlineName;
+            tempItem.AirlineId = Flight.AvailSegments[0].AirlinesId;
+            tempItem.Cost = TempFare;
+
+            if (!this.ReturnCheapFlightList[tempItem.Airlinename]) {
+                this.ReturnCheapFlightList[tempItem.Airlinename] = {};
+                this.ReturnCheapFlightList[tempItem.Airlinename] = tempItem;
+                this.ShowRtnElm = true;
+
+            }
+            else {
+                if (this.ReturnCheapFlightList[tempItem.Airlinename].Cost > tempItem.Cost) {
+                    this.ReturnCheapFlightList[tempItem.Airlinename] = tempItem;
+                    this.ShowRtnElm = true;
+                }
+            }
+            this.AirlineListRtn[this.ReturnCheapFlightList[tempItem.Airlinename].Airlinename] = true
+
+            if (this.lobjFareFliter.HighFare == 0) {
+                this.lobjFareFliter.HighFare = TempFare;
+            }
+            else if (TempFare > this.lobjFareFliter.HighFare) {
+                this.lobjFareFliter.HighFare = TempFare;
+            }
+        }
+    }
+
+    updateFliterModel(event: any, Type: string) {
+        if (Type == 'FARE') {
+            if (event) {
+                this.lobjFareFliter.MinFare = event.from;
+                this.lobjFareFliter.MaxFare = event.to;
+            }
+        }
+        else if (Type == 'OnDep') {
+            if (event) {
+                this.lobjTimeFliter.OnwardDeptMin = event.from;
+                this.lobjTimeFliter.OnwardDeptMax = event.to;
+            }
+        }
+        else if (Type == 'OnArv') {
+            if (event) {
+                this.lobjTimeFliter.OnwardArvlMin = event.from;
+                this.lobjTimeFliter.OnwardArvlMax = event.to;
+            }
+        }
+        else if (Type == 'RetnDep') {
+            if (event) {
+                this.lobjTimeFliter.ReturnDeptMin = event.from;
+                this.lobjTimeFliter.ReturnDeptMax = event.to;
+            }
+        }
+        else if (Type == 'RetnArv') {
+            if (event) {
+                this.lobjTimeFliter.ReturnArvlMin = event.from;
+                this.lobjTimeFliter.ReturnArvlMax = event.to;
+            }
+        }
+        this.OnwardFligthFliter();
+        if (this.SearchCls.TripType == "R" && this.AvailFligth.Return.Flights) {
+            this.ReturnFligthFliter();
+        }
+    }
+
+    getByAirline(pstrAirId: any) {
+
+        this.airlineId = pstrAirId;
+        this.OnwardFligthFliter();
+        if (this.SearchCls.TripType == "R" && this.AvailFligth.Return.Flights) {
+            this.ReturnFligthFliter();
+        }
+    }
+
+
+    prevNextDay(selectedType: any, TripType) {
+
+        console.log(selectedType, TripType);
+        if (TripType == "O") {
+            if (selectedType == 1) {
+
+                this.SearchCls.Onward = new Date(this.SearchCls.Onward.setDate(this.SearchCls.Onward.getDate() - 1));
+
+            }
+            else {
+                this.SearchCls.Onward = new Date(this.SearchCls.Onward.setDate(this.SearchCls.Onward.getDate() + 1));
+
+            }
+        }
+        else {
+            if (selectedType == 1) {
+
+                this.SearchCls.Return = new Date(this.SearchCls.Return.setDate(this.SearchCls.Return.getDate() - 1));
+
+            }
+            else {
+                this.SearchCls.Return = new Date(this.SearchCls.Return.setDate(this.SearchCls.Return.getDate() + 1));
+
+            }
+
+        }
+        this.fnSearch();
+    }
+
+    OnwardFligthFliter() {
+        var lobjSearchRslt = JSON.parse(window.localStorage.getItem("DomAvailFligth"));
+        var flights = lobjSearchRslt.Onward.Flights;
+        var FliterFlight = [];
+        var FliterParams = {
+            FareMin: this.lobjFareFliter.MinFare,
+            FareMax: this.lobjFareFliter.MaxFare,
+            OnwardDepMin: this.lobjTimeFliter.OnwardDeptMin,
+            OnwardDepMax: this.lobjTimeFliter.OnwardDeptMax,
+            OnwardArvMin: this.lobjTimeFliter.OnwardArvlMin,
+            OnwardArvMax: this.lobjTimeFliter.OnwardArvlMax,
+            DirectSeg: this.ChkDirectFliter,
+            ConnectSeg: this.ChkConnectFliter,
+            AirlineName: this.airlineId
+        };
+        FliterFlight = flights.filter(function (item) {
+            var IsvalidFigth = true;
+            if (FliterParams.FareMin != 0) {
+                if (item.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount < FliterParams.FareMin)
+                { IsvalidFigth = false; }
+            }
+            if (FliterParams.FareMax != 0) {
+                if (item.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount > FliterParams.FareMax)
+                { IsvalidFigth = false; }
+            }
+            if (FliterParams.OnwardDepMin != 0) {
+                if (TravelTimeDiff(item.AvailSegments[0].DepartureDateTime, FliterParams.OnwardDepMin, 'L') == "T") {
+                    IsvalidFigth = false;
+                }
+            }
+            if (FliterParams.OnwardDepMax != 0) {
+                if (TravelTimeDiff(item.AvailSegments[0].DepartureDateTime, FliterParams.OnwardDepMax, 'G') == "T") {
+                    IsvalidFigth = false;
+                }
+            }
+            if (FliterParams.OnwardArvMin != 0) {
+                if (TravelTimeDiff(item.AvailSegments[0].ArrivalDateTime, FliterParams.OnwardArvMin, 'L') == "T") {
+                    IsvalidFigth = false;
+                }
+            }
+            if (FliterParams.OnwardArvMax != 0) {
+                if (TravelTimeDiff(item.AvailSegments[0].ArrivalDateTime, FliterParams.OnwardArvMax, 'G') == "T") {
+                    IsvalidFigth = false;
+                }
+            }
+            if (FliterParams.DirectSeg == true && item.AvailSegments.length > 1) {
+
+                IsvalidFigth = false;
+            }
+            if (FliterParams.ConnectSeg == true && item.AvailSegments.length == 1) {
+                IsvalidFigth = false;
+            }
+            if (FliterParams.AirlineName != "") {
+
+                if (item.AvailSegments[0].AirlinesId != FliterParams.AirlineName) {
+                    //IsvalidFigth = true;
+                    IsvalidFigth = false;
+                }
+            }
+
+            if (IsvalidFigth) { return true; }
+            else { return false; }
+
+        });
+        if (FliterFlight.length > 0) {
+            this.AvailFligth.Onward.Flights = FliterFlight;
+            this.OnwardSortMode = "";
+            this.OnwardSort(this.OnwardSortType);
+        }
+        else {
+            this.AvailFligth.Onward = {};
+            //ShowMSG(null, "No flights available for your criteria");
+        }
+    }
+
+    OnwardSort(SortType: string) {
+        if (this.AvailFligth.Onward.Flights.length > 0) {
+            if (this.OnwardSortType == SortType) {
+                (this.OnwardSortMode == "" || this.OnwardSortMode == "ASC") ? this.OnwardSortMode = "DESC" : this.OnwardSortMode = "ASC"
+            }
+            else {
+                this.OnwardSortType = SortType;
+                this.OnwardSortMode = "ASC";
+            }
+            var AvailFligth = this.AvailFligth.Onward.Flights;
+            var SortMode = this.OnwardSortMode;
+            var SortFligth = AvailFligth.sort(function (a, b) {
+                if (SortType == "Flight") {
+                    var nameA = a.AvailSegments[0].AirlineName.toUpperCase(); // ignore upper and lowercase
+                    var nameB = b.AvailSegments[0].AirlineName.toUpperCase(); // ignore upper and lowercase 
+                    if (SortMode == "ASC") {
+                        return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
+                    }
+                    else {
+                        return nameB < nameA ? -1 : nameB > nameA ? 1 : 0;
+                    }
+                }
+                else if (SortType == "Dep") {
+                    var DepA = new Date(a.AvailSegments[0].DepartureDateTime).getTime();
+                    var DepB = new Date(b.AvailSegments[0].DepartureDateTime).getTime();
+                    if (SortMode == "ASC") {
+                        return DepA - DepB;
+                    }
+                    else { return DepB - DepA; }
+                }
+                else if (SortType == "Arv") {
+                    var ArvA = new Date(a.AvailSegments[0].ArrivalDateTime).getTime();
+                    var ArvB = new Date(b.AvailSegments[0].ArrivalDateTime).getTime();
+                    if (SortMode == "ASC") {
+                        return ArvA - ArvB;
+                    }
+                    else { return ArvB - ArvA; }
+                }
+                else if (SortType == "Fare") {
+                    var FareA = a.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount;
+                    var FareB = b.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount;
+                    if (SortMode == "ASC") {
+                        return FareA - FareB;
+                    }
+                    else {
+                        return FareB - FareA;
+                    }
+                }
+            })
+            this.AvailFligth.Onward.Flights = SortFligth;
+        }
+
+    }
+
+
+    ReturnFligthFliter() {
+        var lobjSearchRslt = JSON.parse(window.localStorage.getItem("DomAvailFligth"));
+        if (lobjSearchRslt.Return.Flights) {
+            var flights = lobjSearchRslt.Return.Flights;
+            var FliterFlight = [];
+            var FliterParams = {
+                FareMin: this.lobjFareFliter.MinFare,
+                FareMax: this.lobjFareFliter.MaxFare,
+                OnwardDepMin: this.lobjTimeFliter.ReturnDeptMin,
+                OnwardDepMax: this.lobjTimeFliter.ReturnDeptMax,
+                OnwardArvMin: this.lobjTimeFliter.ReturnArvlMin,
+                OnwardArvMax: this.lobjTimeFliter.ReturnArvlMax,
+                DirectSeg: this.ChkDirectFliter,
+                ConnectSeg: this.ChkConnectFliter,
+                AirlineName: this.airlineId
+            };
+            FliterFlight = flights.filter(function (item) {
+                var IsvalidFigth = true;
+                if (FliterParams.FareMin != 0) {
+                    if (item.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount < FliterParams.FareMin)
+                    { IsvalidFigth = false; }
+                }
+                if (FliterParams.FareMax != 0) {
+                    if (item.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount > FliterParams.FareMax)
+                    { IsvalidFigth = false; }
+                }
+                if (FliterParams.OnwardDepMin != 0) {
+                    if (TravelTimeDiff(item.AvailSegments[0].DepartureDateTime, FliterParams.OnwardDepMin, 'L') == "T") {
+                        IsvalidFigth = false;
+                    }
+                }
+                if (FliterParams.OnwardDepMax != 0) {
+                    if (TravelTimeDiff(item.AvailSegments[0].DepartureDateTime, FliterParams.OnwardDepMax, 'G') == "T") {
+                        IsvalidFigth = false;
+                    }
+                }
+                if (FliterParams.OnwardArvMin != 0) {
+                    if (TravelTimeDiff(item.AvailSegments[0].ArrivalDateTime, FliterParams.OnwardArvMin, 'L') == "T") {
+                        IsvalidFigth = false;
+                    }
+                }
+                if (FliterParams.OnwardArvMax != 0) {
+                    if (TravelTimeDiff(item.AvailSegments[0].ArrivalDateTime, FliterParams.OnwardArvMax, 'G') == "T") {
+                        IsvalidFigth = false;
+                    }
+                }
+                if (FliterParams.DirectSeg == true && item.AvailSegments.length > 1) {
+
+                    IsvalidFigth = false;
+                }
+                if (FliterParams.ConnectSeg == true && item.AvailSegments.length == 1) {
+                    IsvalidFigth = false;
+                }
+
+                if (FliterParams.AirlineName != "") {
+
+                    if (item.AvailSegments[0].AirlinesId != FliterParams.AirlineName) {
+                        //IsvalidFigth = true;
+                        IsvalidFigth = false;
+                    }
+                }
+                if (IsvalidFigth) { return true; }
+                else { return false; }
+
+            });
+            if (FliterFlight.length > 0) {
+                this.AvailFligth.Return.Flights = FliterFlight;
+                this.ReturnSortMode = "";
+                this.ReturnSort(this.ReturnSortType);
+            }
+            else {
+                this.AvailFligth.Return = {};
+                //ShowMSG(null, "No flights available for your criteria");
+            }
+        }
+    }
+
+    ReturnSort(SortType: string) {
+        if (this.AvailFligth.Return.Flights.length > 0) {
+            if (this.ReturnSortType == SortType) {
+                (this.ReturnSortMode == "" || this.ReturnSortMode == "ASC") ? this.ReturnSortMode = "DESC" : this.ReturnSortMode = "ASC"
+            }
+            else {
+                this.ReturnSortType = SortType;
+                this.ReturnSortMode = "ASC";
+            }
+            var AvailFligth = this.AvailFligth.Return.Flights;
+            var SortMode = this.ReturnSortMode;
+            var SortFligth = AvailFligth.sort(function (a, b) {
+                if (SortType == "Flight") {
+                    var nameA = a.AvailSegments[0].AirlineName.toUpperCase(); // ignore upper and lowercase
+                    var nameB = b.AvailSegments[0].AirlineName.toUpperCase(); // ignore upper and lowercase 
+                    if (SortMode == "ASC") {
+                        return nameA < nameB ? -1 : nameA > nameB ? 1 : 0;
+                    }
+                    else {
+                        return nameB < nameA ? -1 : nameB > nameA ? 1 : 0;
+                    }
+                }
+                else if (SortType == "Dep") {
+                    var DepA = new Date(a.AvailSegments[0].DepartureDateTime).getTime();
+                    var DepB = new Date(b.AvailSegments[0].DepartureDateTime).getTime();
+                    if (SortMode == "ASC") {
+                        return DepA - DepB;
+                    }
+                    else { return DepB - DepA; }
+                }
+                else if (SortType == "Arv") {
+                    var ArvA = new Date(a.AvailSegments[0].ArrivalDateTime).getTime();
+                    var ArvB = new Date(b.AvailSegments[0].ArrivalDateTime).getTime();
+                    if (SortMode == "ASC") {
+                        return ArvA - ArvB;
+                    }
+                    else { return ArvB - ArvA; }
+                }
+                else if (SortType == "Fare") {
+                    var FareA = a.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount;
+                    var FareB = b.AvailSegments[0].AvailPaxFareDetails.Adult.GrossAmount;
+                    if (SortMode == "ASC") {
+                        return FareA - FareB;
+                    }
+                    else {
+                        return FareB - FareA;
+                    }
+                }
+            })
+            this.AvailFligth.Return.Flights = SortFligth;
+        }
+
+    }
+
+    ShowMoreFligth(fligthNO, Type) {
+        if (Type == "O") {
+            (this.ShowMoreOnwardDtls[fligthNO] == 'true') ? this.ShowMoreOnwardDtls[fligthNO] = 'false' : this.ShowMoreOnwardDtls[fligthNO] = 'true';
+            var showElm = document.getElementById("ShowMore_" + fligthNO);
+        }
+
+        if (Type == "R") {
+            (this.ShowMoreReturnDtls[fligthNO] == 'true') ? this.ShowMoreReturnDtls[fligthNO] = 'false' : this.ShowMoreReturnDtls[fligthNO] = 'true';
+            var showElm = document.getElementById("ShowMoreRtn_" + fligthNO);
+        }
+        //this.ShowMoreOnwardDtls[fligthNO] ? jQuery(showElm).slideDown(600, "swing") : jQuery(showElm).hide();
+    }
+
+    getLayoverTime(Segment, index, FligthID) {
+
+        if (Segment.length > 1) {
+            var dtFligthArv = Segment[index].ArrivalDateTime;
+            if (Segment[index + 1]) {
+                var dtFligthDep = Segment[index + 1].DepartureDateTime;
+            }
+            if (dtFligthArv !== undefined && dtFligthDep !== undefined) {
+                //if (FligthID == 111)
+                {
+                    dtFligthArv = new Date(dtFligthArv);
+                    dtFligthDep = new Date(dtFligthDep);
+                    var milliseconds = (dtFligthDep.getTime() - dtFligthArv.getTime());
+                    var secDiff = milliseconds / 1000; //in s
+                    var minDiff = milliseconds / 60 / 1000; //in minutes
+                    var hDiff = milliseconds / 3600 / 1000; //in hours
+                    var hours = Math.floor(hDiff);
+                    var minutes = minDiff - 60 * hours;
+                    return (hours + 'Hrs ' + minutes + 'Min');
+                }
+
+            }
+            else { return ""; }
+
+        }
+
+    }
+
+    gotoBooking(fligthUniqID: string, Type: string) {
+
+        sessionStorage.setItem("DomFligthsDetails", null);
+        if (Type == "O") {
+            var lobjSearchRslt = this.AvailFligth.Onward;
+            var flights = lobjSearchRslt.Flights;
+            var SelectFigth = flights.filter(function (item) { if (item.FligthUnique == fligthUniqID) { return true; } return false; });
+            var TaxInput = { lobjSearchInput: SelectFigth[0], UserTrackID: this.UserTrackID }
+            sessionStorage.setItem("DomFligthsDetails", JSON.stringify(TaxInput));
+        }
+        else if (Type == "R") {
+
+            var Flights = {
+                Onward: null,
+                Return: null
+            }
+
+            Flights.Onward = this.SelectFligthOnwardDtls;
+
+            Flights.Return = this.SelectFligthReturnDtls;
+
+            var TaxRtnInput = { lobjSearchInput: null, UserTrackID: null };
+            TaxRtnInput.lobjSearchInput = Flights;
+            TaxRtnInput.UserTrackID = this.UserTrackID;
+            sessionStorage.setItem("DomFligthsDetails", JSON.stringify(TaxRtnInput));
+        }
+        this.router.navigateByUrl('/dombook');
+    }
+
+    getFareRule(fligthUniqID: string, Type: string) {
+        //document.documentElement.scrollTop = 0;
+
+        var lobjSearchRslt = null;
+        if (Type == "O") {
+            lobjSearchRslt = this.AvailFligth.Onward;
+        }
+        else if (Type == "R") {
+            lobjSearchRslt = this.AvailFligth.Return;
+        }
+        var SelectFigth = lobjSearchRslt.Flights.filter(function (item) { if (item.FligthUnique == fligthUniqID) { return true; } return false; });
+        SelectFigth = SelectFigth[0];
+        this.FareRuleCls.UserTrackId = this.UserTrackID;
+        this.FareRuleCls.AirlineID = SelectFigth.AvailSegments[0].AirlinesId;
+        this.FareRuleCls.FlightID = SelectFigth.AvailSegments[0].FlightId;
+        this.FareRuleCls.ClassCode = SelectFigth.AvailSegments[0].AvailPaxFareDetails.ClassCode;
+        this.FareRuleCls.CrsID = SelectFigth.CrsID;
+        this.FareRuleCls.FareBasis = SelectFigth.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis;
+        this.FareRuleCls.BrowserFlag = "1";
+        this.FareRuleCls.CarrierCode = SelectFigth.AvailSegments[0].AirlineCode;
+        this.FareRuleCls.SegmentKeyRef = SelectFigth.BaseDetail.SegmentKeyRef;
+        this.FareRuleCls.TravelType = "D";
+        var lobjFareRuleInputReq = this.FareRuleCls;
+        var Response = this._http.post(this.Url + "api/Domestic/FareRule", lobjFareRuleInputReq).subscribe((res: Response) => {
+            HideProcBar();
+            var loutputFareRuleResp = res.json();
+            if (loutputFareRuleResp.Status == 1) {
+                ShowFareRule(loutputFareRuleResp.Data);
+            }
+        });
+    }
+
+    getKeyArray(Data) {
+
+        return Object.keys(Data)
+    }
+
+    SetRoundTripDtls(FligthUnique: string, Type: string) {
+        var SelectOnwardFligth = null;
+        var Fligths;
+        if (Type == "O") {
+            for (let fligth of this.AvailFligth.Onward.Flights) {
+                if (fligth.FligthUnique == FligthUnique) {
+                    SelectOnwardFligth = fligth;
+                }
+            }
+            if (SelectOnwardFligth) {
+                for (let key of Object.keys(this.SelectFligthOnward)) {
+                    this.SelectFligthOnward[key] = 'false'
+                    if (key == FligthUnique) {
+                        this.SelectFligthOnward[key] = 'true';
+                    }
+                }
+            }
+            this.SelectFligthOnwardDtls = SelectOnwardFligth;
+        }
+        else if (Type == "R") {
+            for (let fligth of this.AvailFligth.Return.Flights) {
+                if (fligth.FligthUnique == FligthUnique) {
+                    SelectOnwardFligth = fligth;
+                }
+            }
+            console.log("selected flight is ", SelectOnwardFligth);
+            if (SelectOnwardFligth) {
+                for (let key of Object.keys(this.SelectFligthReturn)) {
+                    this.SelectFligthReturn[key] = 'false'
+                    if (key == FligthUnique) {
+                        this.SelectFligthReturn[key] = 'true';
+                    }
+                }
+            }
+            this.SelectFligthReturnDtls = SelectOnwardFligth;
+        }
+    }
+
+
+    ResetFilter() {
+
+        this.airlineId = "";
+        this.ChkDirectFliter = false;
+        this.ChkConnectFliter = false;
+
+
+        this.showFilter = false;
+
+        this.selectedCheckBox = document.querySelectorAll('.Themes-FliterChkBox');
+        for (let checkbox of this.selectedCheckBox) {
+            checkbox.MaterialCheckbox.uncheck();
+        }
+
+        this.lobjFareFliter = {
+            MaxFare: this.lobjFareFliter.HighFare,
+            MinFare: 0,
+            HighFare: this.lobjFareFliter.HighFare,
+            LowFare: 0
+        }
+        this.FareSlider.update({ from: this.lobjFareFliter.LowFare, to: this.lobjFareFliter.HighFare });
+
+
+
+
+
+        this.lobjTimeFliter = {
+            OnwardDeptMin: 0,
+            OnwardDeptMax: 48,
+            OnwardArvlMin: 0,
+            OnwardArvlMax: 48,
+            ReturnDeptMin: 0,
+            ReturnDeptMax: 48,
+            ReturnArvlMin: 0,
+            ReturnArvlMax: 48
+        }
+
+        this.OnwardDepSlider.update({ from: this.lobjTimeFliter.OnwardDeptMin, to: this.lobjTimeFliter.OnwardDeptMax });
+        this.OnwardArrvSlider.update({ from: this.lobjTimeFliter.OnwardArvlMin, to: this.lobjTimeFliter.OnwardArvlMax });
+
+
+        //this.cheapeastFare(this.AvailFligth.Onward.Flights);
+        this.OnwardFligthFliter();
+        if (this.SearchCls.TripType == "R") {
+
+            this.ReturnDepSlider.update({ from: this.lobjTimeFliter.ReturnDeptMin, to: this.lobjTimeFliter.ReturnDeptMax });
+            this.RetunrArrvSlider.update({ from: this.lobjTimeFliter.ReturnArvlMin, to: this.lobjTimeFliter.ReturnArvlMax });
+            this.ReturnFligthFliter();
+        }
+
+        this.showFilter = true;
+
+
+
+    }
+
+
+}
+
+export abstract class DynamicComponent {
+    Parent: any;
+}
+
+export class dynamicopupSample extends DynamicComponent {
+    @Input() parentComponent: any
+}
+
+export class AvailableFligth {
+    public Onward: any;
+    public Return: any;
+}
+
+export class FareFliter {
+    public LowFare: number;
+    public HighFare: number;
+    public MinFare: number;
+    public MaxFare: number;
+}
+
+export class TimeFliter {
+    public OnwardDeptMin: number;
+    public OnwardDeptMax: number;
+    public OnwardArvlMin: number;
+    public OnwardArvlMax: number;
+    public ReturnDeptMin: number;
+    public ReturnDeptMax: number;
+    public ReturnArvlMin: number;
+    public ReturnArvlMax: number;
+}
+
+interface IAirlineDtls
+{ Name: string; Id: string; Group: string; }
+
+interface ICarouselOptn
+{ nav: boolean; navText: string[]; rewindNav: boolean; pagination: boolean; slideBy: number; stagePadding: number; margin: number; items: number }
