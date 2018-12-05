@@ -1,0 +1,1274 @@
+using ARMBtErrorLogger;
+using HermesLogger;
+using Newtonsoft.Json;
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Data;
+using System.Data.SqlClient;
+using System.IO;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+using System.Web.Mvc;
+using System.Web;
+
+namespace BIYAHEKOMVCWEB
+{
+    [SessionState(System.Web.SessionState.SessionStateBehavior.ReadOnly)]
+    public class DomesticController : AsyncController
+    {
+        #region "Declaration"
+
+        Common LobjCommon = new Common();
+        DomsearchMaster LobjDomSearch = new DomsearchMaster();
+        string lstrErrorCode = string.Empty;
+        string lstrErrorMsg = string.Empty;
+        string JSONresult = string.Empty;
+        clsConnector lobjErrorLog = new clsConnector();
+        ARMErrorLogger lobjARMError = new ARMErrorLogger();
+        #endregion
+
+        #region "Action Method"
+
+        public ActionResult Index()
+        {
+            if (Session["logininfo"] == null)
+            {
+                return View("Error");
+            }
+            return View();
+        }
+        public ActionResult Result()
+        {
+            if (Session["logininfo"] == null)
+            {
+                return View("Error");
+            }
+            return View();
+        }
+
+        #endregion
+
+        #region "Service Method"
+
+
+        [HttpPost]
+        public JsonResult PreSearch(DomRequest input, List<DomRequest> multiReq)
+        {
+            try
+            {
+
+                if (Session["logininfo"] == null)
+                {
+                    JSONresult = LobjCommon.SetStatus("2", "Session time out", "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                Session["TaxResponse"] = null;
+                Session["TaxResponseRt"] = null;
+                Session["SelectedFlight"] = null;
+                Session["SelectedFlightRt"] = null;
+                Session["AvailableFlights"] = null;
+
+                if (input.Triptype == "M")
+                {
+                    if (input.currentSeg == 0)
+                    {
+                        Session["USERTRACKID"] = LobjCommon.GenerateUserTrackID(terminal.Table1[0].TERMINALID);
+                    }
+                    Session["AvailableFlightsM" + input.currentSeg] = null;
+                    Session["USERTRACKID" + "M" + input.currentSeg] = Session["USERTRACKID"] + "M" + input.currentSeg;
+                    Session["SearchReq" + "M" + input.currentSeg] = input;
+                }
+                else
+                {
+                    Session["USERTRACKID"] = LobjCommon.GenerateUserTrackID(terminal.Table1[0].TERMINALID);
+                    Session["SearchReq"] = input;
+                }
+
+
+                Session["SearchReqM"] = multiReq;
+                JSONresult = LobjCommon.SetStatus("1", "Success", "[]");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                //  lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "AIRLINE", "Domestic", "PreSearch", e);
+                JSONresult = LobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Domestic", "PreSearch");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+        [HttpPost]
+        [AllowAnonymous]
+        public JsonResult getCahce(DomRequest input)
+        {
+            try
+            {
+
+                JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+
+                if (Session["logininfo"] == null)
+                {
+                    JSONresult = LobjCommon.SetStatus("2", "Session time out", "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+                if (!input.DirectAccess)
+                {
+                    string lstrInputt = "";
+                    lstrInputt = input.Triptype + "~" + input.Orgin + "~" + input.Dest + "~" + input.DepDate.ToString("MM/dd/yyyy").Replace("-", "/") + "~";
+                    if (input.Triptype.ToUpper() == "R")
+                    {
+                        lstrInputt += input.RetDate.ToString("MM/dd/yyyy").Replace("-", "/") + "~" + input.PrefAirlines + "~";
+                    }
+
+                    lstrInputt += input.Adult + "~" + input.Child + "~" + input.Infant + "~" + input.Class + "~";
+                    lstrInputt += Convert.ToInt32(input.SeniorCtzn) + "~" + Convert.ToInt32(input.DirectFlight);
+
+
+                    if (Session["cacheSearchData"] == null)
+                    {
+
+                        Session["cacheSearchData"] = lstrInputt;
+                        Session["AvailableFlights"] = null;
+                        JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+                    }
+                    else
+                    {
+                        if (Session["cacheSearchData"].ToString() == lstrInputt)
+                        {
+                            if (Session["AvailableFlights"] != null)
+                            {
+                                if (Session["searchInput"] != null)
+                                {
+                                    if (Session[Session["USERTRACKID"].ToString()] == null)
+                                    {
+                                        Session[Session["USERTRACKID"].ToString()] = Session["searchInput"] + "^";
+                                    }
+                                    else
+                                    {
+                                        Session[Session["USERTRACKID"].ToString()] = Session["searchInput"] + "^";
+                                    }
+                                }
+                                else
+                                {
+                                    JSONresult = LobjCommon.SetStatus("2", "Session time out", "[]");
+                                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                                }
+
+                                BusinessMethodResponse pobjRestemp = (BusinessMethodResponse)Session["AvailableFlights"];
+
+                                JSONresult = JsonConvert.SerializeObject(pobjRestemp.AvailabilityOutput.AvailableFlights);
+                                if (pobjRestemp.AvailabilityOutputRt != null)
+                                {
+                                    JSONresult = "[" + JSONresult + "," + JsonConvert.SerializeObject(pobjRestemp.AvailabilityOutputRt.AvailableFlights) + "]";
+                                }
+                                else
+                                {
+                                    JSONresult = "[" + JSONresult + "]";
+                                }
+
+                                JSONresult = LobjCommon.SetStatus("1", "Success", JSONresult);
+
+                                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+
+                                //lobjErrorLog.WriteAppLogFiles("END END THREAD NO" + threaddetails.ThreadNo, DateTime.Now.ToString());
+                            }
+                            else
+                            {
+
+                                JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+                            }
+                        }
+                        else
+                        {
+                            JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+                            Session["cacheSearchData"] = lstrInputt;
+                            Session["AvailableFlights"] = null;
+                        }
+                    }
+                }
+                else
+                {
+                    Session["AvailableFlights"] = null;
+                    JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+
+                }
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+
+            catch (Exception ex)
+            {
+                Session["AvailableFlights"] = null;
+                //  lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "AIRLINE", "Domestic", "Search", ex);
+                JSONresult = LobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Domestic", "getCahce");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<JsonResult> Search(DomRequest input, ThreadDetails threaddetails)
+        {
+            try
+            {
+
+                //lobjErrorLog.WriteAppLogFiles("THREAD NO" + threaddetails.ThreadNo, DateTime.Now.ToString());
+                if (Session["logininfo"] == null)
+                {
+                    JSONresult = LobjCommon.SetStatus("2", "Session time out", "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                string lstrSessionAddon = ""; //used for multisegment
+
+                Session["searchInput"] = null;
+
+
+                string lstrInput = string.Empty;
+                string PstrOutPut = string.Empty;
+                string LstrJourneyDetails = input.Orgin + "~" + input.Dest + "~" + input.DepDate.ToString("MM/dd/yyyy").Replace("-", "/") + "~*";
+                if (input.Triptype.ToUpper() == "R")
+                {
+                    LstrJourneyDetails += input.Dest + "~" + input.Orgin + "~" + input.RetDate.ToString("MM/dd/yyyy").Replace("-", "/") + "~*";
+                }
+                else if (input.Triptype.ToUpper() == "M")
+                {
+                    Session["SegCount"] = input.currentSeg;
+                    input.Triptype = "O";
+                    lstrSessionAddon = "M" + input.currentSeg;
+                    Session["SearchReq" + lstrSessionAddon] = input;
+                }
+                string LstrUserTrackID = Session["USERTRACKID" + lstrSessionAddon].ToString();
+                string PreferedAirline = string.Empty;
+                lstrInput = "SEARCHNEW1|" + terminal.Table1[0].TRAVELAGENTID + "$" + terminal.Table1[0].TERMINALID + "$" + terminal.Table1[0].OPERATORID + "$" + terminal.Table1[0].HANDSHAKEID + "$" + input.Triptype + "$" + LstrJourneyDetails
+                        + "$" + input.Class + "$";
+                string airlineID = "";
+                if (threaddetails.ThreadNo == 1)
+                {
+                    if (checkAirlineID(input.PrefAirlines, "9,620,", ref airlineID))
+                    {
+                        lstrInput += airlineID + "$";
+                    }
+                    else
+                    {
+                        JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+                        return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                    }
+
+                }
+                else if (threaddetails.ThreadNo == 2)
+                {
+                    if (checkAirlineID(input.PrefAirlines, "6,", ref airlineID))
+                    {
+                        lstrInput += airlineID + "$";
+                        //lstrInput += "6,$";
+                    }
+                    else
+                    {
+                        JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+                        return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                    }
+
+                }
+                else if (threaddetails.ThreadNo == 3)
+                {
+                    if (checkAirlineID(input.PrefAirlines, "892,", ref airlineID))
+                    {
+                        lstrInput += airlineID + "$";
+                        //lstrInput += "892,$";
+                    }
+                    else
+                    {
+                        JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+                        return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                    }
+
+                }
+                else if (threaddetails.ThreadNo == 4)
+                {
+                    if (checkAirlineID(input.PrefAirlines, "10,", ref airlineID))
+                    {
+                        lstrInput += airlineID + "$";
+                    }
+                    else
+                    {
+                        JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+                        return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                    }
+                    //lstrInput += "10,$";
+
+                }
+                else if (threaddetails.ThreadNo == 5)
+                {
+                    if (checkAirlineID(input.PrefAirlines, "869,", ref airlineID))
+                    {
+                        lstrInput += airlineID + "$";
+                    }
+                    else
+                    {
+                        JSONresult = LobjCommon.SetStatus("0", "Result Not available", "[]");
+                        return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                    }
+                    //lstrInput += "869,$";
+
+                }
+                lstrInput += input.Adult + "$" + input.Child + "$" + input.Infant + "$1"/*Rectnt country*/ + "$" + LstrUserTrackID
+                        + "$" + Convert.ToInt32(input.DirectAccess) + "$0$$0$" + Convert.ToInt32(input.DirectFlight) + "$" + Convert.ToInt32(input.SeniorCtzn) + "$";
+                if (Session[Session["USERTRACKID" + lstrSessionAddon].ToString()] == null)
+                {
+                    Session[Session["USERTRACKID" + lstrSessionAddon].ToString()] = lstrInput + "^";
+                }
+                //else
+                //{
+                //    Session[Session["USERTRACKID" + lstrSessionAddon].ToString()] = Session[Session["USERTRACKID" + lstrSessionAddon].ToString()].ToString() + lstrInput + "^";
+                //}
+                Session["searchInput" + lstrSessionAddon] = lstrInput + "^";
+                Int32 FlightCount = 0;
+                Int32 FlightCountRt = 0;
+                // LobjAirhostout = lobjAirHost.BusinessMethodRest("192.168.30.149", lstrInput, ref lstrErrorCode, ref lstrErrorMsg);
+
+                string airlineip = ConfigurationManager.AppSettings["airlineip"].ToString();
+                string airlineports = ConfigurationManager.AppSettings["airlineports"].ToString();
+                //lobjErrorLog.WriteAppLogFiles("TCP HIT THREAD NO" + threaddetails.ThreadNo, DateTime.Now.ToString());
+                lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_AIR, "Domestic-Newlayout", "Search", clsConnector.APPLOG_MessageType.REQUEST, lstrInput, "");
+                LobjCommon.TCPSocket(airlineip, airlineports, lstrInput, ref PstrOutPut, ref lstrErrorMsg);
+                await Task.Delay(500);
+                //lobjErrorLog.WriteAppLogFiles("TCP END THREAD NO" + threaddetails.ThreadNo, DateTime.Now.ToString());
+                if (lstrErrorMsg != "")
+                {
+                    lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_AIR, "Domestic-Newlayout", "Search - FAILURE", clsConnector.APPLOG_MessageType.RESPONSE, lstrErrorMsg, "");
+                    JSONresult = LobjCommon.SetStatus("0", lstrErrorMsg, "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+                if (PstrOutPut.Split('|')[0].ToString() == "0")
+                {
+                    lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "Domestic-Newlayout", "Search - FAILURE", clsConnector.APPLOG_MessageType.RESPONSE, PstrOutPut, "");
+                    JSONresult = LobjCommon.SetStatus("0", "" /*PstrOutPut.Split('|')[1].ToString().Replace("\"", "'")*/, "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+                BusinessMethodResponse pobjRes = new BusinessMethodResponse();
+
+                if (Session["AvailableFlights" + lstrSessionAddon] != null)
+                {
+                    BusinessMethodResponse pobjRestemp = (BusinessMethodResponse)Session["AvailableFlights" + lstrSessionAddon];
+                    if (pobjRestemp.AvailabilityOutput != null)
+                    {
+                        FlightCount = pobjRestemp.AvailabilityOutput.AvailableFlights.Flights.Length;
+                    }
+                    else
+                    {
+                        FlightCount = 0;
+                    }
+
+                    if (pobjRestemp.AvailabilityOutputRt != null)
+                    {
+                        FlightCountRt = pobjRestemp.AvailabilityOutputRt.AvailableFlights.Flights.Length;
+                    }
+                    else
+                    {
+                        FlightCountRt = 0;
+                    }
+                }
+
+
+                lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "Domestic-Newlayout", "Search - SUCCESS", clsConnector.APPLOG_MessageType.RESPONSE, PstrOutPut, "");
+                LobjDomSearch.BuildSearchResult(lstrInput, PstrOutPut, ref pobjRes, ref FlightCount, ref FlightCountRt, threaddetails.ThreadNo, ref lstrErrorMsg);
+                //lobjErrorLog.WriteAppLogFiles("END THREAD NO" + threaddetails.ThreadNo, DateTime.Now.ToString());
+                if (Session["AvailableFlights" + lstrSessionAddon] != null)
+                {
+                    BusinessMethodResponse pobjRestemp = (BusinessMethodResponse)Session["AvailableFlights" + lstrSessionAddon];
+                    if (pobjRes.AvailabilityOutput != null && pobjRes.AvailabilityOutput.AvailableFlights.Flights.Length > 0)
+                    {
+                        AvailFlightSegments[] flights = (AvailFlightSegments[])pobjRestemp.AvailabilityOutput.AvailableFlights.Flights.Concat(pobjRes.AvailabilityOutput.AvailableFlights.Flights).ToArray();
+                        AvailableFlights availableflights = new AvailableFlights();
+                        availableflights.Flights = flights;
+                        AvailabilityOutput availabilityoutput = new AvailabilityOutput();
+                        availabilityoutput.AvailableFlights = availableflights;
+                        pobjRestemp.AvailabilityOutput = availabilityoutput;
+                    }
+                    if (pobjRestemp.AvailabilityOutputRt != null && pobjRes.AvailabilityOutputRt.AvailableFlights.Flights.Length > 0)
+                    {
+                        AvailFlightSegments[] flightsRt = (AvailFlightSegments[])pobjRestemp.AvailabilityOutputRt.AvailableFlights.Flights.Concat(pobjRes.AvailabilityOutputRt.AvailableFlights.Flights).ToArray();
+                        AvailableFlights availableflightsRt = new AvailableFlights();
+                        availableflightsRt.Flights = flightsRt;
+                        AvailabilityOutput availabilityoutputRt = new AvailabilityOutput();
+                        availabilityoutputRt.AvailableFlights = availableflightsRt;
+                        pobjRestemp.AvailabilityOutputRt = availabilityoutputRt;
+                    }
+                    if (pobjRestemp.AvailabilityOutput != null)
+                    {
+                        Session["AvailableFlights" + lstrSessionAddon] = pobjRestemp;
+                        JSONresult = JsonConvert.SerializeObject(pobjRestemp.AvailabilityOutput.AvailableFlights);
+                        if (pobjRestemp.AvailabilityOutputRt != null)
+                        {
+                            JSONresult = "[" + JSONresult + "," + JsonConvert.SerializeObject(pobjRestemp.AvailabilityOutputRt.AvailableFlights) + "]";
+                        }
+                        else
+                        {
+                            JSONresult = "[" + JSONresult + "]";
+                        }
+                        JSONresult = LobjCommon.SetStatus("1", "Success", JSONresult);
+                        //lobjErrorLog.WriteAppLogFiles("END END THREAD NO" + threaddetails.ThreadNo, DateTime.Now.ToString());
+                        return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                    }
+                }
+                if (pobjRes.AvailabilityOutput != null)
+                {
+                    Session["AvailableFlights" + lstrSessionAddon] = pobjRes;
+                    JSONresult = JsonConvert.SerializeObject(pobjRes.AvailabilityOutput.AvailableFlights);
+                    if (pobjRes.AvailabilityOutputRt != null)
+                    {
+                        JSONresult = "[" + JSONresult + "," + JsonConvert.SerializeObject(pobjRes.AvailabilityOutputRt.AvailableFlights) + "]";
+                    }
+                    else
+                    {
+                        JSONresult = "[" + JSONresult + "]";
+                    }
+
+                    JSONresult = LobjCommon.SetStatus("1", "Success", JSONresult);
+                }
+                else
+                {
+                    JSONresult = LobjCommon.SetStatus("0", "failure", "[]");
+                }
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                //   lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "AIRLINE", "Domestic", "Search", ex);
+                JSONresult = LobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Domestic", "Search");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+        public Boolean checkAirlineID(string pstrAirlineID, string toCheck, ref string airlineID)
+        {
+
+            try
+            {
+                if (pstrAirlineID != "")
+                {
+                    string[] larrAirlineID = pstrAirlineID.Split(',');
+                    string[] larrtoCheck = toCheck.Split(',');
+                    airlineID = "";
+                    for (int i = 0; i < larrtoCheck.Length; i++)
+                    {
+                        if (larrAirlineID.Contains(larrtoCheck[i]))
+                        {
+                            if (larrtoCheck[i] != "")
+                            {
+                                airlineID += larrtoCheck[i] + ",";
+                            }
+                        }
+                    }
+                    if (airlineID == "" || airlineID == ",")
+                    {
+                        return false;
+                    }
+                    else
+                    {
+                        return true;
+                    }
+
+                }
+                else
+                {
+                    return false;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                lobjARMError.Err_Handler(ex, "Domestic", "checkAirlineID");
+                return false;
+            }
+
+        }
+
+        [HttpPost]
+        [AllowAnonymous]
+        public async Task<JsonResult> GetTax(Int32 FlightId, string TaxType, string Segment, Int32 ThreadId, string arg)
+        {
+            try
+            {
+                if (Session["logininfo"] == null)
+                {
+                    JSONresult = LobjCommon.SetStatus("2", "Session time out", "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+
+                string lstrSessionAddon = "";
+                if (TaxType == "M")
+                {
+                    lstrSessionAddon = "M" + arg;
+                }
+                string[] searchReqArr = Session[Session["USERTRACKID"].ToString() + lstrSessionAddon].ToString().Split('^')[0].Split('$');
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                BusinessMethodResponse LobjAirhost = (BusinessMethodResponse)Session["AvailableFlights" + lstrSessionAddon];
+                AvailFlightSegments Flight = new AvailFlightSegments();
+
+                if (Segment == "O")
+                {
+                    Flight = LobjAirhost.AvailabilityOutput.AvailableFlights.Flights.AsEnumerable().Where(flight => flight.BaseDetail.FlightsCount == FlightId && flight.BaseDetail.ThreadCount == ThreadId).FirstOrDefault();
+                    Session["DomSelectedCoupon"] = null;
+                    Session["SelectedFlight" + lstrSessionAddon] = null;
+
+                    Session["SelectedFlight" + lstrSessionAddon] = FlightId;
+                }
+                else if (Segment == "R")
+                {
+                    Flight = LobjAirhost.AvailabilityOutputRt.AvailableFlights.Flights.AsEnumerable().Where(flight => flight.BaseDetail.FlightsCount == FlightId && flight.BaseDetail.ThreadCount == ThreadId).FirstOrDefault();
+                    Session["SelectedFlightRt"] = null;
+                    Session["SelectedFlightRt"] = FlightId;
+                }
+                if (Flight.FareType == "C" || Flight.FareType == "CORP")
+                {
+                    Session["DomSelectedCoupon"] = "C";
+                }
+                string LstrInput = string.Empty;
+                if (Flight.FareType == "C" || Flight.FareType == "CORP")
+                {
+                    LstrInput = "CUPNEASEFR|";
+                    LstrInput += Session["USERTRACKID"].ToString() + "$";
+                    LstrInput += terminal.Table1[0].TRAVELAGENTID + "$";
+                    LstrInput += terminal.Table1[0].TERMINALID + "$";
+                    LstrInput += terminal.Table1[0].OPERATORID + "$";
+                    LstrInput += terminal.Table1[0].HANDSHAKEID + "$";
+                    LstrInput += Flight.AvailSegments[0].AirlinesId + "$";
+                    foreach (var item in Flight.AvailSegments)
+                    {
+                        LstrInput += item.FlightId + "~";
+                        LstrInput += item.AvailPaxFareDetails.ClassCode + "~";
+                        LstrInput += item.AirlinesId + "~";
+                        LstrInput += "1~";//EticketFlag
+                        LstrInput += item.AvailPaxFareDetails.Adult.BasicAmount + "~";
+                        if (item.AvailPaxFareDetails.Adult.FareBasis.ToString() != "")
+                        {
+                            string[] Fairbasis = item.AvailPaxFareDetails.Adult.FareBasis.Split(' ');
+                            LstrInput += Fairbasis[0] + " " + Fairbasis[1] + "@";
+                        }
+                        else
+                        {
+                            LstrInput += "@";
+                        }
+                    }
+                    LstrInput += "$";
+                    LstrInput += Flight.CrdID + "$";
+                    LstrInput += "0$";//CatchFlag 
+                    LstrInput += "0$";//Insurance Support
+                    LstrInput += "0$";//SSR support Flag  
+                    LstrInput += searchReqArr[8] + "~" + searchReqArr[9] + "~" + searchReqArr[10] + "$";//PaxDetails
+                    LstrInput += "0$";//TransFeeFlag
+                }
+                else
+                {
+                    LstrInput = "TAXREQCRS1|";
+                    LstrInput += Session["USERTRACKID" + lstrSessionAddon].ToString() + "$";
+                    LstrInput += terminal.Table1[0].TRAVELAGENTID + "$";
+                    LstrInput += terminal.Table1[0].TERMINALID + "$";
+                    LstrInput += terminal.Table1[0].OPERATORID + "$";
+                    LstrInput += terminal.Table1[0].HANDSHAKEID + "$";
+                    LstrInput += Flight.AvailSegments[0].AirlinesId + "$";
+                    foreach (var item in Flight.AvailSegments)
+                    {
+                        LstrInput += item.FlightId + "~";
+                        LstrInput += item.AvailPaxFareDetails.ClassCode + "~";
+                        LstrInput += item.AirlinesId + "~";
+                        LstrInput += "1~";//EticketFlag
+                        LstrInput += item.AvailPaxFareDetails.Adult.BasicAmount + "@";
+                    }
+                    LstrInput += "$";
+                    LstrInput += Flight.CrdID + "$";
+                    LstrInput += "0$1$1$" + searchReqArr[18] + "$";
+
+                }
+                Session["TaxInputStr"] = LstrInput;
+
+                string PstrOutPut = "";
+                string airlineip = ConfigurationManager.AppSettings["airlineip"].ToString();
+                string airlineports = ConfigurationManager.AppSettings["airlineports"].ToString();
+                lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "Domestic-Newlayout", "GetTax", clsConnector.APPLOG_MessageType.REQUEST, LstrInput, "");
+                LobjCommon.TCPSocket(airlineip, airlineports, LstrInput, ref PstrOutPut, ref lstrErrorMsg);
+                if (lstrErrorMsg != "")
+                {
+                    lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "Domestic-Newlayout", "GetTax - FAILURE", clsConnector.APPLOG_MessageType.RESPONSE, lstrErrorMsg, "");
+                    JSONresult = LobjCommon.SetStatus("0", lstrErrorMsg, "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+                if (PstrOutPut.Split('|')[0].ToString() == "0")
+                {
+                    lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "Domestic-Newlayout", "GetTax - FAILURE", clsConnector.APPLOG_MessageType.RESPONSE, PstrOutPut, "");
+                    JSONresult = LobjCommon.SetStatus("0", PstrOutPut.Split('|')[1].ToString(), "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+                BusinessMethodResponse pobjRes = new BusinessMethodResponse();
+                LobjDomSearch.TaxParsing(PstrOutPut, ref pobjRes);
+                if (Segment == "O")
+                {
+                    Session["SelectedSeg" + lstrSessionAddon] = Flight;
+                    Session["TaxResponse" + lstrSessionAddon] = pobjRes;
+                }
+                else
+                {
+                    Session["SelectedSegRt"] = Flight;
+                    Session["TaxResponseRt"] = pobjRes;
+                }
+                double dbltotal = 0.0;
+                double dblcurenttaxfare = 0.0;
+                DomRequest lstrSearchReq = (DomRequest)Session["SearchReq" + lstrSessionAddon];
+
+                /** /
+                StreamReader strStream = new StreamReader(Server.MapPath(@"~\Content\Json\PlanCities.json"));
+                string lstrPlan = strStream.ReadToEnd();
+                List<InsuranceObj> lobjPlan = new List<InsuranceObj>();
+                lobjPlan = JsonConvert.DeserializeObject<List<InsuranceObj>>(lstrPlan);
+                List<OrgDes> lobjCityList = new List<OrgDes>();
+                string lstrCityDetails = System.IO.File.ReadAllText(System.Web.HttpContext.Current.Server.MapPath("~/Content/Sources/City/IntCity.js")).Replace("\r\n\t", "");
+                lobjCityList = JsonConvert.DeserializeObject<List<OrgDes>>(lstrCityDetails);
+
+                string lstrDest = lobjCityList.Where(x => x.ID == lstrSearchReq.Dest.Trim()).Select(X => X.NAME).FirstOrDefault().ToLower();
+                //bool test = lobjPlan[1].Cities.Contains(lstrDest);
+
+                var matches = from person in lobjPlan
+                              where lobjPlan[1].Contains("")
+                              select person;
+                 * /**/
+
+                foreach (var item in pobjRes.TaxOutput.Taxes.AvailTaxSegements)
+                {
+                    double AExtraTax = 0.0;
+                    double CExtraTax = 0.0;
+                    double IExtraTax = 0.0;
+                    foreach (var AExtraTaxData in item.AdultFareDetails.AvailTaxItem)
+                    {
+                        AExtraTax += AExtraTaxData.Amount;
+                    }
+                    if (item.ChildFareDetails.AvailTaxItem != null)
+                    {
+                        foreach (var CExtraTaxData in item.ChildFareDetails.AvailTaxItem)
+                        {
+                            CExtraTax += CExtraTaxData.Amount;
+                        }
+                    }
+                    if (item.InfantFareDetails.AvailTaxItem != null)
+                    {
+                        foreach (var IExtraTaxData in item.InfantFareDetails.AvailTaxItem)
+                        {
+                            IExtraTax += IExtraTaxData.Amount;
+                        }
+                    }
+                    AExtraTax += item.AdultFareDetails.TransactionFee;
+                    CExtraTax += item.ChildFareDetails.TransactionFee;
+                    IExtraTax += item.InfantFareDetails.TransactionFee;
+
+                    dblcurenttaxfare += ((item.AdultFareDetails.BasicAmount + AExtraTax) * lstrSearchReq.Adult) + ((item.ChildFareDetails.BasicAmount + CExtraTax) * lstrSearchReq.Child) + ((item.InfantFareDetails.BasicAmount + IExtraTax) * lstrSearchReq.Infant);
+
+                }
+                foreach (var item in Flight.AvailSegments)
+                {
+                    dbltotal += (item.AvailPaxFareDetails.Adult.GrossAmount) * (lstrSearchReq.Adult + lstrSearchReq.Child + lstrSearchReq.Infant);
+
+                }
+                //dblcurenttaxfare = dblcurenttaxfare + 10;
+                string MinorAirlineId = ConfigurationManager.AppSettings["MinorAirlineId"].ToString();
+                string MinorAirlineExtrCost = ConfigurationManager.AppSettings["MinorAirlineExtraFare"].ToString();
+                MinorAirlineExtrCost = MinorAirlineExtrCost.Split('|')[0].ToString(); //Dom Minor Extra Fare
+                if (isBetween(dbltotal, (dblcurenttaxfare - 10), (dblcurenttaxfare + 10)) || lstrSearchReq.Infant > 0 || lstrSearchReq.Adult > 1 || lstrSearchReq.Child > 0 || TaxType == "M")
+                {
+
+                    JSONresult = LobjCommon.SetStatus("1", "Success", "{\"Segment\":\"" + Segment + "\",\"MinorAirlineId\":\"" + MinorAirlineId + "\",\"MinorAirlineExtrCost\":\"" + MinorAirlineExtrCost + "\",\"TaxType\":\"" + TaxType + "\",\"GrossAmount\":\"" + dbltotal + "\",\"TaxFare\":\"" + dblcurenttaxfare + "\",\"segment\":" + JsonConvert.SerializeObject(Flight) + ",\"Tax\":" + JsonConvert.SerializeObject(pobjRes.TaxOutput.Taxes.AvailTaxSegements) + ",\"arg\":" + arg + ",\"Searchreq\":" + JsonConvert.SerializeObject((DomRequest)Session["SearchReq" + lstrSessionAddon]) + "}");
+                }
+                else
+                {
+                    JSONresult = LobjCommon.SetStatus("3", "Success", "{\"Segment\":\"" + Segment + "\",\"MinorAirlineId\":\"" + MinorAirlineId + "\",\"MinorAirlineExtrCost\":\"" + MinorAirlineExtrCost + "\",\"TaxType\":\"" + TaxType + "\",\"GrossAmount\":\"" + dbltotal + "\",\"TaxFare\":\"" + dblcurenttaxfare + "\",\"segment\":" + JsonConvert.SerializeObject(Flight) + ",\"Tax\":" + JsonConvert.SerializeObject(pobjRes.TaxOutput.Taxes.AvailTaxSegements) + ",\"Searchreq\":" + JsonConvert.SerializeObject((DomRequest)Session["SearchReq" + lstrSessionAddon]) + "}");
+                }
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                //   lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "AIRLINE", "Domestic", "GetTax", ex);
+                JSONresult = LobjCommon.SetStatus("0", "Tax Calculation failed", "[]");
+                lobjARMError.Err_Handler(ex, "Domestic", "GetTax");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+
+
+        [HttpPost]
+        public JsonResult GetFareRule(string FlightId, String AirlinesId, String ClassCode, String Type)
+        {
+            try
+            {
+                if (Session["logininfo"] == null)
+                {
+                    JSONresult = LobjCommon.SetStatus("2", "Session time out", "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+
+
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                String lstrAgentDtls = terminal.Table1[0].TERMINALID + "$" + terminal.Table1[0].TRAVELAGENTID + "$" + terminal.Table1[0].OPERATORID + "$" + terminal.Table1[0].HANDSHAKEID + "$";
+
+                BusinessMethodResponse LobjAirhost = (BusinessMethodResponse)Session["AvailableFlights"];
+                AvailFlightSegments Flight = new AvailFlightSegments();
+
+                string lstrReqInput = "";
+
+
+                lstrReqInput = "FARERULCRS|";
+
+                lstrReqInput += Session["USERTRACKID"].ToString() + "$" + lstrAgentDtls;
+                lstrReqInput += AirlinesId + "$" + AirlinesId + "#";
+                lstrReqInput += FlightId + "#";
+                lstrReqInput += ClassCode + "~$";
+                lstrReqInput += "1$";
+                lstrReqInput += "#$";
+                lstrReqInput += "1$";
+                lstrReqInput += Type + "$";
+
+                string PstrOutPut = string.Empty;
+                string airlineip = ConfigurationManager.AppSettings["airlineip"].ToString();
+                string airlineports = ConfigurationManager.AppSettings["airlineports"].ToString();
+                //TCP Connection For FareRule
+                lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "Domestic-Newlayout", "GetFareRule", clsConnector.APPLOG_MessageType.REQUEST, lstrReqInput, "");
+                LobjCommon.TCPSocket(airlineip, airlineports, lstrReqInput, ref PstrOutPut, ref lstrErrorMsg);
+
+                if (lstrErrorMsg == "")
+                {
+                    if (PstrOutPut.Split('|')[0] == "1")
+                    {
+                        //PstrOutPut = PstrOutPut.Split('|')[1].Replace("#", "").Replace("\r\n", "<br>").Replace("\t", "<br><br>").Replace("\\", "").Replace("/", "&sol;").Replace("/", "&bsol;");
+                        PstrOutPut = PstrOutPut.Split('|')[1].Replace("#", "").Replace("\r\n", "<br>").Replace("\t", "<br><br>").Replace("\\", "").Replace(":", "-").Replace("\"", "'");
+                        JSONresult = LobjCommon.SetStatus("1", PstrOutPut, "[]");
+
+                    }
+                    else
+                    {
+                        lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "Domestic-Newlayout", "GetFareRule - FAILURE", clsConnector.APPLOG_MessageType.RESPONSE, PstrOutPut, "");
+                        JSONresult = LobjCommon.SetStatus("0", "Fare Rule Not Available. Please try Later", "[]");
+                        PstrOutPut = PstrOutPut.Split('|')[1];
+                    }
+
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+                else
+                {
+                    lobjErrorLog.APPLOG_WRITER(HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "Domestic-Newlayout", "GetFareRule - FAILURE", clsConnector.APPLOG_MessageType.RESPONSE, lstrErrorMsg, "");
+                    JSONresult = LobjCommon.SetStatus("0", lstrErrorMsg, "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+
+
+            }
+            catch (Exception ex)
+            {
+                //    lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "AIRLINE", "Domestic", "GetFareRule", ex);
+                JSONresult = LobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Domestic", "GetFareRule");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+        }
+
+        [HttpPost]
+        [ActionName("CheapFareDate")]
+        public JsonResult GetCheapestFareByDate(string Origin, string Dest, DateTime TDate)
+        {
+            try
+            {
+                SqlParameter[] lobjParam = new SqlParameter[4];
+                ARMDataTier.clsDataconnector lobjDataTier = new ARMDataTier.clsDataconnector(ARMDataTier.clsDataconnector.DATABASE.REPORTSBUS);
+                DataSet lobjDataSet = new DataSet();
+                lstrErrorCode = string.Empty;
+                lstrErrorMsg = string.Empty;
+                JSONresult = string.Empty;
+
+
+                lobjParam[0] = new SqlParameter();
+                lobjParam[0].ParameterName = "@ORIGIN";
+                lobjParam[0].DbType = DbType.String;
+                lobjParam[0].Value = Origin;
+
+                lobjParam[1] = new SqlParameter();
+                lobjParam[1].ParameterName = "@DESTINATION";
+                lobjParam[1].DbType = DbType.String;
+                lobjParam[1].Value = Dest;
+
+                lobjParam[2] = new SqlParameter();
+                lobjParam[2].ParameterName = "@travelDate";
+                lobjParam[2].DbType = DbType.String;
+                lobjParam[2].Value = TDate.ToString("MM/dd/yyyy").Replace("-", "/");
+
+                lobjDataTier.FillDataset("Tra_Get_FareDetails", ref lobjDataSet, lobjParam, ref lstrErrorCode, ref lstrErrorMsg);
+
+                if (string.IsNullOrEmpty(lstrErrorCode))
+                {
+                    if (lobjDataSet.Tables.Count > 0)
+                    {
+                        if (lobjDataSet.Tables[0].Rows.Count > 0)
+                        {
+                            JSONresult = LobjCommon.SetStatus("1", "", JsonConvert.SerializeObject(lobjDataSet.Tables[1]));
+                        }
+                        else
+                        {
+                            JSONresult = LobjCommon.SetStatus("0", "No Rows Found !.", "[]");
+                        }
+                    }
+                    else
+                    {
+                        JSONresult = LobjCommon.SetStatus("0", "No Tables Found !.", "[]");
+                    }
+                }
+                else
+                {
+                    JSONresult = LobjCommon.SetStatus("0", "", "[]");
+                }
+            }
+            catch (Exception ex)
+            {
+                lobjARMError.Err_Handler(ex, "DomesticController", "GetCheapestFareByDate");
+
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost] 
+        public JsonResult updateChepestFare(string pstrInput,DateTime pDate)
+        {
+            try
+            {
+                if (Session["logininfo"] == null)
+                {
+                    JSONresult = LobjCommon.SetStatus("2", "Session time out", "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+
+                SqlParameter[] lobjParam = new SqlParameter[1];
+                ARMDataTier.clsDataconnector lobjDataTier = new ARMDataTier.clsDataconnector(ARMDataTier.clsDataconnector.DATABASE.REPORTSBUS);
+                DataSet lobjDataSet = new DataSet();
+                lstrErrorCode = string.Empty;
+                lstrErrorMsg = string.Empty;
+                JSONresult = string.Empty;
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                pstrInput += terminal.Table1[0].TERMINALID + "$@";
+                pstrInput = pstrInput.Replace("*DATE*", pDate.ToString("MM/dd/yyyy").Replace("-", "/"));
+                lobjParam[0] = new SqlParameter();
+                lobjParam[0].ParameterName = "@INPUTSTRAING";
+                lobjParam[0].DbType = DbType.String;
+                lobjParam[0].Value = pstrInput;
+
+                lobjDataTier.FillDataset("TRA_INS_AIRLINEFARE", ref lobjDataSet, lobjParam, ref lstrErrorCode, ref lstrErrorMsg);
+
+                if (string.IsNullOrEmpty(lstrErrorCode))
+                {
+                    if (lobjDataSet.Tables.Count > 0)
+                    {
+                        if (lobjDataSet.Tables[0].Rows.Count > 0)
+                        {
+                            JSONresult = LobjCommon.SetStatus("1", "", JsonConvert.SerializeObject(lobjDataSet.Tables[1]));
+                        }
+                        else
+                        {
+                            JSONresult = LobjCommon.SetStatus("0", "No Rows Found !.", "[]");
+                        }
+                    }
+                    else
+                    {
+                        JSONresult = LobjCommon.SetStatus("0", "No Tables Found !.", "[]");
+                    }
+                }
+                else
+                {
+                    JSONresult = LobjCommon.SetStatus("0", "", "[]");
+                }
+            }
+            catch (Exception ex)
+            {
+                lobjARMError.Err_Handler(ex, "DomesticController", "GetCheapestFareByDate");
+
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult EmailorPrint(int[][] arrFlightCount, string EmailID, int Flag, string FareType, string bookingType)
+        {
+            try
+            {
+                string lstrReturn = string.Empty;
+                if (Session["logininfo"] == null || Session["AvailableFlights"] == null)
+                {
+                    JSONresult = LobjCommon.SetStatus("2", "Session time out", "[]");
+                    return Json(JSONresult, JsonRequestBehavior.AllowGet);
+                }
+                BusinessMethodResponse lobjFlights = (BusinessMethodResponse)Session["AvailableFlights"];
+                AvailFlightSegments[] lobjOngoing = lobjFlights.AvailabilityOutput.AvailableFlights.Flights.ToList().Where(x => arrFlightCount[0].ToList().Contains(x.BaseDetail.FlightsCount)).OrderBy(x => x.BaseDetail.GrossAmount).ToArray();
+
+                AvailFlightSegments[] lobjReturn = new AvailFlightSegments[0];
+                if (arrFlightCount.Length > 1)
+                {
+                    lobjReturn = lobjFlights.AvailabilityOutputRt.AvailableFlights.Flights.ToList().Where(x => arrFlightCount[1].ToList().Contains(x.BaseDetail.FlightsCount)).OrderBy(x => x.BaseDetail.GrossAmount).ToArray();
+                    lstrReturn = JsonConvert.SerializeObject(lobjReturn);
+                }
+                else
+                {
+                    lstrReturn = "[]";
+                }
+
+
+
+                if (!string.IsNullOrEmpty(EmailID) || Flag == 0)
+                {
+                    string strOngoing = string.Empty;
+                    string strReturn = string.Empty;
+                    string StrSearch = string.Empty;
+                    StreamReader strStream = new StreamReader(Server.MapPath(@"~\Templates\Airline\EmailorPrint.html"));
+                    string strstyle = "@font-face {   font-family: 'Open Sans';   font-style: normal;   font-weight: 600;   src: local('Open Sans SemiBold'), local('OpenSans-SemiBold'), url(https://fonts.gstatic.com/s/opensans/v15/MTP_ySUJH_bn48VBG8sNSq-j2U0lmluP9RWlSytm3ho.woff2) format('woff2');   unicode-range: U+0460-052F, U+20B4, U+2DE0-2DFF, U+A640-A69F; } body { font-family: 'Open Sans',calibri,'Helvetica Neue',sans-serif; } .layout-gt-xs-row { flex-direction: row; } .layout-gt-xs, .layout-gt-xs-column, .layout-gt-xs-row { box-sizing: border-box; display: flex; } .layout-column { flex-direction: column; } .layout, .layout-column, .layout-row { box-sizing: border-box; display: flex; } .layout-column { flex-direction: column; } .layout, .layout-column, .layout-row { box-sizing: border-box; display: flex; } .layout-align-start-center, .layout-align-center-center, .layout-align-end-center, .layout-align-space-between-center, .layout-align-space-around-center { align-content: center; align-items: center; max-width: 100%; } .layout-align-center, .layout-align-center-start, .layout-align-center-center, .layout-align-center-end, .layout-align-center-stretch { justify-content: center; }.layout-column > .flex, .layout-lg-column > .flex { min-height: 0; } .layout-column > .flex, .layout-gt-md-column > .flex { min-height: 0; } .layout-column > .flex, .layout-gt-sm-column > .flex { min-height: 0; } .layout-column > .flex, .layout-gt-xs-column > .flex { min-height: 0; } .layout-row > .flex, .layout-gt-xs-row > .flex { min-width: 0; } .layout-column > .flex, .layout-column > .flex { min-height: 0; } .layout-column > .flex, .layout-column > .flex { min-height: 0; } .layout-column > .flex { flex-basis: auto; } .layout-column { flex-direction: column; } .layout, .layout-column, .layout-row { box-sizing: border-box; display: flex; } .flex { box-sizing: border-box; flex: 1 1 0; } .layout-align-start-center, .layout-align-center-center, .layout-align-end-center, .layout-align-space-between-center, .layout-align-space-around-center { align-content: center; align-items: center; max-width: 100%; } .layout-align-center, .layout-align-center-start, .layout-align-center-center, .layout-align-center-end, .layout-align-center-stretch { justify-content: center; } .testlay { display: block; z-index: 2; position: absolute; height: 58px; background: rgba(240, 64, 65, 0.39) none repeat scroll 0px 0px; width: 25%; } .hideSelect{ display: none;}";
+                    string strTemplate = strStream.ReadToEnd();
+                    strStream.Close();
+                    int strSartIndex = 0, strEndIndex = 0, strSearchStart = 0, strSearchEnd = 0;
+                    strSartIndex = strTemplate.ToString().IndexOf("<!--onGoing-->");
+                    strEndIndex = strTemplate.ToString().IndexOf("<!--onGoing End-->");
+
+                    strSearchStart = strTemplate.ToString().IndexOf("<!--SearchDetails-->");
+                    strSearchEnd = strTemplate.ToString().IndexOf("<!--ENDSearchDetails-->");
+
+                    strOngoing = strTemplate.ToString().Substring(strSartIndex, strEndIndex - strSartIndex);
+
+                    StrSearch = strTemplate.ToString().Substring(strSearchStart, strSearchEnd - strSearchStart);
+
+                    string style = string.Empty;
+                    StreamReader strCSSStream = new StreamReader(Server.MapPath(@"~\Content\Css\Common.css"));
+                    strstyle += strCSSStream.ReadToEnd();
+                    strCSSStream = new StreamReader(Server.MapPath(@"~\Content\Css\angular-material.css"));
+                    strstyle += strCSSStream.ReadToEnd();
+                    strCSSStream.Close();
+                    style = "<html><head><style type='text/css'>" + strstyle;
+                    //style += "</style> </head> <body><div style='width:100%'><img src='http://corp.hermes-it.in/Content/Images/logo.gif' alt='TMS LOGO'></div>";
+                    style += ".HideCorp{display:none;} .HideCupon{display:none;}.F-19 { font-size: 19px !important;}.Fare-New { color: #034f84;font-size: 15px;font-weight: bold;}.Air-1 {font-size: 14px;font-weight: bold; color: #000;}.print {margin: 3px;color: #8e8e8e;border-color: #8e8e8e;background-color: #8e8e8e;border-style:none;height:1px;} .Air-3 {color: #666;}.F-12 {font-size: 12px !important;}.F-11 {font-size: 11px !important;}</style> </head> <body><div style='width:100%'><img src='https://biyaheko.com/style/biyaheko/images/logo.gif' alt='LOGO'></div>";
+
+
+
+                    StringBuilder strFlightDetails = new StringBuilder();
+                    strFlightDetails.Append(style);
+                    if (Session["SearchReq"] != null)
+                    {
+
+                        if (bookingType == "D")
+                        {
+                            DomRequest SearchReq = (DomRequest)Session["SearchReq"];
+
+                            List<OrgDes> lobjCityList = new List<OrgDes>();
+                            string lstrJsonMenu = System.IO.File.ReadAllText(System.Web.HttpContext.Current.Server.MapPath("~/Content/Sources/City/IntCity.js")).Replace("\r\n\t", "");
+                            lobjCityList = JsonConvert.DeserializeObject<List<OrgDes>>(lstrJsonMenu);
+
+                            StrSearch = StrSearch.Replace("{{ctrl.ICL[ctrl.Search.Orgin]}}", lobjCityList.Where(x => x.ID == SearchReq.Orgin.Trim()).Select(X => X.NAME).FirstOrDefault());
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.Orgin}}", SearchReq.Orgin);
+                            StrSearch = StrSearch.Replace("{{ctrl.ICL[ctrl.Search.Dest]}}", lobjCityList.Where(x => x.ID == SearchReq.Dest.Trim()).Select(X => X.NAME).FirstOrDefault());
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.Dest}}", SearchReq.Dest);
+
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.DepDate | date:'dd MMM yyyy' }}", SearchReq.DepDate.ToString("dd MMM yyyy"));
+                            if (SearchReq.Triptype == "R")
+                            {
+                                StrSearch = StrSearch.Replace("{{ctrl.Search.RetDate | date:'dd MMM yyyy' }}", SearchReq.RetDate.ToString("dd MMM yyyy"));
+                            }
+                            else
+                            {
+                                StrSearch = StrSearch.Replace("^retHide^", "HideCupon");
+                            }
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.Adult}}", SearchReq.Adult.ToString());
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.Child}}", SearchReq.Child.ToString());
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.Infant}}", SearchReq.Infant.ToString());
+                            strFlightDetails.Append(StrSearch);
+                        }
+                        else
+                        {
+                            SearchRequest SearchReq = (SearchRequest)Session["SearchReq"];
+                            StrSearch = StrSearch.Replace("{{ctrl.OrginId.NAME}}", SearchReq.orgin.NAME);
+                            StrSearch = StrSearch.Replace("{{ctrl.OrginId.ID}}", SearchReq.orgin.ID);
+                            StrSearch = StrSearch.Replace("{{ctrl.DestId.NAME}}", SearchReq.dest.NAME);
+                            StrSearch = StrSearch.Replace("{{ctrl.DestId.ID}}", SearchReq.dest.NAME);
+
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.DepDate | date:'dd MMM yyyy' }}", SearchReq.DepDate.ToString("dd MMM yyyy"));
+                            if (SearchReq.TravelType == "R")
+                            {
+                                StrSearch = StrSearch.Replace("{{ctrl.Search.RetDate | date:'dd MMM yyyy' }}", SearchReq.RetDate.ToString("dd MMM yyyy"));
+                            }
+                            else
+                            {
+                                StrSearch = StrSearch.Replace("^retHide^", "HideCupon");
+                            }
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.Adult}}", SearchReq.Adult.ToString());
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.Child}}", SearchReq.Child.ToString());
+                            StrSearch = StrSearch.Replace("{{ctrl.Search.Infant}}", SearchReq.Infant.ToString());
+                            strFlightDetails.Append(StrSearch);
+                        }
+
+
+                    }
+
+                    strFlightDetails.Append("<div class='layout layout-padding'>");
+                    strFlightDetails.Append("<div class='flex'>");
+                    string OnwardSelectFligth = "";
+                    string ReturnSelectFligth = "";
+                    if (FareType.Contains("~"))
+                    {
+                        string SelectFligth = FareType.Split('~')[1].ToString();
+                        FareType = FareType.Split('~')[0];
+                        OnwardSelectFligth = SelectFligth.Split('$')[0];
+                        ReturnSelectFligth = SelectFligth.Split('$')[1];
+                    }
+                    foreach (AvailFlightSegments lobjSegments in lobjOngoing)
+                    {
+                        string strTemp = string.Empty;
+                        strTemp = strOngoing;
+                        if (OnwardSelectFligth != "")
+                        {
+                            if (lobjSegments.BaseDetail.FlightsCount.ToString() == OnwardSelectFligth)
+                            {
+                                strTemp = strTemp.Replace("testlay hideSelect", "testlay");
+                            }
+                        }
+                        strTemp = strTemp.Replace("{{Flight.AvailSegments[Flight.AvailSegments.length-1].AirlinesId}}", lobjSegments.AvailSegments[lobjSegments.AvailSegments.Length - 1].AirlinesId);
+                        strTemp = strTemp.Replace("{{Flight.BaseDetail.ReturnBaseAirlineName}}", lobjSegments.BaseDetail.ReturnBaseAirlineName);
+                        strTemp = strTemp.Replace("{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.ClassCode}}", lobjSegments.AvailSegments[lobjSegments.AvailSegments.Length - 1].AvailPaxFareDetails.ClassCode);
+                        strTemp = strTemp.Replace("{{Flight.AvailSegments[Flight.AvailSegments.length-1].FlightNumber}}", lobjSegments.AvailSegments[lobjSegments.AvailSegments.Length - 1].FlightNumber);
+                        strTemp = strTemp.Replace("{{Flight.BaseDetail.BaseDepartureDateTime | date:'h:mm a'}}", lobjSegments.BaseDetail.BaseDepartureDateTime.ToString("HH:mm tt"));
+                        strTemp = strTemp.Replace("{{Flight.BaseDetail.BaseOrigin}}", lobjSegments.BaseDetail.BaseOrigin);
+                        strTemp = strTemp.Replace("{{Flight.BaseDetail.ReturnBaseDuration}}", lobjSegments.BaseDetail.ReturnBaseDuration);
+                        // strTemp = strTemp.attr  ("<div class='printwid'> <div class='print'></div></div>");
+                        strTemp = strTemp.Replace("{{ Flight.BaseDetail.ReturnNoOfStops == 0 ?'Non Stop': (Flight.BaseDetail.ReturnNoOfStops - 1) +' Stop'}}", (lobjSegments.BaseDetail.ReturnNoOfStops == 0 ? "Non Stop" : (lobjSegments.BaseDetail.ReturnNoOfStops - 1) + " Stop"));
+                        strTemp = strTemp.Replace("{{Flight.BaseDetail.ReturnBaseArrivalDateTime | date:'h:mm a'}}", lobjSegments.BaseDetail.ReturnBaseArrivalDateTime.ToString("HH:mm tt"));
+                        strTemp = strTemp.Replace("{{Flight.BaseDetail.ReturnBaseDestination}}", lobjSegments.BaseDetail.ReturnBaseDestination);
+                        strTemp = strTemp.Replace("{{Flight.AvailSegments[0].CurrencyCode}}", lobjSegments.AvailSegments[0].CurrencyCode);
+                        if (FareType == "GROSS")
+                        {
+                            strTemp = strTemp.Replace("{{Flight.BaseDetail.GrossAmount | number : 0}}", ((int)lobjSegments.BaseDetail.GrossAmount).ToString());
+                            //strTemp = strTemp.Replace("{{Flight.BaseDetail.GrossAmntWOComm | number : 0}}", "");
+                            //lobjDataLogger.Err_Handler("EmailORPrint - GROSS", strTemp, true);
+
+                        }
+                        else if (FareType == "NET")
+                        {
+                            strTemp = strTemp.Replace("{{Flight.BaseDetail.GrossAmount | number : 0}}", ((int)lobjSegments.BaseDetail.GrossAmount).ToString());
+                            //strTemp = strTemp.Replace("{{Flight.BaseDetail.GrossAmntWOComm | number : 0}}", ((int)lobjSegments.BaseDetail.GrossAmntWOComm).ToString());
+                            //lobjDataLogger.Err_Handler("EmailORPrint - NET", strTemp, true);
+                        }
+
+                        strTemp = strTemp.Replace("ng-src", "src");
+                        //if (lobjSegments.FareType == "C")
+                        //{
+                        //    strTemp = strTemp.Replace("^HideCorp^", "HideCorp");
+                        //}
+                        //else if (lobjSegments.FareType == "CORP")
+                        //{
+                        //    strTemp = strTemp.Replace("^HideCupon^", "HideCupon");
+                        //}
+                        //else
+                        //{
+                        //    strTemp = strTemp.Replace("^HideCorp^", "HideCorp");
+                        //    strTemp = strTemp.Replace("^HideCupon^", "HideCupon");
+                        //}
+                        strFlightDetails.Append(strTemp);
+                    }
+                    strFlightDetails.Append("</div>");
+                    if (arrFlightCount.Length > 1)
+                    {
+                        strFlightDetails.Append("<div class='flex'>");
+                        foreach (AvailFlightSegments lobjSegments in lobjReturn)
+                        {
+                            string strTemp = string.Empty;
+                            strTemp = strOngoing;
+                            if (ReturnSelectFligth != "")
+                            {
+                                if (lobjSegments.BaseDetail.FlightsCount.ToString() == ReturnSelectFligth)
+                                {
+                                    strTemp = strTemp.Replace("testlay hideSelect", "testlay");
+                                }
+                            }
+                            strTemp = strTemp.Replace("{{Flight.AvailSegments[Flight.AvailSegments.length-1].AirlinesId}}", lobjSegments.AvailSegments[lobjSegments.AvailSegments.Length - 1].AirlinesId);
+                            strTemp = strTemp.Replace("{{Flight.BaseDetail.ReturnBaseAirlineName}}", lobjSegments.BaseDetail.ReturnBaseAirlineName);
+                            strTemp = strTemp.Replace("{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.ClassCode}}", lobjSegments.AvailSegments[lobjSegments.AvailSegments.Length - 1].AvailPaxFareDetails.ClassCode);
+                            strTemp = strTemp.Replace("{{Flight.AvailSegments[Flight.AvailSegments.length-1].FlightNumber}}", lobjSegments.AvailSegments[lobjSegments.AvailSegments.Length - 1].FlightNumber);
+                            strTemp = strTemp.Replace("{{Flight.BaseDetail.BaseDepartureDateTime | date:'h:mm a'}}", lobjSegments.BaseDetail.ReturnBaseDepartureDateTime.ToString("HH:mm tt"));
+                            strTemp = strTemp.Replace("{{Flight.BaseDetail.BaseOrigin}}", lobjSegments.BaseDetail.ReturnBaseOrigin);
+                            strTemp = strTemp.Replace("{{Flight.BaseDetail.ReturnBaseDuration}}", lobjSegments.BaseDetail.ReturnBaseDuration);
+                            strTemp = strTemp.Replace("{{ Flight.BaseDetail.ReturnNoOfStops == 0 ?'Non Stop': (Flight.BaseDetail.ReturnNoOfStops - 1) +' Stop'}}", (lobjSegments.BaseDetail.ReturnNoOfStops == 0 ? "Non Stop" : (lobjSegments.BaseDetail.ReturnNoOfStops - 1) + " Stop"));
+                            strTemp = strTemp.Replace("{{Flight.BaseDetail.ReturnBaseArrivalDateTime | date:'h:mm a'}}", lobjSegments.BaseDetail.ReturnBaseArrivalDateTime.ToString("HH:mm tt"));
+                            strTemp = strTemp.Replace("{{Flight.BaseDetail.ReturnBaseDestination}}", lobjSegments.BaseDetail.ReturnBaseDestination);
+                            strTemp = strTemp.Replace("{{Flight.AvailSegments[0].CurrencyCode}}", lobjSegments.AvailSegments[0].CurrencyCode);
+
+                            if (FareType == "GROSS")
+                            {
+                                strTemp = strTemp.Replace("{{Flight.BaseDetail.GrossAmount | number : 0}}", ((int)lobjSegments.BaseDetail.GrossAmount).ToString());
+                                //strTemp = strTemp.Replace("{{Flight.BaseDetail.GrossAmntWOComm | number : 0}}", "");
+                                //lobjDataLogger.Err_Handler("EmailORPrint - GROSS", strTemp, true);
+
+                            }
+                            else if (FareType == "NET")
+                            {
+                                strTemp = strTemp.Replace("{{Flight.BaseDetail.GrossAmount | number : 0}}", ((int)lobjSegments.BaseDetail.GrossAmount).ToString());
+                                //strTemp = strTemp.Replace("{{Flight.BaseDetail.GrossAmntWOComm | number : 0}}", ((int)lobjSegments.BaseDetail.GrossAmntWOComm).ToString());
+                                //lobjDataLogger.Err_Handler("EmailORPrint - NET", strTemp, true);
+                            }
+                            //strTemp = strTemp.Replace("Content/Images/coupon.png", ConfigurationManager.AppSettings["CurrentDomain"].ToString() + "Content/Images/coupon.png");
+                            //strTemp = strTemp.Replace("Content/Images/corporate.png", ConfigurationManager.AppSettings["CurrentDomain"].ToString() + "Content/Images/corporate.png");
+                            //strTemp = strTemp.Replace("ng-src", "src");
+                            //if (lobjSegments.FareType == "C")
+                            //{
+                            //    strTemp = strTemp.Replace("^HideCorp^", "HideCorp");
+                            //}
+                            //else if (lobjSegments.FareType == "CORP")
+                            //{
+                            //    strTemp = strTemp.Replace("^HideCupon^", "HideCupon");
+                            //}
+                            //else
+                            //{
+                            //    strTemp = strTemp.Replace("^HideCorp^", "HideCorp");
+                            //    strTemp = strTemp.Replace("^HideCupon^", "HideCupon");
+                            //}
+                            strFlightDetails.Append(strTemp);
+
+                        }
+                        strFlightDetails.Append("</div>");
+                    }
+                    strFlightDetails.Append("</div></body></html>");
+                    lstrErrorMsg = string.Empty;
+                    string lstrSubject = "Dear Customer<br>&nbsp;&nbsp;&nbsp;Please Find the Attachment for Filght Details.<br>Regards,<br>TMS.";
+
+                    if (Flag == 0)
+                    {
+                        string filePath = ConfigurationManager.AppSettings["UploadFlightDetail"].ToString();
+                        if (strFlightDetails.ToString() != "")
+                        {
+                            if (!Directory.Exists(filePath))
+                            {
+                                Directory.CreateDirectory(filePath);
+                            }
+                            filePath += "FLIGHTDETAILS-" + DateTime.Now.ToString("dd-MM-HHmmss") + ".htm";
+                            System.IO.File.WriteAllText(filePath, strFlightDetails.ToString());
+                        }
+                        filePath = filePath.Replace(ConfigurationManager.AppSettings["UploadFlightDetail"].ToString(), ConfigurationManager.AppSettings["DownloadFlightDetail"].ToString());
+                        JSONresult = LobjCommon.SetStatus("3", filePath, "[]");
+                        return Json(JSONresult);
+                    }
+                    else
+                    {
+                        string filePath = ConfigurationManager.AppSettings["UploadFlightDetail"].ToString();
+                        if (strFlightDetails.ToString() != "")
+                        {
+                            if (!Directory.Exists(filePath))
+                            {
+                                Directory.CreateDirectory(filePath);
+                            }
+                            filePath += "FLIGHTDETAILS-" + DateTime.Now.ToString("dd-MM-HHmmss") + ".htm";
+                            System.IO.File.WriteAllText(filePath, strFlightDetails.ToString());
+                        }
+
+
+                        string[] paths = new string[1];
+                        paths[0] = filePath;
+                        string lstrMailContent = "";
+                        lstrMailContent += "Dear partner,<br/><br/>";
+                        lstrMailContent += "Greeting !!!<br/>";
+                        lstrMailContent += "Download your search availability.<br/><br/> ";
+                        lstrMailContent += "Regards,<br/>";
+                        lstrMailContent += "BK Team";
+                        LobjCommon.EmailsenderAttach(EmailID, "Flight Details", lstrMailContent, paths, ref lstrErrorMsg);
+
+
+                        //LobjCommon.Emailsender(EmailID, "", "", "FLIGHT DETAILS", strFlightDetails.ToString(), ref lstrErrorMsg);
+                        if (lstrErrorMsg == "")
+                        {
+                            JSONresult = LobjCommon.SetStatus("0", "Mail Sent Successfully", "[]");
+                        }
+                        else
+                        {
+                            JSONresult = LobjCommon.SetStatus("0", lstrErrorMsg, "[]");
+                        }
+                    }
+                }
+                else
+                {
+                    JSONresult = LobjCommon.SetStatus("1", "", "[{\"Ongoing\":" + JsonConvert.SerializeObject(lobjOngoing) + "," + "\"Return\":" + lstrReturn + "}]");
+                }
+            }
+            catch (Exception ex)
+            {
+                JSONresult = LobjCommon.SetStatus("0", "Unable To Process Your Request Please Try after sometime !", "[]");
+                lobjARMError.Err_Handler(ex, "DomesticController", "EmailorPrint");
+            }
+            return Json(JSONresult);
+        }
+
+
+        #endregion
+
+        #region "Method"
+        public string getAirLineId(string psrtAirLineCode)
+        {
+            try
+            {
+                switch (psrtAirLineCode.Trim())
+                {
+                    case "2P":
+                        //Air Phil Express
+                        return "1";
+                    case "JQ":
+                        //Jetstar
+                        return "2";
+                    case "3K":
+                        //Jetstar Asia
+                        return "3";
+                    case "5J":
+                        //CebupacificAir
+                        return "9";
+                    case "PR":
+                        //Philippine Airlines 
+                        return "6";
+                    case "Z2":
+                        //Zest Air
+                        return "10";
+                    default:
+                        DataSet ds = new DataSet();
+                        ds.ReadXml(System.AppDomain.CurrentDomain.BaseDirectory + "source\\xml\\InternationalAirlines.xml");
+                        DataTable dt;
+                        dt = ds.Tables[0];
+                        DataView dvAirlines = new DataView(dt, "IATACode ='" + psrtAirLineCode + "'", "", DataViewRowState.CurrentRows);
+                        if (dvAirlines.Count > 0)
+                        {
+                            return dvAirlines[0]["AirlinesId"].ToString();
+                        }
+                        else
+                        {
+                            return "";
+                        }
+                        break;
+                }
+                return "";
+            }
+            catch (Exception ex)
+            {
+                //  lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "AIRLINE", "Domestic", "getAirLineId", ex);
+                lobjARMError.Err_Handler(ex, "DomesticController", "getAirLineId");
+                return "";
+            }
+        }
+
+        public bool isBetween(double value, double min, double max)
+        {
+            return ((value > min) && (value < max));
+        }
+
+        #endregion
+    }
+}
