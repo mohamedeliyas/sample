@@ -1272,3 +1272,599 @@ namespace BIYAHEKOMVCWEB
         #endregion
     }
 }
+
+
+
+bus
+
+using System;
+using System.Collections.Generic;
+using System.Configuration;
+using System.Linq;
+using System.Threading.Tasks;
+using System.Web;
+using System.Xml;
+using System.Web.Mvc;
+using System.Data;
+using HermesLogger;
+using BIYAHEKOMVCWEB.Logic;
+using BIYAHEKOMVCWEB.Models;
+using System.Globalization;
+using System.Data.SqlClient;
+using Newtonsoft.Json;
+using System.IO;
+using System.Web.UI.WebControls;
+using System.Web.UI;
+using ARMBtErrorLogger;
+namespace BIYAHEKOMVCWEB.Controllers
+{
+    public class BusController : Controller
+    {
+        DataAccess ldataAccess = new DataAccess();
+        Common lobjCommon = new Common();
+        LoginMaster Lobjlogin = new LoginMaster();
+        ARMDataTier.clsDataconnector lobjDataTier = new ARMDataTier.clsDataconnector(ARMDataTier.clsDataconnector.DATABASE.HERMES);
+        string JsonResult = string.Empty;
+        HermesLogger.clsConnector lobjErrorLog = new clsConnector();
+        ARMErrorLogger lobjARMError = new ARMErrorLogger();
+        public ActionResult Busindex()
+        {
+            return View();
+        }
+        public ActionResult BusBooking()
+        {
+            return View();
+        }
+
+        public ActionResult BusHistory()
+        {
+            return View();
+        }
+
+        string JSONresult = string.Empty;
+        [HttpGet]
+        public JsonResult Originload()
+        {
+            try
+            {
+                List<Origincity> lobjorigin = new List<Origincity>();
+
+                string lstrError = string.Empty;
+                string lstrErrCode = string.Empty;
+                string lstrErrMsg = string.Empty;
+                DataSet lobjDataset = new DataSet();
+
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                lobjDataTier.FillDataset("Tmp_Get_BusCity", ref lobjDataset, ref lstrErrCode, ref lstrErrMsg);
+                if (lstrError == "")
+                {
+                    string lstroutput = JsonConvert.SerializeObject(lobjDataset);
+
+                    JSONresult = lobjCommon.SetStatus("1", "", lstroutput);
+
+
+                }
+                else
+                {
+                    //clsJsonObject<string> lobjcityRespn = new clsJsonObject<string>();
+                    //lobjcityRespn = lobjCommon.StringToJson<string>(0, "", lstrError);
+                    //return Request.CreateResponse(HttpStatusCode.OK, lobjcityRespn);
+                }
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+                lobjARMError.Err_Handler(ex, "Bus", "Originload");
+                JSONresult = lobjCommon.SetStatus("0", "Unable To Process Your Request !.", "[]");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult MakeSearch(BusSearchRequest AvailableBus)
+        {
+            try
+            {
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                DataSet dsDetails = new DataSet();
+                DataTable dsDetail = new DataTable();
+                string lstrError = string.Empty;
+
+
+                if (ldataAccess.BusSearch(AvailableBus, ref dsDetail, ref lstrError))
+                {
+                    JSONresult = lobjCommon.SetStatus("1", "Success", JsonConvert.SerializeObject(dsDetail));
+                }
+                else
+                {
+                    JSONresult = lobjCommon.SetStatus("0", lstrError, "[]");
+                }
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+
+            }
+            catch (Exception ex)
+            {
+                // lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "BUS", "MakeSearch", "MakeSearch", ex);
+                lobjARMError.Err_Handler(ex, "Bus", "MakeSearch");
+                JSONresult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult booking(BusBookingRequest details)
+        {
+            try
+            {
+                string lstrError = string.Empty;
+                //if (details.BoardingDtls.Boarding== null)
+                //{
+                //    details.BoardingDtls.Boarding = "";
+                //}
+                //if (details.BoardingDtls.Dropping == null)
+                //{
+                //    details.BoardingDtls.Dropping = "";
+                //}
+                //if (details.BoardingDtls.Address == null)
+                //{
+                //    details.BoardingDtls.Address = "";
+                //}
+                //if (details.BoardingDtls.DropAdress == null)
+                //{
+                //    details.BoardingDtls.DropAdress = "";
+                //}
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+                }
+                AllBookingDetails lobjbookdetails = new AllBookingDetails();
+                lobjbookdetails.TravelAgentID = terminal.Table1[0].TRAVELAGENTID;
+                lobjbookdetails.TerminalID = terminal.Table1[0].TERMINALID;
+                lobjbookdetails.OperatorID = Convert.ToInt32(terminal.Table1[0].OPERATORID);
+                lobjbookdetails.origin = details.SearchDetails.origin;
+                lobjbookdetails.destination = details.SearchDetails.destination;
+                lobjbookdetails.TripId = details.SearchDetails.TripId;
+                lobjbookdetails.Mobileno = details.AgentDetail.Mobile;
+                lobjbookdetails.Emailid = details.AgentDetail.Emailid;
+                lobjbookdetails.Name = details.AgentDetail.Name;
+                string lobjpax = "";
+                for (int i = 0; i < details.PassDetails.Length; i++)
+                {
+                    if (details.PassDetails[i] != null)
+                    {
+                        lobjpax += details.PassDetails[i].Title + "$" + details.PassDetails[i].FirstName + "$" + details.PassDetails[i].LastName + "$" + details.PassDetails[i].Gender + "$" + details.PassDetails[i].Age + "$" + details.PassDetails[i].idproof + "$" + "" + "$" + "@";
+                    }
+                }
+                string NewdFormate = Convert.ToDateTime(DateTime.Now).ToString("ddMMyyyy", CultureInfo.InvariantCulture);
+                string text = (DateTime.Now).ToString("ddMMyyyyHH:mm:ss.fff", CultureInfo.InvariantCulture);
+                string usertrack = text.Replace(":", "").Replace(".", "");
+                string lstrUserTrack = terminal.Table1[0].TRAVELAGENTID + usertrack;
+
+                DataSet dsDetail = new DataSet();
+
+                dsDetail = ldataAccess.Inserttrack(details, ref lstrUserTrack, terminal, ref lobjpax, ref lstrError);
+
+
+
+                if (lstrError == "")
+                {
+                    if (dsDetail.Tables[0].Rows[0][0].ToString() == "1")
+                    {
+                        LoginInfo logininfo = new LoginInfo();
+                        logininfo = (LoginInfo)Session["logininfo"];
+                        string lstrErrorMsg = string.Empty;
+                        AgentInfo lobjAgentInfo = new AgentInfo();
+
+                        if (lobjCommon.getTravelAgentLogo(logininfo.Table1[0].TRAVELAGENTID) != "")
+                        {
+
+                            lobjAgentInfo.STATENAME = lobjCommon.getTravelAgentLogo(logininfo.Table1[0].TRAVELAGENTID);
+                        }
+
+                        JSONresult = lobjCommon.SetStatus("1", "Success", "[{\"details\" : " + JsonConvert.SerializeObject(dsDetail.Tables[1].Rows[0][0].ToString()) + ",\"TravelLogo\":\"" + lobjAgentInfo.STATENAME + "\"}]");
+                    }
+                    else
+                    {
+                        JSONresult = lobjCommon.SetStatus("0", "Failure", JsonConvert.SerializeObject(dsDetail.Tables[0].Rows[0][1].ToString()));
+                    }
+                }
+                else
+                {
+                    JSONresult = lobjCommon.SetStatus("2", "No Record Found", "[]");
+                }
+            }
+            catch (Exception ex)
+            {
+                //   lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "BUS", "booking", "booking", ex);
+                JSONresult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Bus", "booking");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+
+
+
+
+        [HttpPost]
+        public JsonResult Boardingload(Bussearchdtls lobjBus)
+        {
+            try
+            {
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                DataSet dsDetails = new DataSet();
+                DataSet dsDetail = new DataSet();
+                string lstrError = string.Empty;
+                dsDetail = ldataAccess.Boarding(lobjBus, ref lstrError);
+
+                if (dsDetail.Tables[0].Rows.Count > 0)
+                {
+                    JSONresult = lobjCommon.SetStatus("1", "Success", JsonConvert.SerializeObject(dsDetail));
+                }
+                else { JSONresult = lobjCommon.SetStatus("0", "No Record Found", "[]"); }
+            }
+            catch (Exception ex)
+            {
+                //  lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "BUS", "Boardingload", "Boardingload", ex);
+                JSONresult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Bus", "Boardingload");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+        public JsonResult Droppingload(Bussearchdtls lobjBus)
+        {
+            try
+            {
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                DataSet dsDetails = new DataSet();
+                DataSet dsDetail = new DataSet();
+                string lstrError = string.Empty;
+                dsDetail = ldataAccess.Dropping(lobjBus, ref lstrError);
+
+                if (dsDetail.Tables[0].Rows.Count > 0)
+                {
+                    JSONresult = lobjCommon.SetStatus("1", "Success", JsonConvert.SerializeObject(dsDetail));
+                }
+                else { JSONresult = lobjCommon.SetStatus("0", "No Record Found", "[]"); }
+            }
+            catch (Exception ex)
+            {
+                //  lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "BUS", "Droppingload", "Droppingload", ex);
+                JSONresult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Bus", "Droppingload");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult DroppingSelectedchange(string Book)
+        {
+
+            try
+            {
+                string lstrError = string.Empty;
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                DataSet dsDetail = new DataSet();
+                string lstrErrorr = string.Empty;
+                dsDetail = ldataAccess.SelectedDropping(Book, ref lstrError);
+
+                if (dsDetail.Tables[0].Rows.Count > 0)
+                {
+                    JSONresult = lobjCommon.SetStatus("1", "Success", JsonConvert.SerializeObject(dsDetail));
+                }
+                else { JSONresult = lobjCommon.SetStatus("0", "No Record Found", "[]"); }
+            }
+            catch (Exception ex)
+            {
+                //    lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "BUS", "DroppingSelectedchange", "DroppingSelectedchange", ex);
+                JSONresult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Bus", "DroppingSelectedchange");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+        [HttpPost]
+        public JsonResult BoardingSelectedchange(string Book)
+        {
+            try
+            {
+                string lstrError = string.Empty;
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                DataSet dsDetail = new DataSet();
+                string lstrErrorr = string.Empty;
+                dsDetail = ldataAccess.SelectedBoarding(Book, ref lstrError);
+
+                if (dsDetail.Tables[0].Rows.Count > 0)
+                {
+                    JSONresult = lobjCommon.SetStatus("1", "Success", JsonConvert.SerializeObject(dsDetail));
+                }
+                else { JSONresult = lobjCommon.SetStatus("0", "No Record Found", "[]"); }
+
+            }
+            catch (Exception ex)
+            {
+                // lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "BUS", "BoardingSelectedchange", "BoardingSelectedchange", ex);
+                JSONresult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Bus", "BoardingSelectedchange");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+
+        [HttpPost]
+        public JsonResult GetBusHistory(BusHistoryObj lobjBusHist)
+        {
+            if (Session["logininfo"] == null)
+            {
+                JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+            }
+            LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+            DataSet dsDetails = new DataSet();
+            DataSet dsDetail = new DataSet();
+
+            string lstrUserTrackID = lobjCommon.GenerateUserTrackID(terminal.Table1[0].TERMINALID);
+            try
+            {
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                string lstrerror = "";
+                dsDetails = ldataAccess.BusHistory(lobjBusHist, terminal, ref lstrerror);
+                Session.Remove("BusHistory");
+                Session["BusHistory"] = dsDetails.Tables[0];
+                if (dsDetails.Tables[0].Rows.Count > 0)
+                {
+                    JSONresult = lobjCommon.SetStatus("1", "Success", JsonConvert.SerializeObject(dsDetails));
+                }
+                else { JSONresult = lobjCommon.SetStatus("0", "No Record Found", "[]"); }
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+
+
+            }
+            catch (Exception ex)
+            {
+                //  lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "BUS", "GetBusHistory", "GetBusHistory", ex);
+                JSONresult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Bus", "GetBusHistory");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+
+
+        [HttpPost]
+        public JsonResult GetVoucher(string VAL)
+        {
+            try
+            {
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                DataSet dsDetails = new DataSet();
+                DataSet dsDetail = new DataSet();
+                string lstrError = string.Empty;
+                dsDetail = ldataAccess.GetPnr(ref VAL, terminal);
+
+                if (dsDetail.Tables[0].Rows.Count > 0)
+                {
+
+                    List<AllBookingDetails> lobjBusRespMethod = new List<AllBookingDetails>();
+                    AllBookingDetails responce = new AllBookingDetails();
+                    List<BusHistoryPax> lobjpax = new List<BusHistoryPax>();
+                    if (!string.IsNullOrEmpty(dsDetail.Tables[0].Rows[0][6].ToString()))
+                    {
+
+                        responce.Departure = dsDetail.Tables[0].Rows[0][14].ToString();
+                        responce.Date = dsDetail.Tables[0].Rows[0][17].ToString();
+                        responce.TripId = Convert.ToInt32(dsDetail.Tables[0].Rows[0][0].ToString());
+                        responce.origin = dsDetail.Tables[0].Rows[0][2].ToString();
+                        responce.destination = dsDetail.Tables[0].Rows[0][3].ToString();
+                        responce.TransportName = dsDetail.Tables[0].Rows[0][20].ToString();
+                        responce.Seatnumber = dsDetail.Tables[0].Rows[0][22].ToString();
+                        responce.BoardingPlace = dsDetail.Tables[0].Rows[0][4].ToString();
+                        responce.GrossFare = Convert.ToDouble(dsDetail.Tables[0].Rows[0][23].ToString());
+                        responce.Markup = Convert.ToDouble(dsDetail.Tables[0].Rows[0][16].ToString());
+                        responce.Reason = dsDetail.Tables[0].Rows[0][18].ToString();
+                        string[] str = dsDetail.Tables[0].Rows[0][6].ToString().Split('@');
+                        for (int i = 0; i < str.Length; i++)
+                        {
+                            if (str[i] != "")
+                            {
+                                BusHistoryPax pax = new BusHistoryPax();
+                                pax.PaxAge = str[i].Split('$')[4];
+                                pax.Title = str[i].Split('$')[0];
+                                pax.Firstname = str[i].Split('$')[1];
+                                pax.LastName = str[i].Split('$')[2];
+                                lobjpax.Add(pax);
+                            }
+                        }
+                    }
+                    responce.PaxDetailas = lobjpax;
+                    LoginInfo logininfo = new LoginInfo();
+
+                    logininfo = (LoginInfo)Session["logininfo"];
+                    string lstrErrorMsg = string.Empty;
+                    AgentInfo lobjAgentInfo = new AgentInfo();
+                    if (lobjCommon.getTravelAgentLogo(logininfo.Table1[0].TRAVELAGENTID) != "")
+                    {
+
+                        lobjAgentInfo.STATENAME = lobjCommon.getTravelAgentLogo(logininfo.Table1[0].TRAVELAGENTID);
+                    }
+
+                    JSONresult = lobjCommon.SetStatus("1", "Success", "[{\"Invoicedetails\" : " + JsonConvert.SerializeObject(responce) + ",\"Logo\":\"" + lobjAgentInfo.STATENAME + "\"}]");
+
+                }
+                else { JSONresult = lobjCommon.SetStatus("0", "No Record Found", "[]"); }
+            }
+            catch (Exception ex)
+            {
+                // lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "BUS", "Boardingload", "Boardingload", ex);
+                JSONresult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Bus", "GetVoucher");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+        }
+
+
+
+
+        [HttpPost]
+        public JsonResult CancelTicket(string VAL)
+        {
+            try
+            {
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                LoginInfo terminal = ((LoginInfo)Session["logininfo"]);
+                if (Session["logininfo"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return Json(JsonResult, JsonRequestBehavior.AllowGet);
+
+                }
+                DataSet dsDetails = new DataSet();
+                DataSet dsDetail = new DataSet();
+                string lstrError = string.Empty;
+                dsDetail = ldataAccess.Cancellall(ref VAL, terminal);
+
+                if (dsDetail.Tables[0].Rows.Count > 0)
+                {
+                    JSONresult = lobjCommon.SetStatus("1", "Success", JsonConvert.SerializeObject(dsDetail));
+                }
+                else { JSONresult = lobjCommon.SetStatus("0", "No Record Found", "[]"); }
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            catch (Exception ex)
+            {
+
+                JSONresult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                lobjARMError.Err_Handler(ex, "Bus", "CancelTicket");
+                return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Json(JSONresult, JsonRequestBehavior.AllowGet);
+
+        }
+
+
+        public HttpResponseBase ExportExcel()
+        {
+            StringWriter sw = new StringWriter();
+            try
+            {
+                if (Session["BusHistory"] == null)
+                {
+                    JsonResult = lobjCommon.SetStatus("2", "User Session has exipred..!!", "[]");
+                    return null;
+
+                }
+                if (Session["BusHistory"] != null)
+                {
+                    DataTable dt = new DataTable();
+                    dt = (DataTable)Session["BusHistory"];
+                    //Create a dummy GridView
+                    string[] selectColumns = new[] { "Refno", "Terminalid", "BaseOrigin", "BaseDestination", "BoardingPlace", "ContactName", "ArrivalPlace", "MobileNumber", "EmailId", "CustomerAddress", "Boardingaddress", "Droppingaddress", "UserTrackId", "DepartureDate", "Amount", "GrossAmount", "Markup", "Date", "REASON", "Status", "Transportname" };
+                    DataTable newDt = new DataView(dt).ToTable(false, selectColumns);
+                    GridView GridView1 = new GridView();
+                    GridView1.AllowPaging = false;
+                    GridView1.DataSource = newDt;
+                    GridView1.DataBind();
+                    Response.Clear();
+                    Response.Buffer = true;
+                    string Filename = "BusHistory" + DateTime.Now.ToString("dd/MM/yyyy");
+                    Response.AddHeader("content-disposition", "attachment;filename=" + Filename + ".xls");
+                    Response.Charset = "";
+                    Response.ContentType = "application/vnd.ms-excel";
+
+                    HtmlTextWriter hw = new HtmlTextWriter(sw);
+                    for (int i = 0; i < GridView1.Rows.Count; i++)
+                    {
+                        //Apply text style to each Row
+                        GridView1.Rows[i].Attributes.Add("class", "textmode");
+                    }
+                    GridView1.RenderControl(hw);
+                    //style to format numbers to string
+                    string style = @"<style> .textmode { mso-number-format:\@; } </style>";
+                    Response.Write(style);
+                    Response.Output.Write(sw.ToString());
+                    Response.Flush();
+                    Response.End();
+                    return Response;
+                }
+                else
+                {
+                    Response.Clear();
+                    return Response;
+                }
+            }
+            catch (Exception ex)
+            {
+                //     lobjErrorLog.ERROR_HANDLER(clsConnector.ERR_ApplicationType.ERR_OTHERS, HermesLogger.clsConnector.APPLOG_ProjectType.APP_OTHERES, "ECPAY", "ECpay", "ECbillinvoice", ex);
+                lobjARMError.Err_Handler(ex, "Bus", "ExportExcel");
+                JsonResult = lobjCommon.SetStatus("0", ex.Message.ToString(), "[]");
+                // return Json(JSONresult, JsonRequestBehavior.AllowGet);
+            }
+            return Response;
+        }
+
+    }
+}
