@@ -1,0 +1,575 @@
+ import {Injectable, Component, OnInit, Input, Output, trigger, ComponentFactoryResolver, Compiler, ComponentRef, ViewChild, ViewContainerRef} from "@angular/core";
+import {BrowserModule} from "@angular/platform-browser"
+import {Http, Response} from "@angular/http";
+import {Router} from "@angular/router";
+import {DynamicContentComponent} from "../Lib/DynamicModalPopup/dynamic-modal-popup";
+declare function getpath(): any;
+declare function HideProcBar(): any;
+declare function ShowMSG(title, Message): any;
+declare function ShowAmenties(Message): any;
+declare function ShowHideDynamicModal(Hide): any;
+@Injectable()
+@Component({
+    selector: "layout",
+    templateUrl: "Templates/HotelBooking/Index.html"
+})
+
+export class HotelBookComponent implements OnInit {
+    private Url: string;
+    Bookingcls: HotelBooking;
+
+    private HotelBookResponse: any;
+    Hotelbkdata: any;
+    passdate: Date;
+    checkdate: AvailableHotel = new AvailableHotel();
+    passcount: any[];
+    adultcount: any[];
+    Membercount: any[];
+    ChildTotal: number;
+    MemberTotal: number;
+    AdultTotal: number;
+    mobileno: number;
+    Invoicesummary: Invoicedetail;
+    BookingResp: BookingCls;
+    policyres = policycancel;
+
+
+    @ViewChild("container", { read: ViewContainerRef })
+    container: ViewContainerRef;
+    @Input()
+    context: any;
+    private componentRef: ComponentRef<{}>;
+    TicketModal: any;
+    InvoiceModel: any
+    Confirmation: any;
+
+
+
+    constructor(private _http: Http, private router: Router, private componentFactoryResolver: ComponentFactoryResolver, private compiler: Compiler) {
+        this.Url = getpath();
+    }
+
+    ngOnInit() {
+        this.Url = getpath();
+        var Bookingdata = JSON.parse(window.localStorage.getItem("HotelSelectedDtls")); //HotelSelectedDtls ""
+        this.policyres = JSON.parse(window.localStorage.getItem("policydetails"));
+
+        console.log("con", this.policyres)
+        this.Hotelbkdata = Bookingdata;
+
+       
+        var pass = JSON.parse(window.localStorage.getItem("HotelSearch"));
+        this.checkdate = pass;
+
+        console.log("pass", pass, this.checkdate)
+        this.AdultTotal = (((this.checkdate.AdultCount1) ? (this.checkdate.AdultCount1 * 1) : 0) + ((this.checkdate.AdultCount2) ? (this.checkdate.AdultCount2 * 1) : 0) + ((this.checkdate.AdultCount3) ? (this.checkdate.AdultCount3 * 1) : 0) + ((this.checkdate.AdultCount4) ? (this.checkdate.AdultCount4 * 1) : 0));
+        this.ChildTotal = (((this.checkdate.ChildCount1) ? (this.checkdate.ChildCount1 * 1) : 0) + ((this.checkdate.ChildCount2) ? (this.checkdate.ChildCount2 * 1) : 0) + ((this.checkdate.ChildCount3) ? (this.checkdate.ChildCount3 * 1) : 0) + ((this.checkdate.ChildCount4) ? (this.checkdate.ChildCount4 * 1) : 0));
+        this.MemberTotal = (((this.checkdate.ChildCount1) ? (this.checkdate.ChildCount1 * 1) : 0) + ((this.checkdate.ChildCount2) ? (this.checkdate.ChildCount2 * 1) : 0) + ((this.checkdate.ChildCount3) ? (this.checkdate.ChildCount3 * 1) : 0) + ((this.checkdate.ChildCount4) ? (this.checkdate.ChildCount4 * 1) : 0) + ((this.checkdate.AdultCount1) ? (this.checkdate.AdultCount1 * 1) : 0) + ((this.checkdate.AdultCount2) ? (this.checkdate.AdultCount2 * 1) : 0) + ((this.checkdate.AdultCount3) ? (this.checkdate.AdultCount3 * 1) : 0) + ((this.checkdate.AdultCount4) ? (this.checkdate.AdultCount4 * 1) : 0));
+        this.Bookingcls = new HotelBooking();
+        this.Bookingcls.Searchdetail = {};
+        this.Bookingcls.SearchRequestDetails = {};
+        this.Bookingcls.Searchdetail.Consolidateid = Bookingdata.Hotelconsolidatorid;
+        this.Bookingcls.Searchdetail.Trackid = Bookingdata.Hotelid;
+        this.Bookingcls.Searchdetail.Hotelids = Bookingdata.trackid;
+        this.Bookingcls.Searchdetail.Grossamt = Bookingdata.GrossFare;
+        this.Bookingcls.Searchdetail.paymode = "5";
+        this.Bookingcls.SearchRequestDetails = pass;
+
+    
+        this.Bookingcls.Customer = {};
+        this.Bookingcls.Customer.Title = "Mrs";
+        this.Bookingcls.RoomDetails = new Array((pass.NoofRooms * 1));
+        for (let i = 0; i < this.Bookingcls.RoomDetails.length; i++) {
+            this.Bookingcls.RoomDetails[i] = {};
+            // this.Bookingcls.RoomDetails[i].Rooms = (i + 1);
+            this.Bookingcls.RoomDetails[i].Adults = new Array((pass["AdultCount" + (i + 1).toString()] * 1));
+            for (let j = 0; j < this.Bookingcls.RoomDetails[i].Adults.length; j++) {
+                this.Bookingcls.RoomDetails[i].Adults[j] = {};
+                this.Bookingcls.RoomDetails[i].Adults[j].AdltType = "ADULT" + (i + 1);
+                this.Bookingcls.RoomDetails[i].Adults[j].AdltTitle = "Mr";
+                this.Bookingcls.RoomDetails[i].Adults[j].AdltGender = "M";
+                this.Bookingcls.RoomDetails[i].Adults[j].AdltIDProof = 1;
+                this.Bookingcls.RoomDetails[i].Adults[j].Adltindex = (i + j + 1);
+            }
+
+            //if (pass["ChildCount" + (i + 1).toString()] != 0) {
+            this.Bookingcls.RoomDetails[i].Childs = new Array((pass["ChildCount" + (i + 1).toString()] * 1))
+            console.log(pass, "cc")
+            for (let K = 0; K < this.Bookingcls.RoomDetails[i].Childs.length; K++) {
+                this.Bookingcls.RoomDetails[i].Childs[K] = {};
+                this.Bookingcls.RoomDetails[i].Childs[K].chldType = "CHILD" + (i + 1 + K);
+                this.Bookingcls.RoomDetails[i].Childs[K].chldTitle = "Mr";
+                this.Bookingcls.RoomDetails[i].Childs[K].chldGender = "M";
+                this.Bookingcls.RoomDetails[i].Childs[K].chldAge = pass["ChildAge" + (i + 1).toString() + K.toString()];
+                console.log(this.Bookingcls.RoomDetails[i].Childs[K].chldAge, "bb")
+                this.Bookingcls.RoomDetails[i].Childs[K].chldindex = (i + K + 1);
+            }
+            //}
+        }
+        console.log("val", this.Bookingcls);
+    }
+
+
+    GETNO() {
+        if (!this.Bookingcls.Customer.hasOwnProperty("PhoneNumber")) {
+
+            if (this.Bookingcls.Customer.PhoneNumber == null || this.Bookingcls.Customer.PhoneNumber == "") {
+                ShowMSG(null, "Please Enter mobileno");
+                return false
+            }
+        }
+        if (this.Bookingcls.Customer.PhoneNumber == "") {
+            ShowMSG(null, "Please Enter mobileno");
+            return false
+        }
+        console.log(this.Bookingcls, "bb")
+        var Response = this._http.post(this.Url + "api/HotelBook/GetUserInfo", this.Bookingcls).subscribe((res: Response) => {
+            this.HotelBookResponse = res.json();
+            console.log(this.HotelBookResponse)
+            HideProcBar();
+
+            if (this.HotelBookResponse.Status == 1) {
+                this.Bookingcls.Customer = this.HotelBookResponse.Data.HotelGetResults;
+
+                this.Bookingcls.Customer.Address = this.HotelBookResponse.Data.HotelGetResults[0].Address;
+                this.Bookingcls.Customer.City = this.HotelBookResponse.Data.HotelGetResults[0].City;
+                this.Bookingcls.Customer.CustomerName = this.HotelBookResponse.Data.HotelGetResults[0].CustomerName;
+                this.Bookingcls.Customer.Emailid = this.HotelBookResponse.Data.HotelGetResults[0].Emailid;
+                this.Bookingcls.Customer.PhoneNumber = this.HotelBookResponse.Data.HotelGetResults[0].PhoneNumber;
+                this.Bookingcls.Customer.Pincode = this.HotelBookResponse.Data.HotelGetResults[0].Pincode;
+                this.Bookingcls.Customer.Title = this.HotelBookResponse.Data.HotelGetResults[0].Title;
+                console.log("vv", this.Bookingcls.Customer.Title)
+            }
+            else {
+                ShowMSG(null, "No Records Found");
+            }
+
+        }
+
+        )
+    };
+
+    Booking() {
+        console.log(this.Bookingcls, "vd")
+        if (!this.Bookingcls.Customer.PhoneNumber) {
+            ShowMSG(null, "Please select PhoneNumber ...! ");
+            return;
+        }
+
+        if (!this.Bookingcls.Customer.Title) {
+            ShowMSG(null, "Please Select Title ...! ");
+            return;
+        }
+        if (!this.Bookingcls.Customer.CustomerName) {
+            ShowMSG(null, "Please Enter CustomerName ...! ");
+            return;
+        }
+        if (!this.Bookingcls.Customer.Emailid) {
+            ShowMSG(null, "Please Enter Emailid ...! ");
+            return;
+        }
+        var pattern = /^\w+@[a-zA-Z_]+?\.[a-zA-Z]{2,3}$/;
+        if (!pattern.test(this.Bookingcls.Customer.Emailid)) {
+            ShowMSG(null, "Please Enter Valid Email...! ");
+            return false;
+        }
+        if (!this.Bookingcls.Customer.Address) {
+            ShowMSG(null, "Please Enter Address ...! ");
+            return;
+        }
+        if (!this.Bookingcls.Customer.City) {
+            ShowMSG(null, "Please Enter City ...! ");
+            return;
+        }
+        if (!this.Bookingcls.Customer.Pincode) {
+            ShowMSG(null, "Please Enter Pincode ...! ");
+            return;
+        }
+
+
+
+
+        for (var i in this.Bookingcls.RoomDetails) {
+            console.log("key", this.Bookingcls.RoomDetails[i].Childs.length)
+
+            for (let j = 0; j < this.Bookingcls.RoomDetails[i].Adults.length; j++) {
+
+                if (!this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltFirstName")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltFirstName) {
+                        ShowMSG(null, "Please Enter First Name ");
+                        return false
+                    }
+                }
+
+                if (this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltFirstName")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltFirstName) {
+                        ShowMSG(null, "Please Enter First Name ");
+                        return false
+                    }
+                }
+
+                if (!this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltLastName")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltLastName) {
+                        ShowMSG(null, "Please Enter Last Name");
+                        return false
+                    }
+                }
+
+                if (this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltLastName")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltLastName) {
+                        ShowMSG(null, "Please Enter Last Name");
+                        return false
+                    }
+                }
+
+
+                if (!this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltAge")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltAge) {
+                        ShowMSG(null, "Please Enter Adult");
+                        return false
+                    }
+                }
+
+                if (this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltAge")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltAge) {
+                        ShowMSG(null, "Please Enter Adult");
+                        return false
+                    }
+                }
+                if (!this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltIDnumber")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltIDnumber) {
+                        ShowMSG(null, "Please Enter AdltIDnumber");
+                        return false
+                    }
+                }
+                if (this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltIDnumber")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltIDnumber) {
+                        ShowMSG(null, "Please Enter IDNumber");
+                        return false
+                    }
+                }
+
+                if (!this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltIDProof")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltIDProof) {
+                        ShowMSG(null, "Please Enter IDNumber");
+                        return false
+                    }
+                }
+                if (this.Bookingcls.RoomDetails[i].Adults[j].hasOwnProperty("AdltIDProof")) {
+                    if (!this.Bookingcls.RoomDetails[i].Adults[j].AdltIDProof) {
+                        ShowMSG(null, "Please Enter IDProof");
+                        return false
+                    }
+                }
+
+
+            }
+            //if (this.Bookingcls.RoomDetails[i].Childs!=0) {
+            //this.Bookingcls.RoomDetails[i].Childs.length
+            for (let K = 0; K < this.Bookingcls.RoomDetails[i].Childs.length; K++) {
+
+                if (!this.Bookingcls.RoomDetails[i].Childs[K].hasOwnProperty("chldFirstName")) {
+                    if (!this.Bookingcls.RoomDetails[i].Childs[K].chldFirstName) {
+                        ShowMSG(null, "Please Enter child First Name ");
+                        return false
+                    }
+                }
+
+                if (this.Bookingcls.RoomDetails[i].Childs[K].hasOwnProperty("chldFirstName")) {
+                    if (!this.Bookingcls.RoomDetails[i].Childs[K].chldFirstName) {
+                        ShowMSG(null, "Please Enter child First Name");
+                        return false
+                    }
+                }
+
+                if (!this.Bookingcls.RoomDetails[i].Childs[K].hasOwnProperty("chldLastName")) {
+                    if (!this.Bookingcls.RoomDetails[i].Childs[K].chldLastName) {
+                        ShowMSG(null, "Please Enter child Last Name");
+                        return false
+                    }
+                }
+
+                if (this.Bookingcls.RoomDetails[i].Childs[K].hasOwnProperty("chldLastName")) {
+                    if (!this.Bookingcls.RoomDetails[i].Childs[K].chldLastName) {
+                        ShowMSG(null, "Please Enter child Last Name");
+                        return false
+                    }
+                }
+
+
+                if (!this.Bookingcls.RoomDetails[i].Childs[K].hasOwnProperty("chldIDnumber")) {
+                    if (!this.Bookingcls.RoomDetails[i].Childs[K].chldIDnumber) {
+                        ShowMSG(null, "Please Enter child IDNumber");
+                        return false
+                    }
+                }
+                if (this.Bookingcls.RoomDetails[i].Childs[K].hasOwnProperty("chldIDnumber")) {
+                    if (!this.Bookingcls.RoomDetails[i].Childs[K].chldIDnumber) {
+                        ShowMSG(null, "Please Enter child IDNumber");
+                        return false
+                    }
+                }
+                //  }
+            }
+
+        }
+        console.log(this.Bookingcls, 'sdfd')
+
+        //var Response = this._http.post(this.Url + "api/HotelBook/booking", this.Bookingcls).subscribe((res: Response) => {
+        //    this.HotelBookResponse = res.json();
+
+        //    HideProcBar();
+        //    if (this.HotelBookResponse.Status == 1) {
+        //        this.Invoice(this.HotelBookResponse.Data);
+        //    }
+        //    if (this.HotelBookResponse.Status == 2) {
+        //        this.ShowReference(this.HotelBookResponse.Data.summary[0]);
+        //    }
+        //    if (this.HotelBookResponse.Status == 0) {
+        //        this.ShowReference(this.HotelBookResponse.StatusDesc);
+        //    }
+        //}
+        //)
+    };
+
+    EMAILSMS(sen, stu): void {
+        if (sen == 1) {
+            this.Bookingcls.Customer.SMS = 1;
+            this.Bookingcls.Customer.EMAIL = 0;
+        }
+        if (sen == 2) {
+            this.Bookingcls.Customer.EMAIL = 1;
+            this.Bookingcls.Customer.SMS = 0;
+        }
+    }
+    Back(YES) {
+        console.log("YES", YES)
+        if (YES == 1) {
+            this.Confirmation = new DynamicContentComponent(this.componentFactoryResolver, this.compiler);
+            var templeteDate = "";
+            this._http.get("Templates/hotelbooking/ConfirmationPopUp.html").subscribe((res: Response) => {
+                HideProcBar();
+                let factory = this.Confirmation.compileTemplate(this, ConfimationPopUp, res.text());
+                this.componentRef = this.container.createComponent(factory);
+                let instance = <DynamicPopupShareData>this.componentRef.instance;
+                instance.Parent = this;
+                ShowHideDynamicModal(false);
+            });
+        }
+        else {
+            ShowHideDynamicModal(true);
+            sessionStorage.setItem("DomLoadType", "Back");
+            this.router.navigateByUrl("/hotelsearch");
+        }
+
+
+
+    }
+
+    ShowReference(Refno) {
+        this.BookingResp = new BookingCls;
+        this.BookingResp = Refno;
+        this.TicketModal = new DynamicContentComponent(this.componentFactoryResolver, this.compiler);
+        var templeteDate = "";
+        this._http.get("Templates/hotelbooking/Summary.html").subscribe((res: Response) => {
+            HideProcBar();
+            let factory = this.TicketModal.compileTemplate(this, TicketModalCompnt, res.text());
+            this.componentRef = this.container.createComponent(factory);
+            let instance = <DynamicPopupShareData>this.componentRef.instance;
+            instance.Parent = this;
+            ShowHideDynamicModal(false);
+        });
+    }
+
+    Invoice(Num) {
+
+        this.Invoicesummary = new Invoicedetail;
+        this.Invoicesummary = Num;
+        //   this.invoicedetilresponce = Num;
+
+        this.InvoiceModel = new DynamicContentComponent(this.componentFactoryResolver, this.compiler);
+        var templeteDate = "";
+        this._http.get("Templates/hotelbooking/Invoice.html").subscribe((res: Response) => {
+            HideProcBar();
+            let factory = this.InvoiceModel.compileTemplate(this, TicketModalCompnt, res.text());
+            this.componentRef = this.container.createComponent(factory);
+            let instance = <DynamicPopupShareData>this.componentRef.instance;
+            instance.Parent = this;
+            ShowHideDynamicModal(false);
+        });
+    }
+
+    CloseTicketPopup() {
+
+        sessionStorage.setItem("DomLoadType", null);
+        this.router.navigateByUrl("/hotelsearch");
+    }
+    PrintTicket() {
+        var printContents = document.getElementById("Summaycontent").innerHTML;
+        var originalContents = document.body.innerHTML;
+        if (navigator.userAgent.toLowerCase().indexOf("chrome") > -1) {
+            var popupWin = window.open("", "_blank", "width=600,height=600,scrollbars=no,menubar=no,toolbar=no,location=no,status=no,titlebar=no");
+            popupWin.window.focus();
+            popupWin.document.write("<!DOCTYPE html><html><head>" +
+                '<link rel="stylesheet" type="text/css" href="Content/Css/angular-material.min.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" />' +
+                "</head>");
+            setTimeout(function () {
+                popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                popupWin.document.close();
+
+            }, 100);
+
+        } else {
+            try {
+                var popupWin = window.open();
+
+                popupWin.document.open();
+
+                popupWin.document.write('<html><head><link rel="stylesheet" type="text/css" href="Content/Css/angular-material.min.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" /></head>');
+                setTimeout(function () {
+                    popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                    popupWin.document.close();
+
+                }, 100);
+
+            }
+            catch (e) {
+
+            }
+        }
+        setTimeout(function () { popupWin.window.close(); }, 1000);
+        return true;
+
+    }
+
+
+    InvoicePrintTicket() {
+        var printContents = document.getElementById("Invoicecontent").innerHTML;
+        var originalContents = document.body.innerHTML;
+        if (navigator.userAgent.toLowerCase().indexOf("chrome") > -1) {
+            var popupWin = window.open("", "_blank", "width=600,height=600,scrollbars=no,menubar=no,toolbar=no,location=no,status=no,titlebar=no");
+            popupWin.window.focus();
+            popupWin.document.write("<!DOCTYPE html><html><head>" +
+                '<link rel="stylesheet" type="text/css" href="Content/Css/angular-material.min.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" />' +
+                "</head>");
+            setTimeout(function () {
+                popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                popupWin.document.close();
+
+            }, 100);
+
+        } else {
+            try {
+                var popupWin = window.open();
+
+                popupWin.document.open();
+
+                popupWin.document.write('<html><head><link rel="stylesheet" type="text/css" href="Content/Css/angular-material.min.css" /><link rel="stylesheet" type="text/css" href="Content/Css/Common.css" /></head>');
+                setTimeout(function () {
+                    popupWin.document.write('<body onload="window.print()"><div class="reward-body">' + printContents + '</div></body></html>');
+
+                    popupWin.document.close();
+
+                }, 100);
+
+            }
+            catch (e) {
+
+            }
+        }
+        setTimeout(function () { popupWin.window.close(); }, 1000);
+        return true;
+
+    }
+
+
+
+
+}
+export class HotelBooking {
+    Customer: any;
+    RoomDetails: any[];
+    Searchdetail: any;
+    SearchRequestDetails: any;
+
+}
+export class BookingCls {
+    hotelname: any;
+    city: any;
+
+}
+
+export class Invoicedetail {
+    summary: any;
+    Pax: any[];
+    Star: any;
+    Searchticket: any;
+
+}
+
+
+
+export class AvailableHotel {
+    public OnwardDate: Date;
+    public ReturnDate: any;
+    public Nationality: any;
+    public NoofRooms: number;
+    public AdultCount1: number;
+    public AdultCount2: number;
+    public AdultCount3: number;
+    public AdultCount4: number;
+    public ChildCount1: number;
+    public ChildCount2: number;
+    public ChildCount3: number;
+    public ChildCount4: number;
+    public ChildAge1: number;
+    public ChildAge2: number;
+    public ChildAge11: number;
+    public ChildAge20: number;
+    public ChildAge21: number;
+    public ChildAge30: number;
+    public ChildAge31: number;
+    public ChildAge40: number;
+    public ChildAge41: number;
+    public Threadno: number;
+    public Traveltype: number;
+}
+
+export class Searchdetail {
+    public Consolidateid: number;
+    public Trackid: number;
+    public Hotelids: number;
+    public Grossamt: number;
+    public paymode: number;
+}
+export class policycancel {
+    public remarks: any;
+    public policy: any;
+
+}
+
+
+export abstract class DynamicPopupShareData {
+    Parent: any;
+}
+
+
+export class TicketModalCompnt extends DynamicPopupShareData {
+    @Input() parentComponent: any
+}
+
+
+export abstract class DynamicPopupShareDataticket {
+    Parent: any;
+}
+
+
+export class InvoiceModalCompnt extends DynamicPopupShareDataticket {
+    @Input() parentComponent: any
+}
+export class ConfimationPopUp extends DynamicPopupShareDataticket {
+    @Input() parentComponent: any
+}
