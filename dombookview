@@ -1,0 +1,2265 @@
+@inherits System.Web.Mvc.WebViewPage
+@using System.Configuration
+<script src="~/Content/App/Dombooking/Dombooking.js?v=@ConfigurationManager.AppSettings["JSCSSVersion"].ToString()"></script>
+<style>
+    
+
+    .panel-bk {
+        background-color: #034F84;
+    }
+
+    .txt-label {
+        color: #fff !important;
+    }
+
+    md-input-container.md-default-theme.md-input-has-value:not(.md-input-invalid) label, md-input-container.md-input-has-value:not(.md-input-invalid) label {
+        color: #dc4132;
+    }
+
+    md-input-container.md-default-theme .md-input, md-input-container .md-input {
+        border-color: #034f84;
+        color: #034F84;
+    }
+
+    md-select.md-default-theme ._md-select-value, md-select ._md-select-value {
+        border-bottom-color: #034F84;
+        color: #034F84;
+    }
+
+    md-checkbox.md-checked ._md-icon::after {
+        border-left: 0 none;
+        border-style: none solid solid none;
+        border-top: 0 none;
+        border-width: 0 1px 1px 0;
+        box-sizing: border-box;
+        content: "";
+        display: table;
+        height: 12px;
+        left: 5.2px;
+        position: absolute;
+        top: 0.8px;
+        transform: rotate(45deg);
+        width: 6px;
+    }
+
+    md-checkbox ._md-icon {
+        border-radius: 0;
+        border-style: solid;
+        border-width: 2px;
+        box-sizing: border-box;
+        height: 16px;
+        left: 0;
+        position: absolute;
+        top: 0;
+        transition: all 240ms ease 0s;
+        width: 16px;
+    }
+
+    .md-button {
+        border-radius: 0px;
+    }
+
+
+    md-list-item.md-3-line, md-list-item.md-3-line > ._md-no-style {
+        height: auto;
+        min-height: 38px;
+    }
+
+    md-tabs-canvas {
+        border-bottom: 1px solid #034F84;
+        height: 36px;
+    }
+
+    md-pagination-wrapper {
+        height: 40px;
+        padding-top: 7px;
+        width: 100% !important;
+    }
+
+    md-tabs.md-default-theme .md-tab, md-tabs .md-tab {
+        color: #034f84;
+    }
+
+    .SSR-Popup md-dialog-content {
+        border: 1px solid #dddddd;
+        border-radius: 5px;
+        margin: 12px;
+        padding: 0 10px;
+    }
+
+    .md-toolbar-tools {
+        font-size: 17px;
+        height: 36px;
+    }
+
+    .md-tab {
+        border: 1px solid #034f84;
+        border-top-left-radius: 7px;
+        border-top-right-radius: 7px;
+        box-sizing: border-box;
+        cursor: pointer;
+        float: left;
+        font-size: 12px;
+        font-weight: 500;
+        line-height: 24px;
+        margin-right: 3px;
+        overflow: hidden;
+        padding: 2px 12px;
+        position: relative;
+        text-align: center;
+        text-overflow: ellipsis;
+        text-transform: uppercase;
+        transition: background-color 0.35s cubic-bezier(0.35, 0, 0.25, 1) 0s;
+        white-space: nowrap;
+        border-bottom: 0 !important;
+    }
+
+    md-toolbar {
+        min-height: 40px;
+    }
+
+    md-tabs.md-default-theme .md-tab.md-active, md-tabs .md-tab.md-active, md-tabs.md-default-theme .md-tab.md-active md-icon, md-tabs .md-tab.md-active md-icon, md-tabs.md-default-theme .md-tab.md-focused, md-tabs .md-tab.md-focused, md-tabs.md-default-theme .md-tab.md-focused md-icon, md-tabs .md-tab.md-focused md-icon {
+        color: #DC4132;
+    }
+
+    .SSR-Fare {
+        color: #DC4132;
+    }
+
+    select {
+        width: 100% !important;
+    }
+
+    .FSC-ServTab md-tab-item {
+        width: 32.8% !important;
+    }
+
+    .FSC-ServTab .fsc-tab-head > div {
+        background: #DDDDDD;
+        padding: 2px 19px;
+        border: 1px solid #BBBBBB;
+    }
+
+    .FSC-ServTab .fsc-tabrow > div {
+        padding: 2px 19px;
+        border: 1px solid #dddddd;
+    }
+
+    .drop {
+        margin: -2px 19px 3px -8px;
+    }
+
+    table, th, td {
+        border: 1px solid black;
+        border-collapse: collapse;
+    }
+
+    .amount {
+        color: rgb(233,30,99);
+        font-size: 16px;
+    }
+</style>
+
+<md-sidenav set-height class="md-sidenav-right md-whiteframe-4dp" md-component-id="filter" style="position:fixed">
+    <md-toolbar style="background-color: #383E5B">
+        <div layout="row" layout-padding layout-align="space-between center">
+            <div>
+                <md-button class="md-icon-button md-primary" ng-click="toggleRight('filter')" aria-label="Settings">
+                    <ng-md-icon icon="arrow_forward" style="fill:#FFFFFF"></ng-md-icon>
+
+                </md-button>
+                Travellers List
+            </div>
+
+        </div>
+    </md-toolbar>
+    <md-content>
+
+        <md-card>
+
+            <div layout="column" flex style="position:fixed;padding-top:10px">
+                <div layout-align="end center">
+                    <div class="layout flex">
+                        <div class="flex">
+                            <md-button class="md-raised btnPrimary" ng-click="AddPassenger();">Select</md-button>
+                        </div>
+                        <div class="flex-5">&nbsp;</div>
+                        <div class="flex">
+                            <md-button class="md-raised yellow" ng-click="toggleRight('filter')">Close</md-button>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+            <div layout="column" style="padding:10px;overflow:auto;margin-top:50px">
+                <div ng-repeat="item in paxList track by $index">
+
+                    <div flex layout="row" class="trvlr-list-item">
+                        <div flex="90">
+
+                            <div class="trvlr-img male"></div>
+                            <div class="trvlr-info">
+                                <div class="trvlr-name">
+                                    {{item.FirstName}} {{item.LastName }}
+                                </div>
+                                <small class="trvlr-dtl">{{item.Gender}}, {{item.PaxType}}</small>
+                            </div>
+                        </div>
+                        <div flex="10" layout-align="center center">
+
+                            <div style="vertical-align: middle; display: inline-block;">
+                                <md-checkbox aria-label="Auto Fill" ng-model="value[$index]" ng-click="SelectPass(item,$index)">
+                                </md-checkbox>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+            </div>
+        </md-card>
+
+    </md-content>
+</md-sidenav>
+
+
+<div layout="column" flex>
+    <div flex="100">
+        <div layout="column" flex class="booking-Row">
+
+            <p>
+                <ng-md-icon size="25" style="fill:#2FCCD9;" icon="access_time"></ng-md-icon>
+
+                You have Only <span style="font-size:20px" class="FClr-Prim-5" ng-class="counter < 121 ? 'blink' : ''"> {{toDisplay}}</span> Minutes to confirm this booking
+            </p>
+        </div>
+    </div>
+    <div layout="row" flex>
+
+        <div flex>
+            <div layout="row">
+
+                <div flex="25" flex-sm="25" class="pad5 bg-Color-2" hide-xs>
+                    <div layout="column" flex>
+
+                        <div class="md-input-focused label txt-label"><b>Your Travelling Schedule</b></div>
+                        <md-divider></md-divider>
+                        <div flex ng-repeat="Segment in seglist" ng-hide="searchData.Triptype =='M'">
+
+                            <div layout="row" layout-align="start center">
+                                <div flex>
+                                    <b class="txtDetails">
+                                        Airline
+                                    </b>
+                                </div>
+                                <div flex>
+                                    <div layout="column" class="txt-label">
+                                        <div flex>
+                                            @*<img style="width:auto;" ng-src="http://202.54.157.189/DISCLAIMER/A{{Segment.AirlinesId}}.bmp" />*@
+
+                                            <div ng-bind-html="fnSetAirLogo(Segment.AirlineCode)"></div>
+                                            <small>{{Segment.AirlineName}}</small>
+                                        </div>
+
+                                        <div flex>{{Segment.AirlineCode}}-{{Segment.FlightNumber}}</div>
+
+
+                                        <div>
+                                            <small flex>{{Segment.AvailPaxFareDetails.Adult.FareBasis}}</small>
+                                            @*<small flex>{{(Segment.AvailPaxFareDetails.Adult.FareType == 'R') ? "REFUNDABLE" : ((Segment.AvailPaxFareDetails.Adult.FareType == 'NR') ? "NON REFUNDABLE" : Segment.AvailPaxFareDetails.Adult.FareType)}}</small>*@
+                                            <br />
+                                            <small flex>class : {{Segment.AvailPaxFareDetails.ClassCode}}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <div layout="row" layout-align="start center">
+                                <div flex>
+                                    <b class="txtDetails">
+                                        Departure
+                                    </b>
+                                </div>
+                                <div flex>
+                                    <div layout="column" class="txt-label">
+                                        <div>
+                                            {{ICL[Segment.Origin]}} <span ng-if="Segment.OriginAirportTerminal">({{Segment.OriginAirportTerminal}})</span>
+                                        </div>
+                                        <div>
+                                            {{ Segment.DepartureDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <div layout="row" layout-align="start center">
+                                <div flex>
+                                    <b class="txtDetails">
+                                        Duration
+                                    </b>
+                                </div>
+                                <div flex>
+                                    <div layout="column" class="txt-label">
+                                        <div>
+                                            {{ Segment.NumberofStops =='0' ?'Non Stop': Segment.NumberofStops +' Stop'}}
+                                        </div>
+                                        <div>
+                                            {{Segment.Duration}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <div layout="row" layout-align="start center">
+                                <div flex>
+                                    <b class="txtDetails">
+                                        Arrival
+                                    </b>
+                                </div>
+                                <div flex>
+                                    <div layout="column" class="txt-label">
+                                        <div>
+                                            {{ICL[Segment.Destination]}} <span ng-if="Segment.DestinationAirportTerminal">({{Segment.DestinationAirportTerminal}})</span>
+                                        </div>
+                                        <div>
+                                            {{ Segment.ArrivalDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <md-divider></md-divider>
+                        </div>
+
+                        <div ng-repeat="taxList in TaxResponseList" ng-show="searchData.Triptype =='M'">
+                            <div class=" txtDetails">Segment {{$index+1}}</div>
+                            <div flex ng-repeat="Segment in taxList.segment.AvailSegments">
+
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <b class="txtDetails">
+                                            Airline
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column" class="txt-label">
+                                            <div flex>
+                                                @*<img style="width:auto;" ng-src="http://202.54.157.189/DISCLAIMER/A{{Segment.AirlinesId}}.bmp" />*@
+
+                                                <div ng-bind-html="fnSetAirLogo(Segment.AirlineCode)"></div>
+                                                <small>{{Segment.AirlineName}}</small>
+                                            </div>
+                                           
+                                            <div flex>{{Segment.AirlineCode}}-{{Segment.FlightNumber}}</div>
+
+
+                                            <small class="txt-primary" ng-if="segment.AvailSegments.length >1">
+                                                <span ng-repeat="item in segment.AvailSegments ">
+                                                    {{item.AirlineCode}}-{{item.FlightNumber}},
+                                                </span>
+                                            </small>
+                                            <small class="txt-primary" ng-if="segment.AvailSegments.length ==1">
+                                                {{segment.AvailSegments[0].AirlineCode}}-{{segment.AvailSegments[0].FlightNumber}}
+                                            </small>
+
+                                            <div>
+                                                <small flex>{{Segment.AvailPaxFareDetails.Adult.FareBasis}}</small>
+                                                @*<small flex>{{(Segment.AvailPaxFareDetails.Adult.FareType == 'R') ? "REFUNDABLE" : ((Segment.AvailPaxFareDetails.Adult.FareType == 'NR') ? "NON REFUNDABLE" : Segment.AvailPaxFareDetails.Adult.FareType)}}</small>*@
+                                                <br />
+                                                <small flex>class : {{Segment.AvailPaxFareDetails.ClassCode}}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br />
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <b class="txtDetails">
+                                            Departure
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column" class="txt-label">
+                                            <div>
+                                                {{ICL[Segment.Origin]}} <span ng-if="Segment.OriginAirportTerminal">({{Segment.OriginAirportTerminal}})</span>
+                                            </div>
+                                            <div>
+                                                {{ Segment.DepartureDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br />
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <b class="txtDetails">
+                                            Duration
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column" class="txt-label">
+                                            <div>
+                                                {{ Segment.NumberofStops =='0' ?'Non Stop': Segment.NumberofStops +' Stop'}}
+                                            </div>
+                                            <div>
+                                                {{Segment.Duration}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br />
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <b class="txtDetails">
+                                            Arrival
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column" class="txt-label">
+                                            <div>
+                                                {{ICL[Segment.Destination]}} <span ng-if="Segment.DestinationAirportTerminal">({{Segment.DestinationAirportTerminal}})</span>
+                                            </div>
+                                            <div>
+                                                {{ Segment.ArrivalDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <md-divider></md-divider>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div layout="column" flex ng-if="seglistRt[0]">
+                        <div class="md-input-focused label txt-label"><b>Your Travelling Return Schedule</b></div>
+                        <md-divider></md-divider>
+                        <div flex ng-repeat="Segment in seglistRt">
+                            <div layout="row" layout-align="start center" class="txt-label">
+                                <div flex class="txtDetails">
+                                    <b>
+                                        Airline
+                                    </b>
+                                </div>
+                                <div flex>
+                                    <div layout="column">
+                                        <div flex>
+                                            <div ng-bind-html="fnSetAirLogo(Segment.AirlineCode)"></div>
+                                            <small>{{Segment.AirlineName}}</small>
+                                        </div>
+                                        <div flex>{{Segment.AirlineCode}}-{{Segment.FlightNumber}}</div>
+
+                                        <div>
+                                            @*<small flex>{{(Segment.AvailPaxFareDetails.Adult.FareType == 'R') ? "REFUNDABLE" : ((Segment.AvailPaxFareDetails.Adult.FareType == 'NR') ? "NON REFUNDABLE" : Segment.AvailPaxFareDetails.Adult.FareType)}}</small>*@
+                                            <small flex>{{Segment.AvailPaxFareDetails.Adult.FareBasis}}</small>
+
+                                            <small flex>class : {{Segment.AvailPaxFareDetails.ClassCode}} </small>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <div layout="row" layout-align="start center" class="txt-label">
+                                <div flex class="txtDetails">
+                                    <b>
+                                        Departure
+                                    </b>
+                                </div>
+                                <div flex>
+                                    <div layout="column">
+                                        <div>
+                                            {{ICL[Segment.Origin]}} <span ng-if="Segment.OriginAirportTerminal">({{Segment.OriginAirportTerminal}})</span>
+                                        </div>
+                                        <div>
+                                            {{ Segment.DepartureDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <br />
+                            <div layout="row" layout-align="start center" class="txt-label">
+                                <div flex class="txtDetails">
+                                    <b>
+                                        Duration
+                                    </b>
+                                </div>
+                                <div flex>
+                                    <div layout="column">
+                                        <div>
+                                            {{ Segment.NumberofStops =='0' ?'Non Stop': Segment.NumberofStops +' Stop'}}
+                                        </div>
+                                        <div>
+                                            {{Segment.Duration}}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <br />
+                            <div layout="row" layout-align="start center" class="txt-label">
+                                <div flex class="txtDetails">
+                                    <b>
+                                        Arrival
+                                    </b>
+                                </div>
+                                <div flex>
+                                    <div layout="column">
+                                        <div>
+                                            {{ICL[Segment.Destination]}} <span ng-if="Segment.DestinationAirportTerminal">({{Segment.DestinationAirportTerminal}})</span>
+                                        </div>
+                                        <div>
+                                            {{ Segment.ArrivalDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <md-divider></md-divider>
+                        </div>
+                    </div>
+
+
+                    @*<div>
+                            <h3 style="text-align: center; color: #fff; border-bottom-style: double; ">      FARE DETAILS</h3>
+                        </div>
+                        <div layout-xs="row">
+                            <div flex layout="row " style="color: #2FCCD9; text-align: center;margin:34px;font-size:small">
+                                1 ADULT
+                                <div flex layout="column" style="color:#fff;text-align:center;">
+                                    <div ng-bind-html="fnSetAirLogo(seglist[0].AirlineCode)"></div>
+                                    {{seglist[0].AirlineName}}
+                                    </br>
+                                    {{seglist[0].FlightNumber}}
+                                </div>
+                            </div>
+
+                            <div flex layout="row" style="color: #2FCCD9; text-align: center;margin:34px;font-size:small">
+                                Taxes and Fees
+                                <div flex layout="column" style="color: #fff; text-align: center">
+                                    {{  seglist[0].AvailPaxFareDetails.ClassCode }}
+                                </div>
+                            </div>
+
+                            <div flex layout="row" style="text-align: left; color: #2FCCD9; margin: 4px; padding: 5px">
+                                Transaction Fee
+                                <div flex layout="column" style="color: #fff; text-align: center">
+                                    {{seglist[0].DepartureDateTime | date:'dd MMM yy'}}
+                                </div>
+                            </div>
+                            <div style="text-align: left; color: #2FCCD9; margin: 4px; padding: 12px">
+                                <h3> Arrival</h3>
+                            </div>
+                        </div>*@
+                    <div layout="column" flex class="txt-label">
+                        <div class="md-input-focused label"><b>Fare Details</b></div>
+                        <md-divider></md-divider>
+
+
+
+                        <div class=" F-White" id="DomTaxLoader" style="text-align:center" ng-if="!Total.TotPayAmnt">
+                            <div class="FareLoader"></div>
+                            Checking Fare from host Server
+                        </div>
+
+                        <div flex ng-if="texlist.Tax[0].AdultFareDetails.AvailTaxItem" @*ng-init="SetGrossAmount(texlist,texlistRt)"*@>
+                            <div layout="row" layout-align="center center">
+                                <div flex="50" class="txtDetails">
+                                    {{texlist.Searchreq.Adult}} Adult{{texlist.Searchreq.Adult > 1 ? 's':''}}
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+
+                                </div>
+                                <div flex="40" style="text-align:right;" class="txt-label">
+                                    @*<span class="Cur"> ₱</span>*@
+                                    {{ (texlist.Tax[0].AdultFareDetails.BasicAmount * texlist.Searchreq.Adult)|number:2}}
+                                </div>
+
+                            </div>
+
+                            <div layout="row" layout-align="center center" ng-if="texlistRt.Tax[0].AdultFareDetails.AvailTaxItem">
+                                <div flex="50" class="txtDetails">
+                                    {{texlistRt.Searchreq.Adult}} Return Adult{{texlistRt.Searchreq.Adult > 1 ? 's':''}}
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@
+                                    {{ (texlistRt.Tax[0].AdultFareDetails.BasicAmount * texlistRt.Searchreq.Adult)|number:2}}
+                                </div>
+
+                            </div>
+
+                            <div layout="row" layout-align="center center" class="txt-label" ng-if="(AServiceTax + CServiceTax + IServiceTax) != 0">
+                                <div flex="50" class="txtDetails">
+                                    Service Tax
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@
+                                    {{ (AServiceTax + CServiceTax + IServiceTax)|number:2}}
+                                </div>
+
+
+                            </div>
+
+                            <div layout="row" layout-align="start center" class="txt-label">
+
+                                <div flex="50" class="menu">
+                                    <md-menu flex>
+                                        <span aria-label="Tax Menu" class="btn-link" style="text-transform:capitalize" ng-click="$mdOpenMenu($event)">
+                                            Taxes & Fees
+                                        </span>
+                                        <md-menu-content layout @*style="max-height:350px;"*@>
+                                            <md-menu-item style="height:auto;font-size:10px;">
+
+                                                <div layout="column">
+                                                    <span ng-click="$mdMenu.close()" flex style="text-align:right;padding-right:7px;cursor:pointer">
+                                                        <b style="float: left; color: #034F84;font-weight:bold">       ADULT TAX SPLIT UP   </b>         <ng-md-icon size="15" icon="clear"></ng-md-icon>
+                                                    </span>
+                                                    <div layout="column" @*layout-gt-sm="row"*@ style="min-width:200px">
+
+                                                        <div flex>
+                                                            <h4>Ongoing</h4>
+                                                            <div layout="row" layout-padding style="border-bottom:1px solid #ddd;" ng-repeat="Item in texlist.Tax[0].AdultFareDetails.AvailTaxItem">
+                                                                <div flex> {{Item.Description}}</div>
+                                                                <div flex layout layout-align="end center">{{Item.Amount |number:2}}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div flex ng-if="texlistRt">
+                                                            <h4>Return</h4>
+                                                            <div layout="row" layout-padding style="border-bottom:1px solid #ddd;" ng-repeat="Item in texlistRt.Tax[0].AdultFareDetails.AvailTaxItem">
+                                                                <div flex> {{Item.Description}}</div>
+                                                                <div flex layout layout-align="end center">{{Item.Amount |number:2}}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    @*<div flex>*@
+                                                    @*<div layout="row" layout-padding class="txt-label">
+                                                        <div flex> TotalTax</div>
+                                                        <div flex class="Fare" style="color:#fff" layout layout-align="end center"><span class="Cur"> ₱</span>{{(ATaxamount + CTaxamount + ITaxamount)|number:2}}</div>*@
+                                                    @*<div flex ng-if="!texlistRt" class="Fare" layout layout-align="end center"><span class="Cur"><ng-md-icon size="18" icon="inr" style="fill: rgb(126, 181, 67); position: relative; top: 2px; left: 5px;"></ng-md-icon></span>{{ texlist.segment.AvailSegments[texlist.segment.AvailSegments.length-1].AvailPaxFareDetails.Adult.TotalTaxAmount |number:2}}</div>
+
+                                                        <div flex ng-if="texlistRt" class="Fare" layout layout-align="end center"><span class="Cur"><ng-md-icon size="18" icon="inr" style="fill: rgb(126, 181, 67); position: relative; top: 2px; left: 5px;"></ng-md-icon></span>{{ (texlist.segment.AvailSegments[texlist.segment.AvailSegments.length-1].AvailPaxFareDetails.Adult.TotalTaxAmount) + (texlistRt.segment.AvailSegments[texlistRt.segment.AvailSegments.length-1].AvailPaxFareDetails.Adult.TotalTaxAmount) |number:2}}</div>*@
+                                                    @*</div>*@
+                                                    @*</div>*@
+                                                </div>
+                                                <br />
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@
+                                    {{(ATaxamount+RtnATaxamount)|number:2}}
+                                </div>
+                            </div>
+                        </div>
+
+                        <div flex ng-if="texlist.Tax[0].ChildFareDetails.AvailTaxItem && (texlist.Searchreq.Child != 0)" @*ng-init="SetGrossAmount(texlist,texlistRt)"*@>
+                            <br />
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    {{texlist.Searchreq.Child}} Child{{texlist.Searchreq.Child > 1 ? 's':''}}
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@
+                                    @*{{CGrossAmount|number:2}}*@
+                                    {{ (texlist.Tax[0].ChildFareDetails.BasicAmount * texlist.Searchreq.Child)|number:2}}
+                                </div>
+                            </div>
+
+                            <div layout="row" layout-align="center center" ng-if="texlistRt.Tax[0].ChildFareDetails.AvailTaxItem && (texlist.Searchreq.Child != 0)">
+                                <div flex="50" class="txtDetails">
+                                    {{texlistRt.Searchreq.Child}} Return Child{{texlistRt.Searchreq.Child > 1 ? 's':''}}
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@
+                                    {{ (texlistRt.Tax[0].ChildFareDetails.BasicAmount * texlistRt.Searchreq.Child)|number:2}}
+                                </div>
+
+                            </div>
+
+
+
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="menu">
+                                    <md-menu flex>
+                                        <span aria-label="Tax Menu" class="btn-link" style="text-transform:capitalize" ng-click="$mdOpenMenu($event)">
+                                            Taxes & Fees
+                                        </span>
+                                        <md-menu-content layout @*style="max-height:350px;"*@>
+                                            <md-menu-item style="height: auto; font-size: 10px;">
+
+                                                <div layout="column">
+                                                    <span ng-click="$mdMenu.close()" flex style="text-align:right;padding-right:7px;cursor:pointer">
+                                                        <b style="float: left; color: #034F84;font-weight:bold">       CHILD TAX SPLIT UP   </b>     <ng-md-icon size="15" icon="clear"></ng-md-icon>
+                                                    </span>
+                                                    <div layout="column" @*layout-gt-sm="row"*@ style="min-width:200px">
+
+                                                        <div flex>
+                                                            <h4>Ongoing</h4>
+                                                            <div layout="row" layout-padding style="border-bottom:1px solid #ddd;" ng-repeat="Item in texlist.Tax[0].ChildFareDetails.AvailTaxItem">
+                                                                <div flex> {{Item.Description}}</div>
+                                                                <div flex layout layout-align="end center">{{Item.Amount |number:2}}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div flex ng-if="texlistRt">
+                                                            <h4>Return</h4>
+                                                            <div layout="row" layout-padding style="border-bottom:1px solid #ddd;" ng-repeat="Item in texlistRt.Tax[0].ChildFareDetails.AvailTaxItem">
+                                                                <div flex> {{Item.Description}}</div>
+                                                                <div flex layout layout-align="end center">{{Item.Amount |number:2}}</div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    @*<div flex>
+                                                        <div layout="row" layout-padding class="txt-label">
+                                                            <div flex> TotalTax</div>
+                                                            <div flex class="Fare" style="color:#fff" layout layout-align="end center"><span class="Cur"> ₱</span>{{(ATaxamount + CTaxamount + ITaxamount)|number:2}}</div>*@
+                                                    @*<div flex ng-if="!texlistRt" class="Fare" layout layout-align="end center"><span class="Cur"><ng-md-icon size="18" icon="inr" style="fill: rgb(126, 181, 67); position: relative; top: 2px; left: 5px;"></ng-md-icon></span>{{ texlist.segment.AvailSegments[texlist.segment.AvailSegments.length-1].AvailPaxFareDetails.Child.TotalTaxAmount |number:2}}</div>
+
+                                                        <div flex ng-if="texlistRt" class="Fare" layout layout-align="end center"><span class="Cur"><ng-md-icon size="18" icon="inr" style="fill: rgb(126, 181, 67); position: relative; top: 2px; left: 5px;"></ng-md-icon></span>{{ (texlist.segment.AvailSegments[texlist.segment.AvailSegments.length-1].AvailPaxFareDetails.Child.TotalTaxAmount) + (texlistRt.segment.AvailSegments[texlistRt.segment.AvailSegments.length-1].AvailPaxFareDetails.Child.TotalTaxAmount) |number:2}}</div>*@
+                                                    @*</div>
+                                                        </div>*@
+                                                </div><br />
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@
+                                    {{CTaxamount+RtnCTaxamount|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div flex ng-if="texlist.Tax[0].InfantFareDetails.AvailTaxItem[0] && (texlist.Searchreq.Infant != 0) ">
+                            <br />
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    {{texlist.Searchreq.Infant}} Infant{{texlist.Searchreq.Infant > 1 ? 's':''}}
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@
+                                    @*{{IGrossAmount|number:2}}*@
+                                    {{ (texlist.Tax[0].InfantFareDetails.BasicAmount * texlist.Searchreq.Infant)|number:2}}
+                                </div>
+                            </div>
+
+
+                            <div layout="row" layout-align="center center" ng-if="texlistRt.Tax[0].InfantFareDetails.AvailTaxItem && (texlist.Searchreq.Infant != 0)">
+                                <div flex="50" class="txtDetails">
+                                    {{texlistRt.Searchreq.Infant}} Return Infant{{texlistRt.Searchreq.Infant > 1 ? 's':''}}
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@
+                                    {{ (texlistRt.Tax[0].InfantFareDetails.BasicAmount * texlistRt.Searchreq.Infant)|number:2}}
+                                </div>
+
+                            </div>
+
+
+
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="menu" ng-if="ITaxamount!=0">
+                                    <md-menu flex>
+                                        <span aria-label="Tax Menu" class="btn-link" style="text-transform:capitalize" ng-click="$mdOpenMenu($event)">
+                                            Taxes & Fees
+                                        </span>
+                                        <md-menu-content layout @*style="max-height:350px;"*@>
+                                            <md-menu-item style="height: auto; font-size: 10px;">
+
+                                                <div layout="column">
+                                                    <span ng-click="$mdMenu.close()" flex style="text-align:right;padding-right:7px;cursor:pointer">
+                                                        <b style="float: left; color: #034F84;font-weight:bold">       INFANT TAX SPLIT UP   </b>         <ng-md-icon size="15" icon="clear"></ng-md-icon>
+                                                    </span>
+                                                    <div layout="column" @*layout-gt-sm="row"*@ style="min-width:200px">
+
+                                                        <div flex>
+                                                            <h4>Ongoing</h4>
+                                                            <div layout="row" layout-padding style="border-bottom:1px solid #ddd;" ng-repeat="Item in texlist.Tax[0].InfantFareDetails.AvailTaxItem">
+                                                                <div flex> {{Item.Description}}</div>
+                                                                <div flex layout layout-align="end center">{{Item.Amount |number:2}}</div>
+                                                            </div>
+                                                        </div>
+                                                        <div flex ng-if="texlistRt">
+                                                            <h4>Return</h4>
+                                                            <div layout="row" layout-padding style="border-bottom:1px solid #ddd;" ng-repeat="Item in texlistRt.Tax[0].InfantFareDetails.AvailTaxItem">
+                                                                <div flex> {{Item.Description}}</div>
+                                                                <div flex layout layout-align="end center">{{Item.Amount |number:2}}</div>
+                                                            </div>
+                                                        </div>
+
+                                                    </div>
+                                                    @*<div flex>
+                                                        <div layout="row" layout-padding class="txt-label">
+                                                            <div flex> TotalTax</div>
+                                                            <div flex class="Fare" style="color:#fff" layout layout-align="end center"><span class="Cur"> ₱</span>{{(ATaxamount + CTaxamount + ITaxamount)|number:2}}</div>*@
+                                                    @*<div flex ng-if="!texlistRt" class="Fare" layout layout-align="end center"><span class="Cur"><ng-md-icon size="18" icon="inr" style="fill: rgb(126, 181, 67); position: relative; top: 2px; left: 5px;"></ng-md-icon></span>{{ texlist.segment.AvailSegments[texlist.segment.AvailSegments.length-1].AvailPaxFareDetails.Infant.TotalTaxAmount |number:2}}</div>
+
+                                                        <div flex ng-if="texlistRt" class="Fare" layout layout-align="end center"><span class="Cur"><ng-md-icon size="18" icon="inr" style="fill: rgb(126, 181, 67); position: relative; top: 2px; left: 5px;"></ng-md-icon></span>{{ (texlist.segment.AvailSegments[texlist.segment.AvailSegments.length-1].AvailPaxFareDetails.Infant.TotalTaxAmount) + (texlistRt.segment.AvailSegments[texlistRt.segment.AvailSegments.length-1].AvailPaxFareDetails.Infant.TotalTaxAmount) |number:2}}</div>*@
+                                                    @*</div>
+                                                        </div>*@
+
+                                                    <br />
+                                                </div>
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;" ng-if="ITaxamount!=0">
+                                    @*<span class="Cur"> ₱</span>*@  {{ITaxamount+RtnITaxamount|number:2}}
+                                </div>
+                            </div>
+
+
+                        </div>
+
+                        @*<div flex ng-if="Total.SSRPay != 0 && TotPayAmnt">
+                                <div layout="row" layout-align="start center">
+                                    <div flex="50" class="txtDetails">
+                                        SSR Charge
+                                    </div>
+                                    <div flex="10">
+                                        <span class="Cur"> ₱</span>
+                                    </div>
+                                    <div flex="40" style="text-align:right;">
+                                         {{Total.SSRPay|number:2}}
+                                    </div>
+                                </div>
+                            </div>*@
+                        <div flex ng-if="(MinorAdult.MinorAdultOnGoFare != 0 || MinorAdult.MinorAdultRetFare!=0) && Total.TotPayAmnt" ng-hide="true">
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    UNMR Fee
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    {{(MinorAdult.MinorAdultOnGoFare*1) + (MinorAdult.MinorAdultRetFare*1) |number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div flex ng-if="Total.MealAmount != 0 && Total.TotPayAmnt">
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    Meals Charge
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    {{Total.MealAmount|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div flex ng-if="Total.BaggageAmount != 0 && Total.TotPayAmnt">
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    Baggage Charge
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    {{Total.BaggageAmount|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div flex ng-if="totalInsuranceAmount">
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    Insurance
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@  {{totalInsuranceAmount|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div flex ng-if="TransactionFee">
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    TransactionFee
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex="40" style="text-align:right;">
+                                    @*<span class="Cur"> ₱</span>*@  {{TransactionFee|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div ng-if="searchData.Triptype=='M' && BasicAmount">
+                            <md-divider></md-divider>
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    <h3>Total Base </h3>
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex style="text-align:right;">
+                                    {{BasicAmount|number:2}}
+                                </div>
+                            </div>
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    <h3>Total Tax</h3>
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex style="text-align:right;">
+                                    {{ATaxamount+ CTaxamount+ITaxamount|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div flex ng-if="Total.TotPayAmnt">
+                            <md-divider></md-divider>
+                            <div layout="row" layout-align="start center">
+                                <div flex="50" class="txtDetails">
+                                    <h3>Total Fare </h3>
+                                </div>
+                                <div flex="10">
+                                    <span class="Cur"> ₱</span>
+                                </div>
+                                <div flex style="text-align:right;">
+
+                                    @*<h3> <span class="Cur"><ng-md-icon size="18" icon="inr" style="fill: rgb(126, 181, 67); position: relative; top: 2px; left: 5px;"></ng-md-icon></span> <b>   <span class="Fare"> {{(GrossAmount+CGrossAmount+IGrossAmount+ATaxamount+CTaxamount+ITaxamount)|number:2}}</span></b></h3>*@
+                                    @*<h3 ng-if="Profile.FareType == 'NET'"> <span class="Cur"> ₱</span> <b>   <span class="Fare" style="color:#fff"> {{((((texlist.TaxFare * 1 ) - texlist.segment.AvailSegments[texlist.segment.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission) + ( texlistRt  ? ((texlistRt.TaxFare * 1) - texlistRt.segment.AvailSegments[texlistRt.segment.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission) : 0))) + Total.SSRPay |number:2}}</span></b></h3>*@
+                                    @*<h3 ng-if="Profile.FareType == 'NET'"> <span class="Cur"> ₱</span> <b>   <span class="Fare" style="color:#fff"> {{((((texlist.TaxFare * 1 ) - texlist.Tax[0].AdultFareDetails.Commission) + ( texlistRt  ? ((texlistRt.TaxFare * 1) - (texlistRt.Tax[0].AdultFareDetails.Commission * 1)) : 0))) + Total.SSRPay |number:2}}</span></b></h3>*@
+                                    <h3> @*<span class="Cur"> ₱</span>*@ <b>   <span class="Fare" style="color:#fff"> {{(Total.TotPayAmnt +totalInsuranceAmount)|number:2}}</span></b></h3>
+                                </div>
+                                @*{{((((texlist.TaxFare * 1 ) - texlist.segment.AvailSegments[texlist.segment.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission) + ( texlistRt  ? ((texlistRt.TaxFare * 1) - texlistRt.segment.AvailSegments[texlistRt.segment.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission) : 0))) + Total.SSRPay |number:2}}*@
+                            </div>
+                            <md-divider></md-divider>
+                        </div>
+
+                    </div>
+                </div>
+                <div style="width:2%"></div>
+
+                <div flex="75" flex-sm="75" flex-xs="100" layout="column">
+
+                    <form name="bookingForm">
+                        <div layout="row" class="booking-head">
+                            Contact Details
+                        </div>
+                        <div class="booking-Row" layout="column" layout-gt-xs="row" ng-cloak>
+                            <md-card class="_md flex booking-card-over">
+                                <div layout="column" flex>
+                                    <div flex>
+                                        <div layout="row" class="book-container">
+                                            <md-checkbox ng-init="Booking.FillContact = false" ng-if="!CustomerReq" ng-model="Booking.FillContact" aria-label="Auto Fill" ng-change="fnAutoFillContact()">
+                                                Auto Fill Agent Details
+                                            </md-checkbox>
+                                        </div>
+                                        <div layout="column" layout-gt-xs="row" class="book-container">
+
+                                            <div flex="10">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Title</label>
+                                                    <md-select ng-init="Booking.Contact.Gender = 'MR'" ng-model="Booking.Contact.Gender">
+                                                        <md-option value="MR">MR</md-option>
+                                                        <md-option value="MS">MS</md-option>
+                                                    </md-select>
+                                                    <div ng-if="!Booking.Contact.Gender && validater" class="errors"> Title is required.</div>
+                                                </md-input-container>
+                                            </div>
+
+                                            <div flex="20">
+
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Name</label>
+                                                    <input oninput="ForKeysPress(this,0,true)" ng-model="Booking.Contact.Firstname" @*ng-pattern="/^[a-zA-Z]*$/"*@ required>
+                                                    <div ng-if="!Booking.Contact.Firstname && validater" class="errors">Passenger Name is required.</div>
+                                                    @*<div ng-if="bookingForm.$error.pattern && validater" class="errors">Enter valid Name.</div>*@
+                                                </md-input-container>
+                                            </div>
+                                            @*<md-input-container>
+                                                    <label>Last Name</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-model="Booking.Contact.Lastname">
+                                                    <div ng-if="!Booking.Contact.Lastname && validater" class="errors"> Last Name is required.</div>
+                                                </md-input-container>*@
+                                            <div flex="20">
+
+                                                <md-input-container flex-gt-sm>
+                                                    <label>E-mail</label>
+                                                    <input oninput="ForKeysPress(this,6,false)" ng-model="Booking.Contact.Mailid" ng-pattern="emailFormat" ng-disabled="CustomerReq">
+                                                    <div ng-if="!Booking.Contact.Mailid && validater" class="errors">Mail id is required.</div>
+                                                    <div ng-if="bookingForm.$error.pattern && validater" class="errors">Enter valid Email ID</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Mobile Number</label>
+                                                    <input oninput="ForKeysPress(this,8,false)" ng-model="Booking.Contact.Mobilenumber" maxlength="11" ng-disabled="CustomerReq">
+                                                    <div ng-if="!Booking.Contact.Mobilenumber && validater" class="errors">  Mobile Number is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div hide flex>
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Address</label>
+                                                    <input oninput="ForKeysPress(this,3,true)" ng-model="Booking.Contact.Address">
+                                                    <div ng-if="!Booking.Contact.Address && validater" class="errors">  Address is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <md-input-container>
+                                                    <md-checkbox class="NM" ng-init="Booking.SendMail = true" ng-model="Booking.SendMail" aria-label="AllBooking">
+                                                        Mail
+                                                    </md-checkbox>
+                                                    <md-checkbox class="NM" ng-init="Booking.SendSMS = true" ng-model="Booking.SendSMS" aria-label="AllBooking">
+                                                        SMS
+                                                    </md-checkbox>
+
+                                                </md-input-container>
+                                            </div>
+                                        </div>
+
+
+
+                                    </div>
+                                </div>
+                            </md-card>
+                        </div>
+
+                        @*<div layout="row" class="booking-head">
+                                Passenger Details
+                            </div>*@
+
+                        <div layout="row" class="booking-head" layout-align="center center" style=" padding: 0px 7px !important">
+                            <div class="flex-60">
+                                Passenger Details
+                            </div>
+                            <div class="flex-30">
+                                <md-button class="Getpass md-accent    " style="line-height: 0px !important; background-color: #2FCCD9" ng-click="GetTraveler()"> Get Passenger</md-button>
+
+                            </div>
+                            <div class="flex-10">
+                                <div layout="row" layout-align="end end">
+                                    <md-checkbox ng-model="Booking.savePax" class="NM" ng-change="fnGetPaxDetails($event)" aria-label="Checkbox 1">
+                                    </md-checkbox>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="booking-Row " layout="column" layout-gt-xs="row">
+                            <md-card flex="" class="_md flex booking-card-over">
+                                <div layout="column" flex ng-init="adultIndex=0;">
+
+                                    <div flex ng-repeat="item in PaxList(texlist.Searchreq.Adult) track by $index" class="book-container">
+                                        <span ng-init="adultIndex=$index"></span>
+                                        <div layout="column" layout-gt-xs="row" class="N-M">
+                                            <span style="color:#0094ff;">  Adult {{$index+1}}</span>
+                                        </div>
+
+                                        <br />
+                                        <div layout="column" layout-gt-xs="row" class="padTB12">
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Title</label>
+                                                    <md-select ng-init="Booking.Adult[$index].Title=(Booking.Adult[$index].Title ? Booking.Adult[$index].Title : 'MR')" ng-change="setGender($index,'Adult')" ng-model="Booking.Adult[$index].Title">
+                                                        <md-option value="MR">MR</md-option>
+                                                        <md-option value="MS">MS</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>First Name</label>
+                                                    <input oninput="ForKeysPress(this,0,false)" ng-init="Booking.Adult[$index].Firstname =null" ng-model="Booking.Adult[$index].Firstname">
+                                                    <div ng-if="!Booking.Adult[$index].Firstname && validater" class="errors"> First Name is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Last Name</label>
+                                                    <input oninput="ForKeysPress(this,0,false)" ng-init="Booking.Adult[$index].Lastname =null" ng-model="Booking.Adult[$index].Lastname">
+                                                    <div ng-if="!Booking.Adult[$index].Lastname && validater" class="errors"> Last Name is required.</div>
+                                                </md-input-container>
+                                            </div>
+
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.sex||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.sex|| searchData.Triptype=='M'">
+                                                    <label>Gender</label>
+                                                    <md-select ng-init="Booking.Adult[$index].Gender = 'M'" ng-model="Booking.Adult[$index].Gender">
+                                                        <md-option value="M">Male</md-option>
+                                                        <md-option value="F">Female</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <div ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB ||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB || Booking.insurance =='1'|| searchData.Triptype=='M'">
+                                                    <mdp-date-picker mdphidecalender mdp-open-on-click ng-change="calculateInsuranceFee();" ng-init="Booking.Adult[$index].DOB = ''" ng-model="Booking.Adult[$index].DOB" mdp-placeholder="DOB(dd/mm/yyyy)" mdp-format="DD/MM/YYYY" mdp-min-date="Adultmindate" mdp-max-date="Adultmaxdate">
+                                                        <div ng-if="!Booking.Adult[$index].DOB && validater" class="errors">DOB is required.</div>
+                                                    </mdp-date-picker>
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                        <div layout-xs="column" layout="row" class="padTB12" ng-hide="true">
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.MealsInfo.length >0">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Meals Info Adult {{$index+1}}</label>
+                                                    <md-select ng-model="Booking.Adult[$index].MealsInfo" md-on-close="CalculateSSR()">
+                                                        <md-option value="0">--Select--</md-option>
+                                                        <md-option ng-repeat="MealsInfo in texlist.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                                                    </md-select>
+
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.BaggageInfo.length >0">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Baggage Info Adult {{$index+1}}</label>
+                                                    <md-select ng-model="Booking.Adult[$index].BaggageInfo" md-on-close="CalculateSSR()">
+                                                        <md-option value="0">--Select--</md-option>
+                                                        <md-option ng-repeat="BaggageInfo in texlist.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlistRt.Tax[0].SSRInfo.MealsInfo.length >0">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Return Meals Info Adult {{$index+1}}</label>
+                                                    <md-select ng-model="Booking.Adult[$index].MealsInfoRtn" md-on-close="CalculateSSR()">
+                                                        <md-option value="0">--Select--</md-option>
+                                                        <md-option ng-repeat="MealsInfo in texlistRt.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlistRt.Tax[0].SSRInfo.BaggageInfo.length >0">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Return Baggage Info Adult {{$index+1}}</label>
+                                                    <md-select ng-model="Booking.Adult[$index].BaggageInfoRtn" md-on-close="CalculateSSR()">
+                                                        <md-option value="0">--Select--</md-option>
+                                                        <md-option ng-repeat="BaggageInfo in texlistRt.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                           
+                                            
+                                        </div>
+                                        <div layout-xs="column" layout="row" class="">
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Age||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Age">
+                                                <md-input-container>
+                                                    <label>Age</label>
+                                                    <input oninput="ForKeysPress(this,8,false)" ng-init="Booking.Adult[$index].Age=null" ng-model="Booking.Adult[$index].Age ">
+                                                    <div ng-if="!Booking.Adult[$index].Age && validater" class="errors"> Age is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>ID Proof</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-init="Booking.Adult[$index].IDProof=null" ng-model="Booking.Adult[$index].IDProof">
+                                                    <div ng-if="!Booking.Adult[$index].IDProof && validater" class="errors"> ID proof name is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>ID Proof No.</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-init="Booking.Adult[$index].IDProofNo=null" ng-model="Booking.Adult[$index].IDProofNo">
+                                                    <div ng-if="!Booking.Adult[$index].IDProofNo && validater" class="errors"> ID proof No is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>ID Proof No.</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-init="Booking.Adult[$index].IDProofNo=null" ng-model="Booking.Adult[$index].IDProofNo">
+                                                    <div ng-if="!Booking.Adult[$index].IDProofNo && validater" class="errors"> ID Proof No. is required.</div>
+                                                </md-input-container>
+                                            </div>
+
+
+                                            <div flex="20" ng-if="searchData.SeniorCtzn && (seglist[0].AirlinesId=='6'||seglistRt[0].AirlinesId =='6')">
+                                                <md-input-container flex-gt-sm>
+
+                                                    <input type="file" ng-model="Booking.Adult[$index].attachedFile" class="selectFile{{$index}}" name="file" onchange="angular.element(this).scope().uploadFile(this.files,this)" style="height:auto !important;width:auto !important;border:none !important" />
+                                                    <label for="file"></label>
+                                                    <div ng-if="!Booking.Adult[$index].attachedFile && validater" class="errors"> Attach proof is required</div>
+                                                </md-input-container>
+
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate">
+                                                <md-input-container class="m-t-2" flex-gt-sm>
+                                                    <mdp-date-picker mdphidecalender mdp-open-on-click ng-init="Booking.Adult[$index].Passportexpiry = $scope.Booking.Passportexpiry" ng-model="Booking.Adult[$index].Passportexpiry" mdp-placeholder="Passport Expiry(dd/mm/yyyy)" mdp-format="DD/MM/YYYY" mdp-min-date="Passportexpirymin" mdp-max-date="Passportexpirymax">
+                                                        <div ng-if="!Booking.Adult[$index].Passportexpiry && validater" class="errors">Passport Expiry is required.</div>
+                                                    </mdp-date-picker>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Passport Issued by</label>
+                                                    <md-select style="min-width:150px;" ng-init="Booking.Adult[$index].PassportIssuedby='PHILIPPINES'" ng-model="Booking.Adult[$index].PassportIssuedby">
+                                                        <md-option ng-repeat="city in InterNationalCity" value="{{city}}">
+                                                            {{city}}
+                                                        </md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality ||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality || searchData.Triptype=='M'">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Nationality</label>
+                                                    <md-select ng-init="Booking.Adult[$index].Nationality='PHILIPPINES'" ng-model="Booking.Adult[$index].Nationality">
+                                                        <md-option ng-repeat="city in InterNationalCity" value="{{city}}">
+                                                            {{city}}
+                                                        </md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+
+                                        </div>
+                                        
+                                        <div layout-xs="column" layout="row" class="" ng-show="Booking.insurance =='1' && Booking.Adult[$index].isEligible || !searchData.Triptype=='M'" ng-init="Booking.Adult[$index].isEligible=true">
+                                            <div flex="20" style="padding-right:0px;">
+                                                <md-input-container class="md-block" flex-gt-sm>
+                                                    <label>ID Type</label>
+                                                    <md-select ng-model="Booking.Adult[$index].IDType" aria-label="Class">
+                                                        <md-option ng-repeat="x in idtypes" data-ng-value="x.id">
+                                                            {{x.name}}
+                                                        </md-option>
+                                                    </md-select>
+                                                    <div ng-if="!Booking.Adult[$index].IDType && validater" class="error">*Select ID Type</div>
+
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" style="padding-right:10px;">
+                                                <md-input-container class="md-block" flex-gt-sm>
+                                                    <label>ID Number</label>
+                                                    <input ng-model="Booking.Adult[$index].idnumber" ng-paste="paste($event)">
+                                                    <div ng-if="!Booking.Adult[$index].idnumber && validater" class="error">*Enter ID Number</div>
+                                                </md-input-container>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <div layout="column" flex ng-repeat="item in PaxList(texlist.Searchreq.Child) track by $index" ng-if="texlist.Searchreq.Child > 0" class="book-container">
+                                        <div layout="column" layout-gt-xs="row" class="N-M">
+                                            <span style="color:#0094ff;">  Child {{$index+1}}</span>
+                                        </div>
+
+                                        <br />
+
+                                        <div layout="column" layout-gt-xs="row" class="padTB12">
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Title</label>
+                                                    <md-select ng-init="Booking.Child[$index].Title='MSTR'" ng-change="setGender($index,'Child')" ng-model="Booking.Child[$index].Title">
+                                                        <md-option value="MSTR">MSTR</md-option>
+                                                        <md-option value="MS">MS</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div><div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>First Name</label>
+                                                    <input oninput="ForKeysPress(this,0,false)" ng-init="Booking.Child[$index].Firstname =null" ng-model="Booking.Child[$index].Firstname">
+                                                    <div ng-if="!Booking.Child[$index].Firstname && validater" class="errors"> First Name is required.</div>
+                                                </md-input-container>
+                                            </div><div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Last Name</label>
+                                                    <input oninput="ForKeysPress(this,0,false)" ng-init="Booking.Child[$index].Lastname =null" ng-model="Booking.Child[$index].Lastname">
+                                                    <div ng-if="!Booking.Child[$index].Lastname && validater" class="errors"> Last Name is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.sex||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.sex || searchData.Triptype=='M'">
+                                                    <label>Gender</label>
+                                                    <md-select ng-init="Booking.Child[$index].Gender = 'M'" ng-model="Booking.Child[$index].Gender">
+                                                        <md-option value="M">Male</md-option>
+                                                        <md-option value="F">Female</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <div ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB || EnableChildDob ||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB ||Booking.insurance =='1'|| searchData.Triptype=='M'">
+                                                    <mdp-date-picker mdphidecalender mdp-open-on-click ng-init="Booking.Child[$index].DOB = ''" ng-change="calculateInsuranceFee()" ng-model="Booking.Child[$index].DOB" mdp-placeholder="DOB(dd/mm/yyyy)" mdp-format="DD/MM/YYYY" mdp-min-date="Childmindate" mdp-max-date="Childmaxdate">
+                                                        <div ng-if="!Booking.Child[$index].DOB && validater" class="errors">DOB is required.</div>
+                                                    </mdp-date-picker>
+                                                </div>
+                                            </div>
+
+                                        </div>
+                                        <div layout-xs="column" layout="row" class="padTB12" ng-hide="true">
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.MealsInfo.length >0">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Meals Info Child {{$index+1}}</label>
+                                                    <md-select ng-model="Booking.Child[$index].MealsInfo" md-on-close="CalculateSSR()">
+                                                        <md-option value="0">--Select--</md-option>
+                                                        <md-option ng-repeat="MealsInfo in texlist.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                                                    </md-select>
+
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.BaggageInfo.length >0">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Baggage Info Child {{$index+1}}</label>
+                                                    <md-select ng-model="Booking.Child[$index].BaggageInfo" md-on-close="CalculateSSR()">
+                                                        <md-option value="0">--Select--</md-option>
+                                                        <md-option ng-repeat="BaggageInfo in texlist.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlistRt.Tax[0].SSRInfo.MealsInfo.length >0">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Return Meals Info Child {{$index+1}}</label>
+                                                    <md-select ng-model="Booking.Child[$index].MealsInfoRtn" md-on-close="CalculateSSR()">
+                                                        <md-option value="0">--Select--</md-option>
+                                                        <md-option ng-repeat="MealsInfo in texlistRt.Tax[0].SSRInfo.MealsInfo" value="{{MealsInfo}}">{{MealsInfo.MealDescription +"  "+MealsInfo.MealAmount}}</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlistRt.Tax[0].SSRInfo.BaggageInfo.length >0">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Return Baggage Info Child {{$index+1}}</label>
+                                                    <md-select ng-model="Booking.Child[$index].BaggageInfoRtn" md-on-close="CalculateSSR()">
+                                                        <md-option value="0">--Select--</md-option>
+                                                        <md-option ng-repeat="BaggageInfo in texlistRt.Tax[0].SSRInfo.BaggageInfo" value="{{BaggageInfo}}">{{BaggageInfo.BaggageDescription +"  "+BaggageInfo.BaggageAmount}}</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            
+                                        </div>
+
+                                        <div layout-xs="column" layout="row" class="">
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality || searchData.Triptype=='M'">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Nationality</label>
+                                                    <md-select ng-init="Booking.Child[$index].Nationality='PHILIPPINES'" ng-model="Booking.Child[$index].Nationality">
+                                                        <md-option ng-repeat="city in InterNationalCity" value="{{city}}">
+                                                            {{city}}
+                                                        </md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Age||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Age">
+                                                <md-input-container>
+                                                    <label>Age</label>
+                                                    <input oninput="ForKeysPress(this,8,false)" ng-init="Booking.Child[$index].Age=null" ng-model="Booking.Child[$index].Age">
+                                                    <div ng-if="!Booking.Child[$index].Age && validater" class="errors"> Age is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>ID Proof</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-init="Booking.Child[$index].IDProof=null" ng-model="Booking.Child[$index].IDProof">
+                                                    <div ng-if="!Booking.Child[$index].IDProof && validater" class="errors"> ID proof name is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>ID Proof No.</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-init="Booking.Child[$index].IDProofNo=null" ng-model="Booking.Child[$index].IDProofNo">
+                                                    <div ng-if="!Booking.Child[$index].IDProofNo && validater" class="errors"> ID proof No is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Passport No.</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-init="Booking.Child[$index].PassportNo=null" ng-model="Booking.Child[$index].PassportNo">
+                                                    <div ng-if="!Booking.Child[$index].PassportNo && validater" class="errors"> Passport No. is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate">
+                                                <md-input-container class="m-t-2" flex-gt-sm>
+                                                    <mdp-date-picker mdphidecalender mdp-open-on-click ng-init="Booking.Child[$index].Passportexpiry = $scope.Booking.Passportexpiry" ng-model="Booking.Child[$index].Passportexpiry" mdp-placeholder="Passport Expiry(dd/mm/yyyy)" mdp-format="DD/MM/YYYY" mdp-min-date="Passportexpirymin" mdp-max-date="Passportexpirymax">
+                                                        <div ng-if="!Booking.Child[$index].Passportexpiry && validater" class="errors">Passport Expiry is required.</div>
+                                                    </mdp-date-picker>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" flex-xs="100" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Passport Issued by</label>
+                                                    <md-select style="min-width:150px;" ng-init="Booking.Child[$index].PassportIssuedby='PHILIPPINES'" ng-model="Booking.Child[$index].PassportIssuedby">
+                                                        <md-option ng-repeat="city in InterNationalCity" value="{{city}}">
+                                                            {{city}}
+                                                        </md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+
+
+                                        </div>
+
+
+                                        <div layout-xs="column" layout="row" class="" ng-show="Booking.insurance =='1'">
+                                            <div flex="20" style="padding-right:0px;">
+                                                <md-input-container class="md-block" flex-gt-sm>
+                                                    <label>ID Type</label>
+                                                    <md-select ng-model="Booking.Child[$index].IDType" aria-label="Class">
+                                                        <md-option ng-repeat="x in idtypes" data-ng-value="x.id">
+                                                            {{x.name}}
+                                                        </md-option>
+                                                    </md-select>
+                                                    <div ng-if="!Booking.Child[$index].IDType && validater" class="error">*Select ID Type</div>
+
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" style="padding-right:10px;">
+                                                <md-input-container class="md-block" flex-gt-sm>
+                                                    <label>ID Number</label>
+                                                    <input ng-model="Booking.Child[$index].idnumber" ng-paste="paste($event)">
+                                                    <div ng-if="!Booking.Child[$index].idnumber && validater" class="error">*Enter ID Number</div>
+                                                </md-input-container>
+                                            </div>
+                                        </div>
+
+
+
+                                    </div>
+
+                                    <div layout="column" flex ng-repeat="item in PaxList(texlist.Searchreq.Infant) track by $index" ng-if="texlist.Searchreq.Infant > 0" class="book-container">
+                                        <div layout="column" layout-gt-xs="row" class="N-M">
+                                            <span style="color:#0094ff;">  Infant {{$index+1}}</span>
+                                        </div>
+                                        <br />
+                                        <div layout="column" layout-gt-xs="row" class="">
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Title</label>
+                                                    <md-select ng-init="Booking.Infant[$index].Title='INF'" ng-model="Booking.Infant[$index].Title">
+                                                        <md-option value="INF">INF</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>First Name</label>
+                                                    <input oninput="ForKeysPress(this,0,false)" ng-init="Booking.Infant[$index].Firstname=null" ng-model="Booking.Infant[$index].Firstname">
+                                                    <div ng-if="!Booking.Infant[$index].Firstname && validater" class="errors"> First Name is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Last Name</label>
+                                                    <input oninput="ForKeysPress(this,0,false)" ng-init="Booking.Infant[$index].Lastname=null" ng-model="Booking.Infant[$index].Lastname">
+                                                    <div ng-if="!Booking.Infant[$index].Lastname && validater" class="errors"> First Name is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Gender</label>
+                                                    <md-select ng-init="Booking.Infant[$index].Gender='M'" ng-model="Booking.Infant[$index].Gender">
+                                                        <md-option value="M">Male</md-option>
+                                                        <md-option value="F">Female</md-option>
+                                                    </md-select>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20">
+                                                <md-input-container flex-gt-sm>
+                                                    <mdp-date-picker mdphidecalender mdp-open-on-click ng-model="Booking.Infant[$index].DOB" ng-change="calculateInsuranceFee()" mdp-placeholder="DOB(dd/mm/yyyy)" mdp-format="DD/MM/YYYY" mdp-min-date="Infmindate" mdp-max-date="Infmaxdate">
+                                                        <div ng-if="!Booking.Infant[$index].DOB && validater" class="errors">DOB is required.</div>
+                                                    </mdp-date-picker>
+                                                </md-input-container>
+                                            </div>
+                                        </div>
+                                        <div layout-xs="column" layout="row" class="">
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Age||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Age">
+                                                <md-input-container flex-gt-sm>
+                                                    <label>Age</label>
+                                                    <input oninput="ForKeysPress(this,8,false)" ng-init="Booking.Infant[$index].Age=null" ng-model="Booking.Infant[$index].Age">
+                                                    <div ng-if="!Booking.Infant[$index].Age && validater" class="errors"> Age is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof">
+                                                <md-input-container ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof" flex-gt-sm>
+                                                    <label>ID Proof</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-init="Booking.Infant[$index].IDProof=null" ng-model="Booking.Infant[$index].IDProof">
+                                                    <div ng-if="!Booking.Infant[$index].IDProof && validater" class="errors"> ID proof name is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof">
+                                                <md-input-container ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.IdProof" flex-gt-sm>
+                                                    <label>ID Proof No.</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-init="Booking.Infant[$index].IDProofNo=null" ng-model="Booking.Infant[$index].IDProofNo">
+                                                    <div ng-if="!Booking.Infant[$index].IDProofNo && validater" class="errors"> ID proof No is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber">
+                                                <md-input-container ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber" flex-gt-sm>
+                                                    <label>Passport No.</label>
+                                                    <input oninput="ForKeysPress(this,1,true)" ng-init="Booking.Infant[$index].PassportNo=null" ng-model="Booking.Infant[$index].PassportNo">
+                                                    <div ng-if="!Booking.Infant[$index].PassportNo && validater" class="errors"> Passport No. is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate">
+                                                <md-input-container class="m-t-2" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate" flex-gt-sm>
+                                                    <mdp-date-picker mdphidecalender mdp-open-on-click ng-init="Booking.Infant[$index].Passportexpiry = $scope.Booking.Passportexpiry" ng-model="Booking.Infant[$index].Passportexpiry" mdp-placeholder="Passport Expiry(dd/mm/yyyy)" mdp-format="DD/MM/YYYY" mdp-min-date="Passportexpirymin" mdp-max-date="Passportexpirymax">
+                                                        <div ng-if="!Booking.Infant[$index].Passportexpiry && validater" class="errors">Passport Expiry is required.</div>
+                                                    </mdp-date-picker>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry">
+                                                <md-input-container ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry" flex-gt-sm>
+                                                    <label>Passport Issued by</label>
+                                                    <md-select style="min-width:150px;" ng-init="Booking.Infant[$index].PassportIssuedby='PHILIPPINES'" ng-model="Booking.Infant[$index].PassportIssuedby">
+                                                        <md-option ng-repeat="city in InterNationalCity" value="{{city}}">
+                                                            {{city}}
+                                                        </md-option>
+                                                    </md-select>
+                                                    <div ng-if="!Booking.Infant[$index].PassportIssuedby && validater" class="errors">Passport Issued by is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="15" ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality||texlistRt.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality || searchData.Triptype=='M'">
+                                                <md-input-container ng-if="texlist.Tax[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality" flex-gt-sm>
+                                                    <label>Nationality</label>
+                                                    <md-select ng-init="Booking.Infant[$index].Nationality='PHILIPPINES'" ng-model="Booking.Infant[$index].Nationality">
+                                                        <md-option ng-repeat="city in InterNationalCity" value="{{city}}">
+                                                            {{city}}
+                                                        </md-option>
+                                                    </md-select>
+                                                    <div ng-if="!Booking.Infant[$index].Nationality && validater" class="errors">Nationality is required.</div>
+                                                </md-input-container>
+                                            </div>
+                                        </div>
+
+                                        <div layout-xs="column" layout="row" class="" ng-show="Booking.insurance =='1'|| !searchData.Triptype=='M'">
+                                            <div flex="20" style="padding-right:0px;">
+                                                <md-input-container class="md-block" flex-gt-sm>
+                                                    <label>ID Type</label>
+                                                    <md-select ng-model="Booking.Infant[$index].IDType" aria-label="Class">
+                                                        <md-option ng-repeat="x in idtypes" data-ng-value="x.id">
+                                                            {{x.name}}
+                                                        </md-option>
+                                                    </md-select>
+                                                    <div ng-if="!Booking.Infant[$index].IDType && validater" class="error">*Select ID Type</div>
+
+                                                </md-input-container>
+                                            </div>
+                                            <div flex="20" style="padding-right:10px;">
+                                                <md-input-container class="md-block" flex-gt-sm>
+                                                    <label>ID Number</label>
+                                                    <input ng-model="Booking.Infant[$index].idnumber" ng-paste="paste($event)">
+                                                    <div ng-if="!Booking.Infant[$index].idnumber && validater" class="error">*Enter ID Number</div>
+                                                </md-input-container>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </md-card>
+                        </div>
+                    </form>
+                    <div layout="column" layout-gt-xs="row" ng-if="texlist.Tax[0].SSRInfo.MealsInfo || texlist.Tax[0].SSRInfo.BaggageInfo || searchData.Triptype =='M'" class="layout-gt-xs-row layout-column " style="cursor:pointer" title="Add Special Services">
+                        <div ng-click="GetSSRDetails($event)"><img src="~/Content/Images/ssr-bg.png" style="width:99%" alt=""><div></div></div>
+                    </div>
+                    <div layout="column" hide-gt-sm ng-if="Total.TotPayAmnt">
+                        <div layout="column" flex>
+                            <div class="layout">
+                                <div class="booking-head flex">Fare Details</div>
+                            </div>
+
+                            <div flex ng-if="texlist.Tax[0].AdultFareDetails.AvailTaxItem" @*ng-init="SetGrossAmount(texlist,texlistRt)"*@ class="book-container">
+                                <div layout="row" layout-align="center center">
+                                    <div flex>
+                                        {{texlist.Searchreq.Adult}} Adult{{texlist.Searchreq.Adult > 1 ? 's':''}}
+                                    </div>
+                                    <div flex style="text-align:right;">
+                                        <span class="Cur"> &#8369;</span> {{GrossAmount|number:2}}
+                                    </div>
+
+                                </div>
+
+                            </div>
+                            <div flex ng-if="texlist.Tax[0].ChildFareDetails.AvailTaxItem!=null" class="book-container">
+
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        {{texlist.Searchreq.Child}} Child{{texlist.Searchreq.Child > 1 ? 's':''}}
+                                    </div>
+                                    <div flex style="text-align:right;">
+                                        <span class="Cur"> &#8369;</span> {{CGrossAmount|number:2}}
+                                    </div>
+                                </div>
+                            </div>
+                            <div flex ng-if="texlist.Tax[0].InfantFareDetails.AvailTaxItem" class="book-container">
+
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        {{texlist.Searchreq.Infant}} Infant{{texlist.Searchreq.Infant > 1 ? 's':''}}
+                                    </div>
+                                    <div flex style="text-align:right;">
+                                        <span class="Cur"> &#8369;</span> {{IGrossAmount|number:2}}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="book-container">
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <md-menu flex>
+                                            <span aria-label="Tax Menu" style="text-transform: capitalize; text-decoration: underline;" ng-click="ShowTaxSplit($event,'Onway')">
+                                                Taxes & Fees
+                                            </span>
+
+                                        </md-menu>
+                                    </div>
+                                    <div flex style="text-align:right;">
+                                        <span class="Cur" @*ng-init="SetATaxAmount(texlist,texlistRt)"*@> &#8369;</span> {{(ATaxamount + CTaxamount + ITaxamount)|number:2}}
+                                    </div>
+                                </div>
+                            </div>
+                            <div flex class="book-container">
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <h3>Total Fare </h3>
+                                    </div>
+                                    <div flex style="text-align:right;">
+                                        <h3> <span class="Cur"> &#8369;</span> <b>   <span class="Fare"> {{(Total.TotPayAmnt+totalInsuranceAmount)|number:2}}</span></b></h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <div hide-gt-sm layout="column" ng-if="texlistRt.Tax[0].AdultFareDetails.AvailTaxItem">
+                        <div class="layout">
+                            <div class="booking-head flex">Return Fare Details</div>
+                        </div>
+                        <div flex ng-if="texlistRt.Tax[0].AdultFareDetails.AvailTaxItem" @*ng-init="SetGrossAmount(texlist,texlistRt)"*@ class="book-container">
+                            <div layout="row" layout-align="center center">
+                                <div flex>
+                                    {{texlist.Searchreq.Adult}} Adult{{texlist.Searchreq.Adult > 1 ? 's':''}}
+                                </div>
+                                <div flex style="text-align:right;">
+                                    <span class="Cur"> &#8369;</span> {{RtnGrossAmount|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div flex ng-if="texlistRt.Tax[0].ChildFareDetails.AvailTaxItem!=null" class="book-container">
+                            <div layout="row" layout-align="start center">
+                                <div flex>
+                                    {{texlist.Searchreq.Child}} Child{{texlist.Searchreq.Child > 1 ? 's':''}}
+                                </div>
+                                <div flex style="text-align:right;">
+                                    <span class="Cur"> &#8369;</span> {{RtnCGrossAmount|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div flex ng-if="texlistRt.Tax[0].InfantFareDetails.AvailTaxItem" class="book-container">
+                            <div layout="row" layout-align="start center">
+                                <div flex>
+                                    {{texlist.Searchreq.Infant}} Infant{{texlist.Searchreq.Infant > 1 ? 's':''}}
+                                </div>
+                                <div flex style="text-align:right;">
+                                    <span class="Cur"> &#8369;</span> {{RtnIGrossAmount|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="book-container">
+                            <div layout="row" layout-align="start center">
+                                <div flex>
+                                    <md-menu flex>
+                                        <span aria-label="Tax Menu" style="text-transform: capitalize; text-decoration: underline;" ng-click="ShowTaxSplit($event,'Return')">
+                                            Taxes & Fees
+                                        </span>
+                                    </md-menu>
+                                </div>
+                                <div flex style="text-align:right;">
+                                    <span class="Cur" @*ng-init="SetATaxAmount(texlist,texlistRt)"*@> &#8369;</span> {{(RtnATaxamount + RtnCTaxamount + RtnITaxamount)|number:2}}
+                                </div>
+                            </div>
+                        </div>
+                        <div flex class="book-container">
+                            <div layout="row" layout-align="start center">
+                                <div flex>
+                                    <h3>Total Fare </h3>
+                                </div>
+                                <div flex style="text-align:right;">
+                                    <h3> <span class="Cur"> &#8369;</span> <b>   <span class="Fare"> {{(TotRtnGrossAmnt)|number:2}}</span></b></h3>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div hide-gt-sm layout="column">
+                        <div class="layout">
+                            <div class="booking-head flex">Flight  Details</div>
+                        </div>
+                        <div layout="column" flex>
+
+                            <div class="md-input-focused label txt-label"><b>Your Travelling Schedule</b></div>
+                            <md-divider></md-divider>
+                            <div flex ng-repeat="Segment in seglist">
+
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <b class="txtDetails">
+                                            Airline
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column">
+                                            <div flex>
+                                                @*<img style="width:auto;" ng-src="http://202.54.157.189/DISCLAIMER/A{{Segment.AirlinesId}}.bmp" />*@
+
+                                                <div ng-bind-html="fnSetAirLogo(Segment.AirlineCode)"></div>
+                                                <small>{{Segment.AirlineName}}</small>
+                                            </div>
+
+                                            <div flex>{{Segment.AirlineCode}}-{{Segment.FlightNumber}}</div>
+
+
+                                            <div>
+                                                <small flex>{{Segment.AvailPaxFareDetails.Adult.FareBasis}}</small>
+                                                @*<small flex>{{(Segment.AvailPaxFareDetails.Adult.FareType == 'R') ? "REFUNDABLE" : ((Segment.AvailPaxFareDetails.Adult.FareType == 'NR') ? "NON REFUNDABLE" : Segment.AvailPaxFareDetails.Adult.FareType)}}</small>*@
+                                                <br />
+                                                <small flex>class : {{Segment.AvailPaxFareDetails.ClassCode}}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br />
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <b class="txtDetails">
+                                            Departure
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column">
+                                            <div>
+                                                {{ICL[Segment.Origin]}} <span ng-if="Segment.OriginAirportTerminal">({{Segment.OriginAirportTerminal}})</span>
+                                            </div>
+                                            <div>
+                                                {{ Segment.DepartureDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br />
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <b class="txtDetails">
+                                            Duration
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column">
+                                            <div>
+                                                {{ Segment.NumberofStops =='0' ?'Non Stop': Segment.NumberofStops +' Stop'}}
+                                            </div>
+                                            <div>
+                                                {{Segment.Duration}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br />
+                                <div layout="row" layout-align="start center">
+                                    <div flex>
+                                        <b class="txtDetails">
+                                            Arrival
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column">
+                                            <div>
+                                                {{ICL[Segment.Destination]}} <span ng-if="Segment.DestinationAirportTerminal">({{Segment.DestinationAirportTerminal}})</span>
+                                            </div>
+                                            <div>
+                                                {{ Segment.ArrivalDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <md-divider></md-divider>
+                            </div>
+                        </div>
+
+                        <div layout="column" flex ng-if="seglistRt[0]">
+                            <div class="md-input-focused label txt-label"><b>Your Travelling Return Schedule</b></div>
+                            <md-divider></md-divider>
+                            <div flex ng-repeat="Segment in seglistRt">
+                                <div layout="row" layout-align="start center">
+                                    <div flex class="txtDetails">
+                                        <b>
+                                            Airline
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column">
+                                            <div flex>
+                                                <div ng-bind-html="fnSetAirLogo(Segment.AirlineCode)"></div>
+                                                <small>{{Segment.AirlineName}}</small>
+                                            </div>
+                                            <div flex>{{Segment.AirlineCode}}-{{Segment.FlightNumber}}</div>
+
+                                            <div>
+                                                @*<small flex>{{(Segment.AvailPaxFareDetails.Adult.FareType == 'R') ? "REFUNDABLE" : ((Segment.AvailPaxFareDetails.Adult.FareType == 'NR') ? "NON REFUNDABLE" : Segment.AvailPaxFareDetails.Adult.FareType)}}</small>*@
+                                                <small flex>{{Segment.AvailPaxFareDetails.Adult.FareBasis}}</small>
+
+                                                <small flex>class : {{Segment.AvailPaxFareDetails.ClassCode}} </small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br />
+                                <div layout="row" layout-align="start center">
+                                    <div flex class="txtDetails">
+                                        <b>
+                                            Departure
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column">
+                                            <div>
+                                                {{ICL[Segment.Origin]}} <span ng-if="Segment.OriginAirportTerminal">({{Segment.OriginAirportTerminal}})</span>
+                                            </div>
+                                            <div>
+                                                {{ Segment.DepartureDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <br />
+                                <div layout="row" layout-align="start center">
+                                    <div flex class="txtDetails">
+                                        <b>
+                                            Duration
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column">
+                                            <div>
+                                                {{ Segment.NumberofStops =='0' ?'Non Stop': Segment.NumberofStops +' Stop'}}
+                                            </div>
+                                            <div>
+                                                {{Segment.Duration}}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <br />
+                                <div layout="row" layout-align="start center">
+                                    <div flex class="txtDetails">
+                                        <b>
+                                            Arrival
+                                        </b>
+                                    </div>
+                                    <div flex>
+                                        <div layout="column">
+                                            <div>
+                                                {{ICL[Segment.Destination]}} <span ng-if="Segment.DestinationAirportTerminal">({{Segment.DestinationAirportTerminal}})</span>
+                                            </div>
+                                            <div>
+                                                {{ Segment.ArrivalDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <md-divider></md-divider>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div ng-hide="searchData.Triptype =='M' || disableInsurance">
+                        <div layout="row" class="booking-head">
+                            Insurance
+                        </div>
+                        <div class="booking-Row" layout="column" layout-gt-xs="row" ng-cloak>
+                            <md-card flex="" class="_md flex booking-card-over">
+                                <div layout="row" flex="100" style="cursor:pointer;border-bottom:1px solid black" ng-click="ModifySearch = (ModifySearch =='Myhide' ? 'Myshow' : 'Myhide')">
+                                    <div flex><span> <b>40% of our customers insure their trip with Pioneer <span style="color: #538ED5;">Safe </span><span style="color: #FF0066;">Trip</span>. </b>See all the benefits you get for just 80 PHP!  </span></div>
+                                    <div flex="5" title="Pionner"><img src="../../Content/Images/pioneerlogo.png" alt=" Pioneer" /></div>
+
+
+
+                                    <div flex="5" title="Show Details" layout-align="center center"><div style="margin-top: 6px; height: 32px; padding-top: 4px;width: 24px; cursor: pointer; background-color: #2FCCD9; "><ng-md-icon icon="{{ModifySearch =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#fff"></ng-md-icon></div></div>
+                                </div>
+                                <div ng-class="ModifySearch">
+                                    <div layout="row" flex="100" layout-align="center center" class="insurance_recovery_tab clearfix">
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Medical Treatment(Reimbursement Only)">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_accidental  Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Medical Treatment</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>100,000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Emergency Trip Cancellation">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_flight Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Trip Cancellation</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>10,000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Emergency Trip Termination">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_tripTermination Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Trip Termination</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>10,000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Flight Delay(One-time payment upon 6-Hour Delay)">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_delay Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Flight Delay(6 Hours Delay)</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>2,000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Missed Connecting Flight(One-time payment upon 6-Hour Delay)">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_Connection  Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Missed Connecting Flight(6 Hours Delay)</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>2,000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+
+
+                                    </div>
+                                    <div class="clearfix"></div>
+                                    <div layout="row" flex="100" layout-align="center center" class="insurance_recovery_tab clearfix">
+
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Baggage Delay(One-time payment upon 6-Hour Delay for Outbound Only)">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_delaybagg  Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Baggage Delay</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>2,000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Damage to baggage(One-time Payment)">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_loss Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Damage to baggage</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>5,000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Loss of Baggage">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_loss Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Loss of Baggage</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>1,000 - 5000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Loss of Personal Money">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_moneyLoss Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Loss of Personal Money</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>2,000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+                                        <div flex-xs flex-gt-xs="20" layout="column" title="Personal accident">
+                                            <div class="insurance_tab">
+                                                <div class="insurance_recovery_tab_info">
+                                                    <span class="insure_img_wrap">
+                                                        <span class="insurance insurance_peraccidental Mblock"></span>
+                                                    </span>
+                                                    <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Personal accident *</span>
+                                                    <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>100,000</span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+
+
+                                        @*<div flex-xs flex-gt-xs="20" layout="column">
+                                                <div class="insurance_tab">
+                                                    <div class="insurance_recovery_tab_info">
+                                                        <span class="insure_img_wrap">
+                                                            <span class="insurance insurance_loss Mblock"></span>
+                                                        </span>
+                                                        <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Trip Delay</span>
+                                                        <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>20,000</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div flex-xs flex-gt-xs="20" layout="column">
+                                                <div class="insurance_tab">
+                                                    <div class="insurance_recovery_tab_info">
+                                                        <span class="insure_img_wrap">
+                                                            <span class="insurance insurance_hotel  Mblock"></span>
+                                                        </span>
+                                                        <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Emergency Hotel</span>
+                                                        <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>20,000</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div flex-xs flex-gt-xs="20" layout="column">
+                                                <div class="insurance_tab">
+                                                    <div class="insurance_recovery_tab_info">
+                                                        <span class="insure_img_wrap">
+                                                            <span class="insurance insurance_travel  Mblock"></span>
+                                                        </span>
+                                                        <span class="Mblock trip_heading RobotoMedium insur_trip_txt">Emergency Travel</span>
+                                                        <span class="Mblock claim_insurance"> <span class="insurance_claim_txt">Claim upto </span><span class="INR">PHP </span>20,000</span>
+                                                    </div>
+                                                </div>
+                                            </div>*@
+                                    </div>
+
+                                </div>
+                                <div style="margin-top:10px" layout="row" flex="100" layout-align="center center" class="insurance_recovery_tab clearfix">
+                                    <div flex="60">
+                                        <md-radio-group ng-model="Booking.insurance" ng-init="Booking.insurance='2'" ng-change="calculateInsuranceFee();">
+                                            <md-radio-button value="1" class="md-primary">Yes, secure my trip with Pioneer <span style="color: #538ED5;">Safe </span><span style="color: #FF0066;">Trip</span> insurance. @*I agree to the <a class="md-warn">Terms and Condition</a>*@</md-radio-button>
+                                            <md-radio-button value="2" class="md-warn"> No, I do not want to insure my trip </md-radio-button>
+                                        </md-radio-group>
+                                    </div>
+                                    <div flex="40">
+                                        <div class="insurance_tab " flex style="width:100%">
+                                            <div class="insurance_recovery_tab_info">
+                                                <div>Kindly Note</div>
+
+                                                <table style="width:100%">
+                                                    <tbody>
+                                                        <tr>
+                                                            <th>Age Limit</th>
+                                                            <th>Amoun in (PHP)</th>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>40 Days to 75 Years</td>
+                                                            <td class="amount">80 PHP</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>76 Years to 80 Years</td>
+                                                            <td class="amount">160 PHP</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>81 Years to 85 Years</td>
+                                                            <td class="amount">240 PHP</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td>Above 86 Years</td>
+                                                            <td class="amount">Not Available</td>
+                                                        </tr>
+
+                                                    </tbody>
+                                                </table>
+
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </md-card>
+
+                        </div>
+                    </div>
+                    <div layout="row" class="booking-head">
+                        Confirm your Request
+                    </div>
+                    <div class="booking-Row" layout="column" layout-gt-xs="row" ng-cloak>
+                        <md-card flex="" class="_md flex booking-card-over">
+                            <div layout="column" flex>
+
+                                <div flex class="book-container">
+                                    <div layout="column" layout-gt-xs="row" layout-align="center center">
+                                        <div flex>
+                                            <h3 style="text-align:right">
+                                                You Are Paying : <span class="Cur"> &#8369;</span>
+                                                @*<span ng-if="!TotPayAmnt" style="float: right;margin: 12px">Checking Fare from Airline Host Server</span>*@
+                                                <span class="FareLoader" ng-if="!Total.TotPayAmnt" style="float: right; width: 7%;"></span>
+                                                <b>
+                                                    <span class="Fare" ng-if="Total.TotPayAmnt" style="font-size:20px"> {{(Total.TotPayAmnt+totalInsuranceAmount)|number:2}}</span>
+                                                </b>
+                                            </h3>
+
+                                        </div>
+                                    </div>
+                                    <div layout="column" layout-gt-xs="row">
+
+                                        <div flex="50" layout="row">
+                                            @*<div>
+                                                    <md-checkbox ng-model="TandC" aria-label="I agree">
+                                                    </md-checkbox>
+                                                    <md-button hide show-gt-sm class="md-primary" ng-click="TermsandConditions($event)"> I agree </md-button>
+                                                    <label hide-gt-sm class="md-primary" ng-click="TermsandConditions($event)"> I agree </label>
+                                                    <br /> <div ng-if="!TandC && validater" class="errors">Agree the Terms and Conditions.</div>
+                                                </div>*@
+
+                                            <div>
+                                                <md-checkbox ng-model="TandC" aria-label="Finished?">
+                                                    I Agree
+                                                </md-checkbox>
+
+
+                                                <div ng-if="!TandC && validater" class="errors">Agree the Terms and Conditions.</div>
+                                            </div>
+
+
+                                        </div>
+                                        <div flex="50">
+                                            <div layout="row" layout-align="space-between center">
+                                                <div flex>
+                                                    <md-button flex="80" ng-if="Blockingflag" class="md-raised md-accent btnPrimary yellow" ng-click="ConfirmBooking($event,0)">RESERVE</md-button>
+                                                </div>
+
+                                                @*<md-button flex class="md-raised md-primary btndanger" ng-click="Back('RP',$event)">Replan</md-button>*@
+                                                <div flex>
+                                                    <md-button flex="80" class="md-raised btnPrimary" ng-click="Back('BK',$event)">Back</md-button>
+                                                </div>
+                                                
+                                                <div flex>
+                                                    <md-button ng-if="Bookingflag" class="md-raised md-accent   yellow" ng-click="ConfirmBooking($event,1)">Book now</md-button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </md-card>
+                    </div>
+
+
+
+
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+<script type="text/ng-template" id="GetPassenger.tmpl.html">
+    <md-dialog flex="75" layout-gt-sm="column" layout-padding>
+        <div class="md-toolbar-tools Dialog-head">
+            <h2>   Traveler List</h2>
+        </div>
+        <md-dialog-content layout="column" flex>
+            <md-content id="tblTicketDetails">
+
+                <table data-md-table>
+                    <thead data-md-head>
+                        <tr data-md-row>
+                            <th data-md-column>
+                                Paxtype
+                            </th>
+                            <th data-md-column>
+                                Title
+                            </th>
+                            <th data-md-column>
+                                FirstName
+                            </th>
+                            <th data-md-column>
+                                LastName
+                            </th>
+
+                            <th data-md-column>
+                                Gender
+                            </th>
+
+                            <th data-md-column>
+                                Select
+                            </th>
+                        </tr>
+                    </thead>
+                    <tbody data-md-body>
+
+                        <tr data-md-row ng-repeat="item in Ctrl.res.Data track by $index">
+
+                            <td data-md-cell style="color: #29608E;">
+                                {{item.PaxType }}
+
+                            </td>
+                            <td data-md-cell style="color: #29608E;">
+
+                                {{item.Title}}
+                            </td>
+                            <td data-md-cell style="color: #29608E;">
+
+                                {{item.FirstName}}
+                            </td>
+                            <td data-md-cell style="color: #29608E; ">
+                                {{item.LastName }}
+                            </td>
+                            <td data-md-cell style="color: #29608E;">
+                                {{item.Gender}}
+                            </td>
+                            <td data-md-cell style="color: #29608E;">
+                                <input type="checkbox" ng-model="value1" ng-click="SelectPass(item,$index,value1)" />
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </md-content>
+        </md-dialog-content>
+        <md-dialog-actions>
+            <div class=" flex layout " layout-align="end center">
+                <div class="layout flex-50">
+                    <div class="flex">
+                        <md-button class="md-raised btnPrimary" ng-click="dgcancel();">Close</md-button>
+                    </div>
+                    <div class="flex-5">&nbsp;</div>
+                    <div class="flex">
+                        <md-button class="md-raised yellow" ng-click="AddPassenger(Ctrl);">Ok</md-button>
+                    </div>
+
+                </div>
+            </div>
+        </md-dialog-actions>
+    </md-dialog>
+</script>
