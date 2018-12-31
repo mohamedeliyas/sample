@@ -1,0 +1,2162 @@
+@inherits System.Web.Mvc.WebViewPage
+@using System.Configuration
+<script src="~/Content/App/Domestic/Domestic.js?v=@ConfigurationManager.AppSettings["jscssversion"].ToString()"></script>
+<style>
+    .Low-Fare-Container {
+        border-right: 1px solid #034f84;
+        padding: 0 4px;
+        width: 112px !important;
+    }
+
+    .slick-arrow {
+        background: #fff none repeat scroll 0 0 !important;
+    }
+
+    .slick-track {
+        position: absolute;
+        overflow: hidden;
+    }
+
+    .md-select-value {
+        border-bottom-width: 0px;
+    }
+
+    md-select:focus:not([disabled]) .md-select-value {
+        border-bottom-width: 0px;
+    }
+
+    .Airline-Chk .md-icon {
+        border-radius: 2px !important;
+        border-width: 1px !important;
+        background: #ebebeb !important;
+        border-color: #cbcbcb !important;
+    }
+
+    .slick-track {
+        width: 100% !important;
+    }
+</style>
+
+<md-sidenav ng-if="Flights[0]" set-height class="md-sidenav-right md-whiteframe-4dp" md-component-id="filter">
+    <md-toolbar>
+        <div layout="row" layout-padding layout-align="space-between center">
+            <div>
+                <md-button class="md-icon-button md-primary" ng-click="toggleRight('filter')" aria-label="Settings">
+                    <ng-md-icon icon="arrow_forward" style="fill:#FFFFFF"></ng-md-icon>
+                </md-button>
+            </div>
+            <div flex>
+                <b> Filter your search</b>
+            </div>
+        </div>
+    </md-toolbar>
+    <md-content>
+        <md-card>
+            <div layout-padding layout style="max-width:250px;" ng-click="ResetFilter(true);">
+                <div><ng-md-icon size="30" icon="cached" style="fill: #808080;"></ng-md-icon></div>
+                @*<b flex style="margin-top:10px;">{{Flights.length}} {{RtnFlights.length > 0 ?' + '+RtnFlights.length + ' ' :''}} Result found.</b>*@
+                <div class="layout-padding">
+                    <b class="btn-link">Reset Filter</b>
+                </div>
+            </div>
+        </md-card>
+        <div style="padding:19px;"><b class="txt-primary" style="margin-top:-10px;">SAVE TIME WITH FILTERS</b></div>
+        <md-card>
+            <div layout="column" style="max-width:250px;padding:10px;">
+                <div flex>
+                    <div layout layout-align="center center">
+                        <div flex><b>Fare Range</b></div>
+                        <div>
+                            <md-button scrolldelay="10" ng-scroll ng-init="FareRangeShow='Myhide'" ng-click="FareRangeShow = (FareRangeShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem()" aria-label="menu" class="md-icon-button md-primary">
+                                <ng-md-icon icon="{{FareRangeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#f8097e"></ng-md-icon>
+                            </md-button>
+                        </div>
+                    </div>
+                </div>
+                <div flex ng-class="FareRangeShow">
+                    @*<rzslider rz-slider-model="Filter.userMinPrice" rz-slider-high="Filter.userMaxPrice" rz-slider-options="{floor:Filter.minPrice, ceil: Filter.maxPrice, step: 1}"></rzslider>*@
+                    <rzslider rz-slider-model="Fareslider.minValue" rz-slider-high="Fareslider.maxValue" rz-slider-options="Fareslider.options" rz-slider-step="1"></rzslider>
+                </div>
+            </div>
+        </md-card>
+        <md-card>
+            <div layout="column" style="max-width:250px;padding:10px;">
+                <div flex>
+                    <div layout layout-align="center center">
+                        <div flex><b>Departure Time</b></div>
+                        <div>
+                            <md-button scrolldelay="10" ng-scroll ng-init="DepTimeShow='Myhide'" ng-click="DepTimeShow = (DepTimeShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem()" aria-label="menu" class="md-icon-button md-primary">
+                                <ng-md-icon icon="{{DepTimeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#f8097e"></ng-md-icon>
+                            </md-button>
+                        </div>
+                    </div>
+                </div>
+                <div flex ng-class="DepTimeShow" style="font-size: 12px;">
+                    <rzslider rz-slider-model="Deptslider.minValue" rz-slider-high="Deptslider.maxValue" rz-slider-options="Deptslider.options"></rzslider>
+                </div>
+            </div>
+        </md-card>
+        <md-card>
+            <div layout="column" style="max-width:250px;padding:10px;">
+                <div flex>
+                    <div layout layout-align="center center">
+                        <div flex><b>Arrival Time</b></div>
+                        <div>
+                            <md-button scrolldelay="10" ng-scroll ng-init="ArrTimeShow='Myhide'" ng-click="ArrTimeShow = (ArrTimeShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem()" aria-label="menu" class="md-icon-button md-primary">
+                                <ng-md-icon icon="{{ArrTimeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#f8097e"></ng-md-icon>
+                            </md-button>
+                        </div>
+                    </div>
+                </div>
+                <div flex ng-class="ArrTimeShow" style="font-size: 12px;">
+
+                    <rzslider rz-slider-model="Arrslider.minValue" rz-slider-high="Arrslider.maxValue" rz-slider-options="Arrslider.options" rz-slider-step="1"></rzslider>
+                </div>
+            </div>
+        </md-card>
+        <md-card>
+            <div layout="column" style="max-width:250px;padding:10px;">
+                <div flex>
+                    <div layout layout-align="center center">
+                        <div flex><b>Segment Type</b></div>
+                        <div>
+                            <md-button scrolldelay="10" ng-scroll ng-init="SegTypeShow='Myhide'" ng-click="SegTypeShow = (SegTypeShow =='Myhide' ? 'Myshow' : 'Myhide')" aria-label="menu" class="md-icon-button md-primary">
+                                <ng-md-icon icon="{{SegTypeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#f8097e"></ng-md-icon>
+                            </md-button>
+                        </div>
+                    </div>
+                </div>
+                <div flex ng-class="SegTypeShow">
+                    <md-checkbox ng-init="Segmenttype.Direct=true" ng-model="Segmenttype.Direct" aria-label="Checkbox 1">
+                        Direct Segment
+                    </md-checkbox>
+                    <md-checkbox ng-init="Segmenttype.Connecting=true" ng-model="Segmenttype.Connecting" aria-label="Checkbox 1">
+                        Connecting Segment
+                    </md-checkbox>
+                </div>
+            </div>
+        </md-card>
+        <md-card>
+            <div layout="column" style="max-width:250px;padding:10px;margin-top:15px">
+                <div flex>
+                    <div layout layout-align="center center">
+                        <div flex><b>Airlines</b></div>
+                        <div>
+                            <md-button scrolldelay="10" ng-scroll ng-init="AirFiltersShow='Myhide'" ng-click="AirFiltersShow = (AirFiltersShow =='Myhide' ? 'Myshow' : 'Myhide')" aria-label="menu" class="md-icon-button md-primary">
+                                <ng-md-icon icon="{{AirFiltersShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#f8097e"></ng-md-icon>
+                            </md-button>
+                        </div>
+                    </div>
+                </div>
+                <div ng-class="AirFiltersShow" flex ng-repeat="(key, value) in CheapestFareList">
+                    <md-checkbox ng-model="AirlineList[CheapestFareList[key].Airlinename]" aria-label="" ng-init="AirlineList[CheapestFareList[key].Airlinename]=true">
+                        {{CheapestFareList[key].Airlinename}}
+                    </md-checkbox>
+                </div>
+            </div>
+        </md-card>
+    </md-content>
+</md-sidenav>
+<div class="layout-column">
+
+    <div class="mobileTop" ng-show="!Ongoing" hide-md hide-gt-md>
+        <div layout="row" layout-align="center center" class="Cheapair" ng-if="TripType == 'R'">
+            <div flex>
+                <div layout="column" layout-align="center center">
+                    <div ng-bind-html="fnSetAirLogo(SelFlight.AvailSegments[0].AirlineCode)"></div>
+                    <small>{{SelFlight.BaseDetail.ReturnBaseAirlineName}}</small>
+                    <small class="txt-primary">{{SelFlight.AvailSegments[0].AvailPaxFareDetails.ClassCode}}-{{SelFlight.AvailSegments[0].FlightNumber}}</small>
+                </div>
+            </div>
+            <div flex>
+                <div layout="column" layout-align="center center">
+                    <div>
+                        <b>{{SelFlight.BaseDetail.ReturnBaseDepartureDateTime | date:'h:mm a'}}</b>
+                        <br />
+                        <small> {{SelFlight.AvailSegments.length == 1 ?'Non Stop': (SelFlight.AvailSegments.length - 1) +' Stop'}}</small>
+                    </div>
+                </div>
+            </div>
+            <div flex>
+                <div layout="column" layout-align="center center">
+                    <div>
+                        <b>{{SelFlight.BaseDetail.ReturnBaseArrivalDateTime | date:'h:mm a'}}</b>
+                        <br />
+                        <small>  {{SelFlight.BaseDetail.ReturnBaseDuration}}</small>
+                    </div>
+                </div>
+            </div>
+            <div flex ng-if="TripType == 'R'">
+                <div layout="row" layout-align="center center">
+                    <div ng-show="!SelFlight.BaseDetail.ReturnBaseOrigin">
+                        <div class="md-ink-ripple">
+                            <span class="Cur">
+                                &#8369;
+                            </span>
+                            <span class="Fare"> {{SelFlight.BaseDetail.GrossAmount}}</span>
+                        </div>
+                    </div>
+                    <div ng-hide="true">
+                        <ng-md-icon ng-if="SelFlight.AvailSegments[0].AvailPaxFareDetails.Adult.FareType =='Refundable'" size="16" icon="check_box" style="fill:#93ba29"></ng-md-icon>
+                        <ng-md-icon ng-if="SelFlight.AvailSegments[0].AvailPaxFareDetails.Adult.FareType =='NonRefundable'" size="16" icon="cancel" style="fill: #ff0000"></ng-md-icon>
+                        <small>{{SelFlight.AvailSegments[0].AvailPaxFareDetails.Adult.FareType}}</small>
+                    </div>
+
+                </div>
+                <div layout="row" flex>
+                    <md-button class="md-raised md-primary" style="min-height:10px;min-width:40px;line-height:20px;" ng-click="CanSelFlight()">Cancel</md-button>
+                </div>
+            </div>
+
+        </div>
+
+        <div layout="row" style="background: #2FCCD9;padding:3px;color:#fff">
+            <div flex class="txt-C">
+                Select Your Return Flight
+            </div>
+        </div>
+    </div>
+
+
+
+    <div class="rsltBackground">
+        <div flex layout="row" class="padTB12" ng-show="Flights[0]">
+            <div class="flex-5">
+                &nbsp;
+            </div>
+            <div class="layout-align-center-center layout-row flex-90">
+                <div class="bg-mdfywhite" flex="80">
+
+                    <span>   {{ICL[Search.Orgin]}} <ng-md-icon ng-show="TripType=='R'" icon="swap_horiz" style="fill: #fff" class="link"></ng-md-icon>  <ng-md-icon ng-show="TripType !='R'" icon="trending_flat" style="fill: #fff" class="link"></ng-md-icon>{{ICL[Search.Dest]}} &nbsp;&nbsp;&nbsp;&nbsp;   <ng-md-icon icon="event" style="fill: #fff" class="link"></ng-md-icon> {{Search.DepDate | date: 'dd MMM yy'}}</span>
+                    <span ng-show="TripType=='R'"> <ng-md-icon icon="swap_horiz" style="fill: #fff" class="link"></ng-md-icon><ng-md-icon icon="event" style="fill: #fff" class="link"></ng-md-icon> {{Search.RetDate | date: 'dd MMM yy'}}</span>
+                    <ng-md-icon icon="accessibility" style="fill: #fff" class="link"><md-tooltip>Adult</md-tooltip>  </ng-md-icon><span>{{Search.Adult}}</span>&nbsp; <ng-md-icon ng-show="Search.Child > 0" icon="face" style="fill: #fff" class="link"><md-tooltip>Child</md-tooltip></ng-md-icon><span ng-show="Search.Child > 0">&nbsp;{{Search.Child}}&nbsp;</span><ng-md-icon ng-show="Search.Infant > 0" icon="child_care" style="fill: #fff" class="link"><md-tooltip>Infant</md-tooltip></ng-md-icon><span ng-show="Search.Infant > 0">&nbsp;{{Search.Infant}}</span>
+
+                </div>
+
+                <div flex-gt-sm flex="20">
+
+                    <md-button scrolldelay="1000" ng-scroll ng-click="ModifySearch = (ModifySearch =='Myhide' ? 'Myshow' : 'Myhide')" style="background-color: #F57C00;color: #fff;" aria-label="menu" class="md-raised md-warn yellow">
+                        <span> MODIFY SEARCH</span>
+                        @*<span hide-xs>SEARCH </span>*@
+
+                    </md-button>
+
+
+                </div>
+            </div>
+            <div class="flex-5">
+                &nbsp;
+            </div>
+        </div>
+    </div>
+
+
+    <div>
+        <div class="animate-show-hide" ng-show="ModifySearch =='Myshow'">
+            <md-card flex>
+                <md-card-content layout="column" style="padding:5px">
+
+                    <div flex>
+                        <div layout-gt-sm="row" layout="column" layout-align="start center">
+                            <div>
+                                <md-radio-group layout="row" ng-model="Search.Triptype" ng-change="clearResult()">
+                                    <md-radio-button value="O" class="md-warn">One Way</md-radio-button>
+                                    <md-radio-button value="R" class="md-warn"> Round Trip </md-radio-button>
+                                    <md-radio-button value="M" class="md-warn"> Multi City </md-radio-button>
+
+                                </md-radio-group>
+                            </div>
+                            <div layout-align="end end" layout="row" flex>
+                                <md-button class="md-raised yellow glow" ng-href="#addbagage">Add Baggage</md-button>
+                            </div>
+
+                        </div>
+                        @*<div layout="row" layout-align="end end">
+                            <label href="#" class="link" ng-click="FarePage('lowfarecalender')">Low Fare Calendar</label>
+                            </div>*@
+                        <div flex ng-show="Search.Triptype!='M'">
+                            <div layout="column" layout-padding layout-gt-sm="row">
+
+
+                                <div flex>
+                                    <div layout-padding>Origin</div>
+                                    <div class="layout flex">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.Domestic.Orgin" aria-label="origin" ng-change="clearResult()">
+                                                <md-option ng-value="City.code" ng-repeat="City in CityList"><b>{{City.name | uppercase}}</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+                                    </div>
+                                </div>
+
+                                <div flex>
+                                    <div class="layout-padding">Destination</div>
+                                    <div class="layout flex">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.Domestic.Dest" aria-label="Destination" ng-change="clearResult()">
+                                                <md-option ng-value="City.code" ng-repeat="City in CityList"><b>{{City.name | uppercase}}</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+                                    </div>
+                                </div>
+
+
+                                <div flex>
+                                    <div class="layout-padding">Onward</div>
+                                    <div class="layout-row  layout-align-space-between border" style="cursor:pointer" ng-click="ShowOnWardDatePicker($event);clearResult();">
+                                        <div class="layout-padding">
+                                            <label ng-if="!Search.Domestic.DepDate"> <b>OnWard</b></label>
+
+                                            <label style="font-size: 12px;"> <b>{{Search.Domestic.DepDate | date:'dd/MM/yyyy'}}</b></label>
+                                        </div>
+                                        <div class="borderleft pad5">
+
+                                            <ng-md-icon icon="today" style="fill: #BDC9D2" class="link"></ng-md-icon>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div flex class="m-t5" ng-if="Search.Triptype=='R'">
+
+                                    <div class="layout-padding">Return</div>
+                                    <div class="layout-row layout-align-space-between border" ng-click="ShowReturnDatePicker($event);clearResult();" style="cursor:pointer">
+                                        <div class="layout-padding">
+                                            <label ng-if="!Search.Domestic.RetDate"> <b>Return</b></label>
+
+                                            <label style="font-size: 12px;"> <b>{{Search.Domestic.RetDate | date:'dd/MM/yyyy'}}</b></label>
+                                        </div>
+                                        <div class="borderleft pad5">
+                                            <ng-md-icon icon="today" style="fill: #BDC9D2" class="link"></ng-md-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div flex class="m-t5">
+                                    <div class="layout-padding">Class</div>
+                                    <div class="layout flex">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.Domestic.Class" ng-init="(!Search.Domestic.Class ? Search.Domestic.Class = 2 : '')" aria-label="Class" ng-change="clearResult()">
+                                                <md-option ng-value="2"><b>ECONOMY</b></md-option>
+                                                <md-option ng-value="3"><b>Business</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+                                    </div>
+                                </div>
+
+                                <div flex>
+                                    <md-menu flex class="Airline_menu">
+                                        <md-button aria-label="menu" ng-click="$mdOpenMenu($event)" style="width: 95%; color: rgb(0, 0, 0); background-color: rgb(255, 255, 255); border-radius: 0px;margin:0px !important">
+                                            <div layout layout-align="space-between center">
+                                                <div>Airlines</div>
+                                                <div><ng-md-icon icon="expand_more"></ng-md-icon></div>
+                                            </div>
+                                        </md-button>
+                                        <md-menu-content style="padding:10px 0;">
+                                            <md-menu-item style="height:auto;" aria-label="do something" md-prevent-menu-close="md-prevent-menu-close">
+                                                <div layout layout-align="center start" layout-padding>
+                                                    <div flex>
+                                                        <div layout="column" layout-align="center start" layout-padding>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="SelectAllair()" ng-model="Search.allairline" aria-label="All" class="md-warn">
+                                                                    All
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.palphilippine" aria-label="PAL Express" class="md-warn">
+                                                                    PAL Express / Philippine Airlines
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.skyjet" aria-label=" SkyJet" class="md-warn">
+                                                                    SkyJet
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.airasiazest" aria-label=" Air Asia Zest" class="md-warn">
+                                                                    Air Asia Zest
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.airasia" aria-label="Air Asia" class="md-warn">
+                                                                    Air Asia
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.cebupacific" aria-label="Cebupacific " class="md-warn">
+                                                                    Cebupacific
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.cebgo" aria-label="Cebgo" class="md-warn">
+                                                                    Cebgo
+                                                                </md-checkbox>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
+                                </div>
+                            </div>
+
+                            <div layout="column" layout-padding layout-gt-sm="row">
+
+
+                                <div flex>
+                                    <div class="layout-padding">Adult(12+)</div>
+                                    <div class="layout">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.Domestic.Adult" md-on-close="ChangeChild(Search.Domestic.Adult);clearResult();" aria-label="Adult">
+                                                <md-option ng-value="Adult" ng-repeat="Adult in AdultArr"><b>{{Adult}}</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+                                    </div>
+
+                                </div>
+
+                                <div flex>
+                                    <div ng-hide="Search.Domestic.SeniorCtzn">
+                                        <div class="layout-padding">Child</div>
+                                        <div class="layout">
+                                            <md-input-container class="flex">
+                                                <label></label>
+                                                <md-select ng-model="Search.Domestic.Child" aria-label="Child" md-on-close="ChangeInfant(Search.Domestic.Child)" ; ng-change="clearResult();">
+                                                    <md-option ng-value="0"><b>0</b></md-option>
+                                                    <md-option ng-value="Child" ng-repeat="Child in ChildArr"><b>{{Child}}</b></md-option>
+                                                </md-select>
+                                            </md-input-container>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div flex>
+                                    <div ng-hide="Search.Domestic.SeniorCtzn">
+                                        <div class="layout-padding">Infant</div>
+                                        <div class="layout">
+                                            <md-input-container class="flex">
+                                                <label></label>
+                                                <md-select ng-model="Search.Domestic.Infant" aria-label="Infant" md-on-close="changePax(Search.Domestic.Infant)" ng-change="clearResult();">
+                                                    <md-option ng-value="0"><b>0</b></md-option>
+                                                    <md-option ng-value="Infant" ng-repeat="Infant in InfantArr"><b>{{Infant}}</b></md-option>
+                                                </md-select>
+                                            </md-input-container>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div flex layout-align="center center">
+                                    <div class="layout-padding">
+                                        <br />
+                                    </div>
+                                    <md-checkbox ng-model="Search.Domestic.SeniorCtzn" aria-label="chkSeniorCitizen" ng-change="opnSCalert()">
+                                        <b>Senior Citizen</b>
+                                    </md-checkbox>
+                                </div>
+                                <div flex layout-align="center center">
+                                    <div class="layout-padding">
+                                        <br />
+                                    </div>
+
+                                    <md-checkbox ng-model="Search.Domestic.HostSearch" aria-label="chkHostSearch" class="md-primary" ng-change="showHostAlert($event)">
+                                        <b>Host Search</b>
+                                    </md-checkbox>
+                                </div>
+                                <div flex layout-align="center center">
+                                    <div class="layout-padding">
+                                        <br />
+                                    </div>
+                                    <md-button class="md-raised yellow" ng-click="SearchDom();"> <b>SEARCH FLIGHTS</b></md-button>
+                                </div>
+
+                            </div>
+                        </div>
+
+                        <div flex ng-show="Search.Triptype=='M'" layout="column">
+
+                            <div layout="row" flex="100" ng-repeat="segment in Search.MDomestic.segList track by $index">
+
+                                <div flex>
+                                    <div layout-padding>Origin</div>
+                                    <div class="layout flex">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.MDomestic.segList[$index].Orgin" aria-label="origin">
+                                                <md-option ng-value="City.code" ng-repeat="City in CityList"><b>{{City.name | uppercase}}</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+                                    </div>
+                                </div>
+
+                                <div flex>
+                                    <div class="layout-padding">Destination</div>
+                                    <div class="layout flex">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.MDomestic.segList[$index].Dest" aria-label="Destination">
+                                                <md-option ng-value="City.code" ng-repeat="City in CityList"><b>{{City.name | uppercase}}</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+                                    </div>
+                                </div>
+
+
+                                <div flex>
+                                    <div class="layout-padding">Onward</div>
+                                    <div class="layout-row  layout-align-space-between border" style="cursor:pointer" ng-click="ShowOnWardDatePicker($event,$index);">
+                                        <div class="layout-padding">
+                                            <label ng-if="!Search.MDomestic.segList[$index].DepDate"> <b>OnWard</b></label>
+
+                                            <label style="font-size: 12px;"> <b>{{Search.MDomestic.segList[$index].DepDate | date:'dd/MM/yyyy'}}</b></label>
+                                        </div>
+                                        <div class="borderleft pad5">
+
+                                            <ng-md-icon icon="today" style="fill: #BDC9D2" class="link"></ng-md-icon>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div layout="row" flex>
+                                <div flex class="m-t5">
+                                    <div class="layout-padding">Class</div>
+                                    <div class="layout flex">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.Domestic.Class" ng-init="(!Search.Domestic.Class ? Search.Domestic.Class = 2 : '')" aria-label="Class" ng-change="clearResult()">
+                                                <md-option ng-value="2"><b>ECONOMY</b></md-option>
+                                                <md-option ng-value="3"><b>Business</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+                                    </div>
+                                </div>
+
+                                <div flex>
+                                    <md-menu flex class="Airline_menu">
+                                        <md-button aria-label="menu" ng-click="$mdOpenMenu($event)" style="width: 95%; color: rgb(0, 0, 0); background-color: rgb(255, 255, 255); border-radius: 0px;margin:0px !important">
+                                            <div layout layout-align="space-between center">
+                                                <div>Airlines</div>
+                                                <div><ng-md-icon icon="expand_more"></ng-md-icon></div>
+                                            </div>
+                                        </md-button>
+                                        <md-menu-content style="padding:10px 0;">
+                                            <md-menu-item style="height:auto;" aria-label="do something" md-prevent-menu-close="md-prevent-menu-close">
+                                                <div layout layout-align="center start" layout-padding>
+                                                    <div flex>
+                                                        <div layout="column" layout-align="center start" layout-padding>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="SelectAllair()" ng-model="Search.allairline" aria-label="All" class="md-warn">
+                                                                    All
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.palphilippine" aria-label="PAL Express" class="md-warn">
+                                                                    PAL Express / Philippine Airlines
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.skyjet" aria-label=" SkyJet" class="md-warn">
+                                                                    SkyJet
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.airasiazest" aria-label=" Air Asia Zest" class="md-warn">
+                                                                    Air Asia Zest
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.airasia" aria-label="Air Asia" class="md-warn">
+                                                                    Air Asia
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.cebupacific" aria-label="Cebupacific " class="md-warn">
+                                                                    Cebupacific
+                                                                </md-checkbox>
+                                                            </div>
+                                                            <div flex>
+                                                                <md-checkbox ng-change="Selectair()" ng-model="Carrier.cebgo" aria-label="Cebgo" class="md-warn">
+                                                                    Cebgo
+                                                                </md-checkbox>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </md-menu-item>
+                                        </md-menu-content>
+                                    </md-menu>
+                                </div>
+                                <div flex>
+                                    <div class="layout-padding">Adult(12+)</div>
+                                    <div class="layout">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.Domestic.Adult" md-on-close="ChangeChild(Search.Domestic.Adult);" aria-label="Adult">
+                                                <md-option ng-value="Adult" ng-repeat="Adult in AdultArr"><b>{{Adult}}</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+                                    </div>
+
+                                </div>
+
+                                <div flex>
+
+                                    <div class="layout-padding">Child</div>
+                                    <div class="layout">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.Domestic.Child" aria-label="Child" md-on-close="ChangeInfant(Search.Domestic.Child)" ;>
+                                                <md-option ng-value="0"><b>0</b></md-option>
+                                                <md-option ng-value="Child" ng-repeat="Child in ChildArr"><b>{{Child}}</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+
+                                    </div>
+                                </div>
+
+                                <div flex>
+
+                                    <div class="layout-padding">Infant</div>
+                                    <div class="layout">
+                                        <md-input-container class="flex">
+                                            <label></label>
+                                            <md-select ng-model="Search.Domestic.Infant" aria-label="Infant" md-on-close="changePax(Search.Domestic.Infant)" ng-change="clearResult();">
+                                                <md-option ng-value="0"><b>0</b></md-option>
+                                                <md-option ng-value="Infant" ng-repeat="Infant in InfantArr"><b>{{Infant}}</b></md-option>
+                                            </md-select>
+                                        </md-input-container>
+                                    </div>
+
+                                </div>
+                                <div flex>
+                                    <div class="layout-padding">
+                                        <br />
+                                    </div>
+                                    <md-button class="md-raised yellow" ng-click="searchMulti(0);">Search</md-button>
+                                </div>
+
+                            </div>
+                            <div layout="row">
+                                <md-button class="md-icon-button md-primary" aria-label="More" ng-click="addSegments();">
+                                    <ng-md-icon size="20" icon="add"></ng-md-icon>
+                                </md-button>
+                                <md-button class="md-icon-button md-accent" aria-label="More" ng-click="removeSegments();">
+                                    <ng-md-icon size="20" icon="remove"></ng-md-icon>
+                                </md-button>
+                            </div>
+
+                        </div>
+
+
+                    </div>
+                </md-card-content>
+            </md-card>
+        </div>
+
+    </div>
+
+
+</div>
+
+
+
+<div layout="column" layout-align="end center" show-xs show-sm hide-gt-sm>
+    <div class="BK-top-Fixed-img " style="float:right">
+
+        <md-button class="md-icon-button md-primary" ng-click="toggleRight('filter')" aria-label="Settings">
+            <ng-md-icon size="20" icon="sortboth" style="fill:#f8097e"></ng-md-icon>
+        </md-button>
+    </div>
+
+</div>
+<div layout="row" layout-gt-xs="row">
+
+    <div class="flex ">
+        <div layout="row">
+            <div class="flex-25 bg-Color-2" hide-xs hide-sm style="background-color: #383E5B;height: 100%;" ng-if="Flights[0]">
+
+                <div class="Themes-Filter">
+                    <div layout-padding layout style="">
+
+                        <div flex="100">
+                            <b ng-click="ResetFilter(true);" style="top: 6px; position: relative; left: -6px; color: #fff;" class="btn-link">
+                                RESET FILTERS
+                            </b>
+                        </div>
+
+                        <div ng-click="ResetFilter(true);" class="cur-pointer" flex="8" style="margin-right: 13px;"><ng-md-icon size="23" icon="cached" style="fill: #81A7C2;"></ng-md-icon></div>
+                    </div>
+                </div>
+                <md-divider></md-divider>
+                <md-card class=" bg-Color-2" style="background-color: rgb(56, 62, 91); box-shadow: inherit;">
+                    <div layout="column" style="padding:10px;">
+                        <div flex>
+                            <div layout layout-align="center center">
+                                <div flex style="font-size:14px"><b style="color: rgb(255, 255, 255); font-size: 11px;">FARE FILTER</b></div>
+                                <div>
+                                    <md-button scrolldelay="3000" ng-scroll ng-init="FareRangeShow='Myhide'" ng-click="FareRangeShow = (FareRangeShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem();" aria-label="menu" class="md-icon-button md-primary">
+                                        <ng-md-icon icon="{{FareRangeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#81A7C2"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                            </div>
+
+                        </div>
+                        <md-divider style="background-color: rgb(151, 151, 151);"></md-divider>
+                        <div flex ng-class="FareRangeShow" ng-init="recalcDem();">
+                            @*<rzslider rz-slider-model="Filter.userMinPrice" rz-slider-high="Filter.userMaxPrice" rz-slider-options="{floor:Filter.minPrice, ceil: Filter.maxPrice, step: 1}"></rzslider>*@
+                            <rzslider rz-slider-model="Fareslider.minValue" rz-slider-high="Fareslider.maxValue" rz-slider-options="Fareslider.options"></rzslider>
+                        </div>
+                    </div>
+                </md-card>
+                <md-card class=" bg-Color-2" style="background-color: rgb(56, 62, 91); box-shadow: inherit;">
+                    <div layout="column" style="padding:10px;">
+                        <div flex>
+                            <div layout layout-align="center center">
+                                <div flex style="font-size:14px"><b style="color: rgb(255, 255, 255);font-size:11px;">DEPARTURE FILTER</b></div>
+                                <div>
+                                    <md-button scrolldelay="10" ng-scroll ng-init="DepTimeShow='Myhide'" ng-click="DepTimeShow = (DepTimeShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem();" aria-label="menu" class="md-icon-button md-primary">
+                                        <ng-md-icon icon="{{DepTimeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#81A7C2"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                            </div>
+                        </div>
+                        <md-divider style="background-color: rgb(151, 151, 151);"></md-divider>
+                        <div flex ng-class="DepTimeShow" ng-init="recalcDem();" ng-click="recalcDem();">
+                            <rzslider rz-slider-model="Deptslider.minValue" rz-slider-high="Deptslider.maxValue" rz-slider-options="Deptslider.options"></rzslider>
+                        </div>
+                    </div>
+                </md-card>
+                <md-card class=" bg-Color-2" style="background-color: rgb(56, 62, 91); box-shadow: inherit;">
+                    <div layout="column" style=" padding:10px;">
+                        <div flex>
+                            <div layout layout-align="center center">
+                                <div flex style="font-size:14px"><b style="color: rgb(255, 255, 255); font-size: 11px;">ARRIVAL FILTER</b></div>
+                                <div>
+                                    <md-button scrolldelay="10" ng-scroll ng-init="ArrTimeShow='Myhide'" ng-click="ArrTimeShow = (ArrTimeShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem();" aria-label="menu" class="md-icon-button md-primary">
+                                        <ng-md-icon icon="{{ArrTimeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#81A7C2"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                            </div>
+                        </div>
+                        <md-divider style="background-color: rgb(151, 151, 151);"></md-divider>
+                        <div flex ng-class="ArrTimeShow" ng-click="recalcDem();">
+                            <rzslider rz-slider-model="Arrslider.minValue" rz-slider-high="Arrslider.maxValue" rz-slider-options="Arrslider.options"></rzslider>
+                        </div>
+                    </div>
+                </md-card>
+                <md-card class=" bg-Color-2" style="background-color: rgb(56, 62, 91); box-shadow: inherit;" ng-init="recalcDem()">
+                    <div layout="column" style=" padding:10px;">
+                        <div flex>
+                            <div layout layout-align="center center">
+                                <div flex style="font-size:14px"><b style="color: rgb(255, 255, 255); font-size: 11px;">SEGMENT FILTER</b></div>
+                                <div>
+                                    <md-button scrolldelay="10" ng-scroll ng-init="SegTypeShow='Myhide'" ng-click="SegTypeShow = (SegTypeShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem();" aria-label="menu" class="md-icon-button md-primary">
+                                        <ng-md-icon icon="{{SegTypeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#81A7C2"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                            </div>
+                        </div>
+                        <md-divider style="background-color: rgb(151, 151, 151);"></md-divider>
+                        <div class="layout-padding flex" style="color: #2fccd9; font-size: 13px; " ng-class="SegTypeShow">
+                            <md-checkbox ng-init="Segmenttype.Direct=true" ng-model="Segmenttype.Direct" aria-label="Checkbox DF">
+                                Direct Flight
+                            </md-checkbox>
+                            <md-checkbox ng-init="Segmenttype.Connecting=true" ng-model="Segmenttype.Connecting" aria-label="Checkbox CF">
+                                Connecting Flight
+                            </md-checkbox>
+                        </div>
+                    </div>
+                </md-card>
+                <md-card class=" bg-Color-2" style="background-color: rgb(56, 62, 91); box-shadow: inherit;" ng-init="recalcDem()">
+                    <div layout="column" style="padding:10px;">
+
+
+                        <div flex>
+                            <div layout layout-align="center center">
+                                <div flex style="font-size:14px"><b style="color: rgb(255, 255, 255);font-size:11px;">AIRLINE FILTER</b></div>
+                                <div>
+                                    <md-button scrolldelay="10" ng-scroll ng-init="AirFiltersShow='Myhide'" ng-click="AirFiltersShow = (AirFiltersShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem();" aria-label="menu" class="md-icon-button md-primary">
+                                        <ng-md-icon icon="{{AirFiltersShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#81A7C2"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                            </div>
+                        </div>
+                        <md-divider style="background-color: rgb(151, 151, 151);"></md-divider>
+                        <div flex" ng-class="AirFiltersShow" flex ng-repeat="(key, value) in CheapestFareList" style="color: #2fccd9; font-size: 13px; ">
+                            <md-checkbox ng-model="AirlineList[CheapestFareList[key].Airlinename]" aria-label="" ng-init="AirlineList[CheapestFareList[key].Airlinename]=true">
+                                {{CheapestFareList[key].Airlinename}}
+                            </md-checkbox>
+                        </div>
+                    </div>
+                </md-card>
+
+
+                <md-card class=" bg-Color-2" style="background-color: rgb(56, 62, 91); box-shadow: inherit;" ng-show="TripType=='R'" ng-init="recalcDem()">
+                    <div layout="column" style="padding:10px;">
+
+
+                        <div flex>
+                            <div layout layout-align="center center">
+                                <div flex style="font-size:14px"><b style="color: rgb(255, 255, 255); font-size: 11px;">RETURN AIRLINE FILTER</b></div>
+                                <div>
+                                    <md-button scrolldelay="10" ng-scroll ng-init="AirFiltersShowRet='Myhide'" ng-click="AirFiltersShowRet = (AirFiltersShowRet =='Myhide' ? 'Myshow' : 'Myhide');recalcDem();" aria-label="menu" class="md-icon-button md-primary">
+                                        <ng-md-icon icon="{{AirFiltersShowRet =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#81A7C2"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                            </div>
+                        </div>
+                        <md-divider style="background-color: rgb(151, 151, 151);"></md-divider>
+                        <div flex" ng-class="AirFiltersShowRet" flex ng-repeat="(key, value) in CheapestFareListRt" style="color: #2fccd9; font-size: 13px; ">
+                            <md-checkbox ng-model="AirlineListRt[CheapestFareListRt[key].Airlinename]" aria-label="" ng-init="AirlineListRt[CheapestFareListRt[key].Airlinename]=true">
+                                {{CheapestFareList[key].Airlinename}}
+                            </md-checkbox>
+                        </div>
+                    </div>
+                </md-card>
+
+                <div ng-if="RtnFlights[0]">
+                    <md-card class="Themes-Filter bg-Color-2" style="background-color: rgb(56, 62, 91); box-shadow: inherit;">
+                        <div layout="column" style="padding:10px;">
+                            <div flex>
+                                <div layout layout-align="center center">
+                                    <div flex><b style="color: rgb(255, 255, 255); font-size: 11px;">RETURN DEPARTURE</b></div>
+                                    <div>
+                                        <md-button scrolldelay="10" ng-scroll ng-init="DepTimeShow='Myhide'" ng-click="DepTimeShow = (DepTimeShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem();" aria-label="menu" class="md-icon-button md-primary">
+                                            <ng-md-icon icon="{{DepTimeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#81A7C2"></ng-md-icon>
+                                        </md-button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div flex ng-class="DepTimeShow" ng-init="recalcDem();" ng-click="recalcDem();">
+                                <rzslider rz-slider-model="RTDeptslider.minValue" rz-slider-high="RTDeptslider.maxValue" rz-slider-options="RTDeptslider.options"></rzslider>
+                            </div>
+                        </div>
+                    </md-card>
+                    <md-divider style="background-color: rgb(151, 151, 151);"></md-divider>
+                    <md-card class="Themes-Filter bg-Color-2 " style="background-color: rgb(56, 62, 91); box-shadow: inherit;">
+                        <div layout="column" style="padding:10px;">
+                            <div flex>
+                                <div layout layout-align="center center">
+                                    <div flex><b style="color: rgb(255, 255, 255); font-size: 11px;">RETURN ARRIVAL</b></div>
+                                    <div>
+                                        <md-button scrolldelay="10" ng-scroll ng-init="ArrTimeShow='Myhide'" ng-click="ArrTimeShow = (ArrTimeShow =='Myhide' ? 'Myshow' : 'Myhide');recalcDem();" aria-label="menu" class="md-icon-button md-primary">
+                                            <ng-md-icon icon="{{ArrTimeShow =='Myshow' ? 'expand_less':'expand_more'}}" style="fill:#81A7C2"></ng-md-icon>
+                                        </md-button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div flex ng-class="ArrTimeShow" ng-click="recalcDem();">
+                                <rzslider rz-slider-model="RTArrslider.minValue" rz-slider-high="RTArrslider.maxValue" rz-slider-options="RTArrslider.options" rz-slider-step="1"></rzslider>
+                            </div>
+                        </div>
+                    </md-card>
+                    <md-divider style="background-color: rgb(151, 151, 151);"></md-divider>
+                </div>
+            </div>
+            <div style="width:1%"></div>
+            <div class="flex-75" flex-sm="100" flex-xs="100" style="padding:0px">
+                <div hide-xs ng-hide="true">
+                    <div class="layout-row" flex ng-if="Flights[0] && CheapestFareByDate.length > 1" style="margin-top:1%;">
+                        <div flex layout="row" layout-xs="column" class="txt-C bg-Color-2 pad5 " style="color:#fff;">
+                            <div style="width: 100%;">   CHEAPEST AIRLINE  BY DATE</div>
+                        </div>
+                    </div>
+
+                    <div class="flex layout-row" style="border: 1px solid rgb(221, 221, 221);margin-bottom:1%;" ng-if="Flights.length > 1 && CheapestFareByDate.length > 1">
+                        <div class="flex-10 layout layout-align-center-center" style="border-right: 1px solid rgb(221, 221, 221); cursor: pointer;" ng-click="ScrollLeftFareByDate()">
+                            <div class="layout layout-align-center-center">
+                                <img src="Content/Images/Keybord_Right.png" style="transform: rotate(180deg);" class="flex-100 flex-gt-xs-50" />
+                            </div>
+                        </div>
+
+                        <div class="flex-80 layout-row layout-padding CheapestDateFare" style="overflow:hidden">
+                            <div ng-repeat="(key, value) in CheapestFareByDate | orderObjectBy:'TravelDate' track by $index" id="divDateCheap{{$index}}" class="Low-Fare-Container layout-column layout-align-center-center" style="cursor:pointer;">
+                                <div style="text-align:center" class="flex">
+                                    <div class="ng-binding ng-scope">
+                                        <ng-md-icon icon="date_range"></ng-md-icon>
+                                        {{::value.TravelDate | date:'dd MMM'}}
+                                    </div>
+                                    <div style="color: rgb(253, 86, 57);"> PHP <span style="font-size: 18px;"> {{::value.Fare}}</span></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex-10 layout layout-align-center-center" style="border-left: 1px solid rgb(221, 221, 221); cursor: pointer;" ng-click="ScrollRightFareByDate()">
+                            <div class="layout layout-align-center-center">
+                                <img src="Content/Images/Keybord_Right.png" class="flex-100 flex-gt-xs-50" />
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div hide-xs>
+                    <div class="layout-row" flex ng-if="Flights[0]">
+                        <div flex layout="row" layout-xs="column" class="txt-C bg-Color-2 pad5" style="color:#fff;">
+                            <div style="width: 100%;">   CHEAPEST AIRLINE  BY FARE</div>
+                        </div>
+                    </div>
+
+                    <div flex layout="column" layout-gt-sm="row">
+
+                        <div class="flex layout-row" style="border: 1px solid rgb(221, 221, 221);margin-bottom:1%;" ng-if="Flights.length > 1">
+                            <div class="flex-10 layout layout-align-center-center" style="border-right: 1px solid rgb(221, 221, 221); cursor: pointer;" ng-click="ScrollLeft()">
+                                <div class="layout layout-align-center-center">
+                                    <img src="Content/Images/Keybord_Right.png" style="transform: rotate(180deg);" class="flex-100 flex-gt-xs-50" />
+                                </div>
+                            </div>
+
+                            <div class="flex-80 layout-row layout-padding CheapestFare" style="overflow:hidden">
+
+                                <div ng-repeat="(key, value) in CheapestFareListTemp | orderObjectBy:'Cost' track by $index" id="divCheap{{$index}}" class="Low-Fare-Container layout-column layout-align-center-center" ng-click="searchongoing(value.Airlinename,value)" style="cursor:pointer;">
+
+                                    <div ng-bind-html="fnSetAirLogo(value.AirlineCode)"></div>
+
+                                    <div style="text-align:center">
+                                        <span class=" ng-binding ng-scope" style="color:#FD5639;width:20px;margin:11px"> PHP {{value.Cost}}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-10 layout layout-align-center-center" style="border-left: 1px solid rgb(221, 221, 221); cursor: pointer;" ng-click="ScrollRight()">
+                                <div class="layout layout-align-center-center">
+                                    <img src="Content/Images/Keybord_Right.png" class="flex-100 flex-gt-xs-50" />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div flex ng-show="TripType=='R'" class="flex layout-row" style="border: 1px solid rgb(221, 221, 221);" ng-if="Flights.length > 1">
+                            @*<slick infinite="true" layout="row" slides-to-show="{{slidesToShow}}" class="slickDivRet" slides-to-scroll="3" init-onload=false data="CheapestFareListRt" style="height:65px;overflow:hidden;cursor:pointer">
+                                <div layout="column" ng-repeat="(key, value) in CheapestFareListRt" class="Low-Fare-Container" ng-click="searchreturn(key, value)">
+
+
+                                <div ng-bind-html="fnSetAirLogo(CheapestFareListRt[key].AirlineCode)"></div>
+                                <div style="text-align:center">
+
+                                <span class="ng-binding ng-scope" style="color:#FD5639;width:20px;margin:11px"> PHP {{CheapestFareListRt[key].Cost}}</span>
+                                </div>
+                                </div>
+                                </slick>*@
+
+                            <div class="flex-10 layout layout-align-center-center" style="border-right: 1px solid rgb(221, 221, 221); cursor: pointer;" ng-click="ScrollLeftRet()">
+                                <div class="layout layout-align-center-center">
+                                    <img src="Content/Images/Keybord_Right.png" style="transform: rotate(180deg);" class="flex-100 flex-gt-xs-50" />
+                                </div>
+                            </div>
+                            <div class="flex-80 layout-row layout-padding CheapestFareRt" style="overflow:hidden">
+                                <div ng-repeat="(key, value) in CheapestFareListRt | orderObjectBy:'Cost' track by $index" id="divCheapRt{{$index}}" class="Low-Fare-Container layout-column layout-align-center-center" ng-click="searchreturn(value.Airlinename,value)" style="cursor:pointer;">
+                                    <div ng-bind-html="fnSetAirLogo(value.AirlineCode)"></div>
+
+                                    <div style="text-align:center">
+                                        <span class=" ng-binding ng-scope" style="color:#FD5639;width:20px;margin:11px"> PHP {{value.Cost}}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex-10 layout layout-align-center-center" style="border-left: 1px solid rgb(221, 221, 221); cursor: pointer;" ng-click="ScrollRightRet()">
+                                <div class="layout layout-align-center-center">
+                                    <img src="Content/Images/Keybord_Right.png" class="flex-100 flex-gt-xs-50" />
+                                </div>
+                            </div>
+
+                        </div>
+
+
+                    </div>
+                </div>
+
+                <div layout="column" layout-gt-xs="row" ng-if="TripType == 'R' && RtnFlights[0]" style="padding-top:15px" hide-xs>
+                    <div flex>
+                        <md-card id="bottom" class="NM" style="background: #383E5B;color:#fff">
+                            <div layout="row">
+                                <div flex="30" layout="row" layout-align="start center">
+                                    <div ng-if="(Search.DepDate | date:'dd/MM/yyyy') != (todayDate | date:'dd/MM/yyyy')" style="cursor:pointer" ng-click="prevNextDay('O',1)">
+                                        <ng-md-icon size="30" icon="chevron_left" style="fill: white;margin-top:-8px"><md-tooltip>PREVIOUS DAY</md-tooltip> </ng-md-icon>
+                                        <span> Previous Day</span>
+                                    </div>
+                                </div>
+                                <div flex="40">
+                                    <div layout="row" layout-align="center center">
+                                        <div>
+                                            {{Search.Orgin}} -
+                                            {{Search.Dest}}<br />
+                                            {{Search.DepDate | date: 'dd MMM yy'}}
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div flex="30" layout="row" layout-align="end center" style="cursor:pointer" ng-click="prevNextDay('O',2)">
+                                    <div ng-if="(Search.DepDate | date:'dd/MM/yyyy') != (Search.RetDate | date:'dd/MM/yyyy')">
+                                        <span> Next Day</span>
+                                        <ng-md-icon size="30" icon="chevron_right" style="fill: white;margin-top:-8px"><md-tooltip>NEXT DAY</md-tooltip></ng-md-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </md-card>
+                    </div>
+                    <div style="width:2%" ng-if="RtnFlights[0] || (TripType == 'R') "></div>
+                    <div flex>
+                        <md-card id="bottom" class="NM" style="background: #383E5B;color:#fff">
+                            <div layout="row">
+                                <div flex="30" layout="row" layout-align="start center">
+
+                                    <div ng-if="((Search.RetDate | date:'dd/MM/yyyy') != (todayDate | date:'dd/MM/yyyy')) && ((Search.DepDate | date:'dd/MM/yyyy') != (Search.RetDate | date:'dd/MM/yyyy'))" style="cursor:pointer" ng-click="prevNextDay('R',1)">
+                                        <ng-md-icon size="30" icon="chevron_left" style="fill: white;margin-top:-8px"><md-tooltip>PREVIOUS DAY</md-tooltip> </ng-md-icon>
+                                        <span> Previous Day</span>
+                                    </div>
+                                </div>
+                                <div flex="40">
+                                    <div layout="row" layout-align="center center">
+                                        <div>
+                                            {{Search.Dest}} -
+                                            {{Search.Orgin}}<br />
+                                            {{Search.RetDate | date: 'dd MMM yy'}}
+                                        </div>
+                                    </div>
+
+                                </div>
+                                <div flex="30" layout="row" layout-align="end center" style="cursor:pointer" ng-click="prevNextDay('R',2)">
+                                    <div>
+                                        <span>Next Day</span>
+                                        <ng-md-icon size="30" icon="chevron_right" style="fill: white;margin-top:-8px"><md-tooltip>NEXT DAY</md-tooltip></ng-md-icon>
+                                    </div>
+                                </div>
+                            </div>
+                        </md-card>
+                    </div>
+                </div>
+
+
+                <div layout="column" layout-gt-xs="row" hide-xs>
+                    <div ng-if="Flights[0]" flex>
+
+                        <md-card class="NM" id="bottom" style="background: #2FCCD9;color:#fff">
+                            <div layout="row">
+                                <div flex="10" layout="row" layout-align="center center">
+                                    <div flex style="cursor:pointer" ng-click="prevNextDay('O',1)" ng-if="((Search.DepDate | date:'dd/MM/yyyy') != (todayDate | date:'dd/MM/yyyy')) && TripType == 'O'">
+                                        <ng-md-icon size="30" icon="chevron_left" style="fill: black; "><md-tooltip>PREVIOUS DAY</md-tooltip> </ng-md-icon>
+                                        <span>Prev</span>
+                                    </div>
+                                </div>
+                                <div flex="20" ng-scroll ng-click="order('BaseDetail.BaseAirlineName')">
+                                    <md-button class="F-11" style="text-transform:capitalize;margin:0px;">
+                                        <span>
+                                            Airline
+                                            <ng-md-icon size="30" icon="{{reverse==false ? 'arrow_drop_down':'arrow_drop_up'}}" ng-show="predicate === 'BaseDetail.BaseAirlineName'" style="fill: red; position: absolute; margin-top: 3px; margin-left: -5px;"></ng-md-icon>
+                                        </span>
+                                    </md-button>
+                                </div>
+                                <div flex="20" ng-click="order('BaseDetail.BaseDepartureDateTime')">
+                                    <md-button class="F-11" style="text-transform:capitalize;margin:0px;">
+                                        Departure
+                                        <ng-md-icon size="30" icon="{{reverse==false ? 'arrow_drop_down':'arrow_drop_up'}}" ng-show="predicate === 'BaseDetail.BaseDepartureDateTime'" style="fill: red; position: absolute; margin-top: 3px; margin-left: -5px;"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                                <div flex="20" ng-click="order('BaseDetail.BaseArrivalDateTime')">
+                                    <md-button class="F-11" style="text-transform:capitalize;margin:0px;">
+                                        Arrival
+                                        <ng-md-icon size="20" icon="{{reverse==false ? 'arrow_drop_down':'arrow_drop_up'}}" ng-show="predicate === 'BaseDetail.BaseArrivalDateTime'" style="fill: red; position: absolute; margin-top: 3px; margin-left: -5px;"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                                <div flex="20">
+                                    <div ng-click="order('BaseDetail.GrossAmount')">
+                                        <md-button class="F-11" style="text-transform:capitalize;margin:0px;">
+                                            Fare
+                                            <ng-md-icon size="30" icon="{{reverse==false ? 'arrow_drop_down':'arrow_drop_up'}}" ng-show="predicate === 'BaseDetail.GrossAmount'" style="fill: red; position: absolute; margin-top: 3px; margin-left: -5px;"></ng-md-icon>
+                                        </md-button>
+                                    </div>
+                                </div>
+
+
+                                <div style="cursor:pointer" layout="row" flex="10">
+                                    <div flex ng-scroll layout-align="center center">
+                                        <div flex>
+                                            <md-checkbox ng-model="Check.ALL" class="SortChk" aria-label="checkALLFLIGHT" ng-change="SelectAllFlights(Check.ALL,Check.RtnALL);" style="top:10px"></md-checkbox>
+                                        </div>
+
+                                    </div>
+
+                                    <div flex ng-if="TripType == 'O'" ng-click="prevNextDay('O',2)" layout="row" layout-align="center center">
+                                        <span>Next</span>
+                                        <ng-md-icon size="30" icon="chevron_right" style="fill: black;"><md-tooltip>NEXT DAY</md-tooltip></ng-md-icon>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </md-card>
+                    </div>
+                    <div style="width:2%" ng-if="RtnFlights[0] || (TripType == 'R') "></div>
+
+                    <div flex ng-if="RtnFlights[0] && TripType == 'R'">
+                        <md-card id="bottom" class="NM" style="background: #2FCCD9;color:#fff">
+                            <div layout="column" layout-gt-xs="row">
+                                @*<div flex="5" style="cursor:pointer" ng-click="prevNextDay('R',1)">
+                                    <div flex ng-if="(Search.RetDate | date:'dd/MM/yyyy') != (todayDate | date:'dd/MM/yyyy') || (Search.DepDate | date:'dd/MM/yyyy') != (Search.RetDate | date:'dd/MM/yyyy')">
+                                    <ng-md-icon size="30" icon="chevron_left" style="fill: black; margin-top: 3px; margin-left: -5px;"><md-tooltip>PREVIOUS DAY</md-tooltip> </ng-md-icon>
+                                    </div>
+                                    </div>*@
+                                <div flex="5"></div>
+                                <div flex="20" ng-scroll ng-click="Returnorder('BaseDetail.ReturnBaseAirlineName')">
+                                    <md-button class="F-11" style="text-transform:capitalize;margin:0px;">
+                                        Airline
+                                        <ng-md-icon size="20" icon="{{reverseRt==false ? 'arrow_drop_down':'arrow_drop_up'}}" ng-show="predicateRt === 'BaseDetail.ReturnBaseAirlineName'" style="fill: red; position: absolute; margin-top: 3px; margin-left: -5px;"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                                <div flex="20" ng-scroll ng-click="Returnorder('BaseDetail.ReturnBaseDepartureDateTime')">
+                                    <md-button class="F-11" style="text-transform:capitalize;margin:0px;">
+                                        <span>
+                                            Departure
+                                            <ng-md-icon size="20" icon="{{reverseRt==false ? 'arrow_drop_down':'arrow_drop_up'}}" ng-show="predicateRt === 'BaseDetail.ReturnBaseDepartureDateTime'" style="fill: red; position: absolute; margin-top: 3px; margin-left: -5px;"></ng-md-icon>
+                                        </span>
+                                    </md-button>
+                                </div>
+                                @*<div flex ng-scroll ng-click="Returnorder('BaseDetail.ReturnBaseDuration')">
+                                    <md-button class="F-11" style="text-transform:capitalize;margin:0px;">
+                                    Duration
+                                    <ng-md-icon size="20" icon="{{reverseRt==false ? 'arrow_drop_down':'arrow_drop_up'}}" ng-show="predicateRt === 'BaseDetail.ReturnBaseDuration'" style="fill: red; position: absolute; margin-top: 3px; margin-left: -5px;"></ng-md-icon>
+                                    </md-button>
+                                    </div>*@
+                                <div flex="20" ng-scroll ng-click="Returnorder('BaseDetail.ReturnBaseArrivalDateTime')">
+                                    <md-button class="F-11" style="text-transform:capitalize;margin:0px;">
+                                        Arrival
+                                        <ng-md-icon size="20" icon="{{reverseRt==false ? 'arrow_drop_down':'arrow_drop_up'}}" ng-show="predicateRt === 'BaseDetail.ReturnBaseArrivalDateTime'" style="fill: red; position: absolute; margin-top: 3px; margin-left: -5px;"></ng-md-icon>
+                                    </md-button>
+                                </div>
+                                <div flex="20" ng-scroll layout="row">
+                                    <div ng-click="Returnorder('BaseDetail.GrossAmount')">
+                                        <md-button class="F-11" style="text-transform:capitalize;margin:0px;">
+                                            Fare
+                                            <ng-md-icon size="20" icon="{{reverseRt==false ? 'arrow_drop_down':'arrow_drop_up'}}" ng-show="predicateRt === 'BaseDetail.GrossAmount'" style="fill:#d5d5d5; position: absolute; margin-top: 6px;"></ng-md-icon>
+                                        </md-button>
+                                    </div>
+                                </div>
+                                <div flex="10" ng-scroll class=" layout-align-center-end layout-column flex">
+                                    <div flex>
+                                        <md-checkbox ng-model="Check.RtnALL" class="SortChk" aria-label="checkALLFLIGHT" ng-change="SelectAllFlights(Check.ALL,Check.RtnALL);" style="top:10px"></md-checkbox>
+                                    </div>
+
+                                </div>
+                                <div flex="5"></div>
+                                @*<div flex="5" style="cursor:pointer" ng-click="prevNextDay('R',2)">
+                                    <ng-md-icon size="30" icon="chevron_right" style="fill: black;  margin-top: 3px; margin-left: -5px;"><md-tooltip>NEXT DAY</md-tooltip></ng-md-icon>
+                                    </div>*@
+                            </div>
+                        </md-card>
+                    </div>
+                </div>
+
+
+                <div layout="row" class="fabSpeedDialDemoBasicUsage fab-container" hide-xs>
+
+                    <div class="lock-size" layout="row" layout-align="center center" ng-if="Flights[0]">
+                        <md-fab-speed-dial md-open="true" md-direction="up"
+                                           class="md-fling">
+                            <md-fab-trigger>
+                                <md-button aria-label="menu" class="md-fab md-warn">
+                                    <ng-md-icon style="fill: #fff" icon="menu" size="27"></ng-md-icon>
+                                </md-button>
+                            </md-fab-trigger>
+
+                            <md-fab-actions>
+                                @*<md-button class="md-fab md-raised md-mini" ng-click="SelectAllFlights(Check.ALL);">
+                                    <md-checkbox ng-model="Check.ALL" aria-label="checkALLFLIGHT" style="margin-left:4px;margin-top:10px"></md-checkbox>
+                                    </md-button>*@
+                                <md-button aria-label="mail" class="md-fab md-raised md-mini" ng-click="EmailFlightDetails('',1);">
+                                    <ng-md-icon style="fill: #034F84" icon="mail"></ng-md-icon>
+                                    <md-tooltip md-direction="left">Email</md-tooltip>
+                                </md-button>
+                                <md-button aria-label="save" class="md-fab md-raised md-mini" ng-click="SendEmailPrint('',0);">
+                                    <ng-md-icon style="fill: #034F84" icon="save"></ng-md-icon>
+                                    <md-tooltip md-direction="left">Save</md-tooltip>
+                                </md-button>
+                                <md-button aria-label="print" class="md-fab md-raised md-mini" ng-click="SendEmailPrint('',1);">
+                                    <ng-md-icon style="fill: #034F84" icon="print"></ng-md-icon>
+                                    <md-tooltip md-direction="left">Print</md-tooltip>
+                                </md-button>
+                                <md-button ng-if="Profile.FareType == 'GROSS'" aria-label="Comission" class="md-fab md-raised md-mini" ng-click="commssion();">
+                                    <img src="~/Content/Images/comission.png">
+                                    <md-tooltip md-direction="left">Show Commission</md-tooltip>
+                                    @*<ng-md-icon style=" fill:#034f84" icon="mail">
+                                        </ng-md-icon>*@
+                                </md-button>
+
+                            </md-fab-actions>
+                        </md-fab-speed-dial>
+                    </div>
+
+                </div>
+
+                <div layout="column" layout-gt-xs="row" ng-class="TripType=='R'?'return':'test'">
+
+                    <div ng-if="Flights[0]" flex>
+                        <md-card ng-if="(Flights | filter:AirlineFilter | orderBy:predicate:reverse).length == 0" class="MH100 result pad5 themes-Font">
+                            <div flex layout layout-align="center center">NO FLIGHTS AVAILABLE</div>
+                        </md-card>
+
+                        <div layout="column" layout-gt-xs="row" flex="" ng-repeat="Flight in Flights | filter:AirlineFilter| orderBy:predicate:reverse">
+                            <div flex>
+
+                                <div hide-xs hide-sm show-gt-sm class="Airline-Rslt-Row">
+
+                                    <div ng-if="TripType =='R' && SelectAirlinr[Flight.BaseDetail.FlightsCount] && RtnFlights[0] " class="testlay">
+                                        <div style="margin: 0px auto; width: 10px; position: relative; transform: rotate(43deg); top: 23px; border-bottom: 1px solid rgb(255, 255, 255); border-right: 1px solid rgb(255, 255, 255); height: 20px;"></div>
+                                    </div>
+                                    <div layout="row" ng-init="SelectAirlinr[Flight.BaseDetail.FlightsCount]=false;" ng-model="SelectAirlinr[Flight.BaseDetail.FlightsCount]" ng-click="SetRoundTripTax(Flight.BaseDetail.FlightsCount,$event,'O',false,Flight.BaseDetail.ThreadCount);">
+                                        <div flex="25" flex-xs="15" flex-sm="25" layout="column" layout-align="center center" ng-init="SetFiterDate(Flight.BaseDetail.BaseDepartureDateTime,Flight.BaseDetail.BaseArrivalDateTime);">
+
+                                            <div ng-bind-html="fnSetAirLogo(Flight.AvailSegments[0].AirlineCode)"></div>
+                                            <small>{{Flight.BaseDetail.BaseAirlineName}}</small>
+
+                                            <div class="FClr-Prim-4" ng-if="Flight.AvailSegments.length >1">
+                                                <span ng-repeat="item in Flight.AvailSegments ">
+                                                    {{item.AirlineCode}}-{{item.FlightNumber}},
+                                                </span>
+                                            </div>
+
+                                            <div class="FClr-Prim-4" ng-if="Flight.AvailSegments.length ==1">
+                                                {{Flight.AvailSegments[0].AirlineCode}}-{{Flight.AvailSegments[0].FlightNumber}}
+                                            </div>
+                                            <small style="color: rgb(119, 119, 119);">{{Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis}}</small>
+                                        </div>
+                                        <div flex="15" flex-xs="25" flex-sm="20" layout="column" layout-align="center center">
+                                            <div>
+                                                <div class="Airline-Seg"><span ng-hide="TripType == 'R'">  {{Flight.BaseDetail.BaseOrigin}} </span> {{ Flight.BaseDetail.BaseDepartureDateTime | date:'HH:mm' }}    </div>
+                                                <div class=" FClr-Prim-4">{{City.code}}     {{ Flight.BaseDetail.BaseDepartureDateTime | date:'dd MMM yyyy' }}     </div>
+                                                @*<small> {{ Flight.AvailSegments.length == 1 ?'Non Stop': (Flight.AvailSegments.length - 1) +' Stop'}}</small>*@
+                                            </div>
+                                        </div>
+
+                                        <div flex="20" flex-xs="20" flex-sm="20" layout="column" layout-align="center center">
+                                            <div>
+
+                                                <div class="FClr-Prim-5">    {{Flight.BaseDetail.BaseDuration}}   </div>
+                                                <div class="FClr-Prim-4">  Stops : {{ Flight.AvailSegments.length == 1 ?'0': (Flight.AvailSegments.length - 1) +' Stop'}}</div>
+
+                                            </div>
+                                        </div>
+
+
+                                        <div flex="15" flex-xs="25" flex-sm="25" layout layout-align="center center">
+                                            <div>
+                                                <div class="Airline-Seg">
+                                                    <span ng-hide="TripType == 'R'"> {{Flight.BaseDetail.BaseDestination }}</span>  {{ Flight.BaseDetail.BaseArrivalDateTime | date:'HH:mm '}}
+                                                </div>
+                                                <div class=" FClr-Prim-4">{{ Flight.BaseDetail.BaseArrivalDateTime | date:'dd MMM yyyy' }}</div>
+                                            </div>
+                                        </div>
+                                        <div flex="15" flex-xs="30" flex-sm="25" layout layout-align="center center">
+                                            <div>
+                                                <div>
+                                                    <div class="md-ink-ripple">
+
+                                                        <div class="FClr-Prim-5" style="padding: 12px 0px;font-size: 20px;">
+                                                            <span class="Cur"> ₱</span>
+                                                            <span> {{Flight.BaseDetail.GrossAmount}}</span>
+
+                                                            @*{{Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis}}*@
+                                                        </div>
+
+                                                    </div>
+
+                                                </div>
+                                                <div>
+
+                                                    @*<div flex layout layout-align="right right" ng-if="Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.length <= 4 || Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.toLowerCase().indexOf('non') >= 0">
+
+                                                        <ng-md-icon class="History-Icon-Box" size="12" icon="cancel" style="fill: #ff0000"></ng-md-icon>
+                                                        NonRefundable
+                                                        </div>
+                                                        <div flex layout layout-align="right right" ng-if="Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.length > 4 && Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.toLowerCase().indexOf('non') == -1">
+
+                                                        <ng-md-icon class="History-Icon-Box" size="12" icon="check_box" style="fill:#93ba29"></ng-md-icon>
+                                                        Refundable
+                                                        </div>*@
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div flex="10" layout-xs="row" flex-xs="100" layout layout-align="center center" ng-hide="TripType == 'R'">
+                                            @*<div>
+
+                                                <md-button style="width: 8px; background-color: #F57C00;border: 1px solid #000; color: #fff;min-width:64px; "> <b>book</b></md-button>
+
+                                                </div>*@
+
+                                            <div flex layout="column" layout-align="center center">
+                                                <md-button class="md-warn md-raised md-mini yellow" style=" background-color: #F57C00; color: #fff;min-width:64px;" ng-click="bookflight(Flight.BaseDetail.FlightsCount,$event,Flight.BaseDetail.ThreadCount)">
+                                                    {{TripType == "O" ?'BOOK':'Select'}}
+                                                </md-button>
+                                            </div>
+                                        </div>
+
+                                        <div flex="5" class="Airline-Chk" hide-xs layout layout-align="center center">
+                                            <md-checkbox ng-checked="ongoingexist(Flight.BaseDetail.FlightsCount);" aria-label="EmailPrintCheckbox" ng-click="ongoingIsChecked(Flight.BaseDetail.FlightsCount)" style="left:10px">
+                                            </md-checkbox>
+                                        </div>
+
+                                    </div>
+
+
+                                    <md-divider hide-xs hide-sm show-gt-sm class="N-M" flex></md-divider>
+                                    <div flex layout="row" layout-align="space-between center" class="pad5 Airline-Rslt-Row-2 FClr-Prim-4" hide-xs hide-sm>
+                                        <div class="flex-20">
+                                            <ng-md-icon icon="business_center" size="20" style="color:#2FCCD9"></ng-md-icon><span ng-hide="RtnFlights[0] || (TripType == 'R') "> HandBaggage :</span>7kg
+                                        </div>
+                                        <div class="flex-20">
+                                            <div ng-show="Flight.AvailSegments[0].AvailableSeats> 0">
+                                                <ng-md-icon icon="airline_seat_recline_normal" size="20" style="color:#2FCCD9"></ng-md-icon><span ng-hide="RtnFlights[0] || (TripType == 'R') ">Available Seat(s) :</span>
+                                                <span ng-class="Flight.AvailSegments[0].AvailableSeats < 6 ? 'blink' : ''"> {{Flight.AvailSegments[0].AvailableSeats}}</span>
+
+                                            </div>
+                                        </div>
+                                        <div class="flex">
+
+
+                                            @*<ng-md-icon icon="attach_money" style="color:#2FCCD9" ng-click="GetFareRule(Flight)"></ng-md-icon>*@
+                                            <small class="btn-link" ng-click="fnGetFareRules(Flight.AvailSegments[0].FlightId,Flight.AvailSegments[0].AirlinesId,Flight.AvailSegments[0].AirlinesId,Flight.AvailSegments[0].ClassCode,$event,'O')"><ng-md-icon icon="attach_money" style="color:#2FCCD9;width:16px;" size="20"></ng-md-icon>Fare Rule !</small>
+
+                                        </div>
+                                        <div class="flex" ng-hide="RtnFlights[0] || (TripType == 'R') ">
+                                            <ng-md-icon icon="restaurant" style="color:#2FCCD9" size="20"></ng-md-icon>Not Available
+                                        </div>
+
+                                        <div class="flex">
+                                            Class :{{Flight.AvailSegments[0].AvailPaxFareDetails.ClassCode}}
+                                        </div>
+
+                                        <div class="FClr-Prim-1" flex layout-align="space-between center" style="cursor:pointer" ng-init="Flight.true=false" ng-click="Flight.true=!Flight.true">
+                                            <span ng-hide="RtnFlights[0] || (TripType == 'R') "> More Details</span>  <ng-md-icon icon="{{Flight.true == false  ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}}"></ng-md-icon>
+                                        </div>
+                                    </div>
+                                    <div flex class="padTB12" layout="column" ng-show="Flight.true">
+                                        <md-tabs md-selected="0" md-dynamic-height md-stretch-tabs="always" md-autoselect style="font-size:11px;">
+                                            <md-tab>
+                                                <md-tab-label>
+                                                    <ng-md-icon size="18" icon="flight" style="fill: rgb(33, 150, 243); position: absolute; margin-top: 3px; margin-left: -15px; "></ng-md-icon>&nbsp;<span ng-hide="showRLow"> Airline Details</span>
+                                                </md-tab-label>
+                                                <md-tab-body>
+                                                    <div layout="column" layout-gt-xs="row">
+                                                        <md-divider flex></md-divider>
+                                                    </div>
+                                                    <div layout="column" layout-gt-xs="row" class="FClr-Prim-1">
+                                                        <div flex="25" layout="column" layout-align="center center"><b>Airline</b></div>
+                                                        <div flex="25" layout="column" layout-align="center center"><b>Departure</b></div>
+                                                        <div flex="25" layout="column" layout-align="center center"><b>Duration</b></div>
+                                                        <div flex="25" layout="column" layout-align="center center"><b>Arrival</b></div>
+                                                    </div>
+
+                                                    <div layout="column" layout-gt-xs="row" ng-repeat="item in Flight.AvailSegments track by $index" style="font-size: 11px; font-weight: bolder;">
+
+                                                        <div flex>
+                                                            <div layout="column" layout-gt-xs="row">
+                                                                <md-divider flex></md-divider>
+                                                            </div>
+                                                            <div layout="column" layout-gt-xs="row">
+                                                                <div flex="25" layout="column" layout-align="center center" class="txt-C">
+                                                                    <div ng-bind-html="fnSetAirLogo(item.AirlineCode)"></div>
+
+                                                                    <span>{{item.AirlineName}}</span><br /> <span>{{item.AirlineCode}} - {{item.FlightNumber}}</span>
+                                                                    @*<small>{{(Segment.AvailPaxFareDetails.Adult.FareType == 'NR'? "NON REFUNDABLE":"REFUNDABLE")}}</small>*@
+                                                                    <small>class:{{Segment.AvailPaxFareDetails.ClassCode}}</small>
+                                                                    @*<small class="btn-link"   ng-click="GetFareRule(Segment.FlightId,$index)" ng-if="seglist.length > 1">Fare Rule</small>-{{Segment.AvailPaxFareDetails.Adult.FareBasis}}*@
+                                                                </div>
+                                                                <div flex="25" layout="column" layout-align="center center" class="txt-C">
+                                                                    <div>
+                                                                        {{ICL[item.Origin] }} ({{item.Origin}})<span ng-if="item.OriginAirportTerminal">({{item.OriginAirportTerminal}})</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        {{item.DepartureDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                                                    </div>
+                                                                </div>
+                                                                <div flex="25" layout="column" layout-align="center center" class="txt-C">
+                                                                    <div>
+                                                                        {{ item.NumberofStops =='0' ?'Non Stop': item.NumberofStops +' Stop'}}
+                                                                    </div>
+                                                                    <div>
+                                                                        {{item.Duration}}
+                                                                    </div>
+                                                                </div>
+                                                                <div flex="25" layout="column" layout-align="center center" class="txt-C">
+                                                                    <div>
+                                                                        {{ICL[item.Destination]}} ({{item.Destination}})<span ng-if="item.DestinationAirportTerminal">({{item.DestinationAirportTerminal}})</span>
+                                                                    </div>
+                                                                    <div>
+                                                                        {{ item.ArrivalDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                </md-tab-body>
+                                            </md-tab>
+                                            <md-tab>
+                                                <md-tab-label>
+                                                    <ng-md-icon size="18" style="fill: rgb(33, 150, 243); position: absolute; margin-top: 3px; margin-left: -15px;" icon="card_travel"></ng-md-icon>&nbsp;
+                                                    <span ng-hide="showRLow">  Baggage Details</span>
+                                                </md-tab-label>
+                                                <md-tab-body>
+                                                    <div layout="column" layout-gt-xs="row">
+                                                        <md-divider flex></md-divider>
+                                                    </div>
+                                                    <div layout="column" layout-align="center center" layout-gt-xs="row" class="FClr-Prim-1">
+                                                        <div flex="30" layout="column" layout-align="center center"><b>Segment</b></div>
+                                                        @*<div flex layout="column" layout-align="center center"><b>Date and Time</b></div>*@
+                                                        <div flex="40" layout="column" layout-align="center center"><b>Checkin Baggage</b></div>
+                                                        <div flex="30" layout="column" layout-align="center center"><b>HandBaggage</b></div>
+                                                    </div>
+                                                    <div layout="column" layout-gt-xs="row" ng-repeat="item in Flight.AvailSegments track by $index">
+                                                        <div flex>
+                                                            <div layout="column" layout-gt-xs="row">
+                                                                <md-divider flex></md-divider>
+                                                            </div>
+                                                            <div layout="column" layout-align="center center" layout-gt-xs="row">
+                                                                <div flex="30" layout="column" layout-align="center center" class="txt-C"><span>{{item.AirlineName}}</span><br /> <span>{{item.AirlineCode}} - {{item.FlightNumber}}</span></div>
+                                                                @*<div flex layout="column" layout-align="center center">{{Segment.DepartureDateTime | date:'MMM dd yyyy HH:mm:ss'}}-{{Segment.ArrivalDateTime | date:'MMM dd yyyy HH:mm:ss'}}</div>*@
+                                                                <div flex="40" layout="column" layout-align="center center" class="txt-C" ng-show="item.AirlineCode =='PR'">Upto 15 kg </div>
+                                                                <div flex="40" layout="column" layout-align="center center" class="txt-C" ng-show="item.AirlineCode !='PR'">N/A </div>
+                                                                <div flex="30" layout="column" layout-align="center center" class="txt-C">Upto 7 kg</div>
+                                                            </div>
+                                                            <div>
+                                                                <span md-padding class="FClr-Prim-5">* Baggage not available for infant</span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </md-tab-body>
+                                            </md-tab>
+                                            <md-tab ng-hide="true">
+                                                <md-tab-label>
+                                                    <ng-md-icon size="18" style="fill: rgb(33, 150, 243); position: absolute; margin-top: 3px; margin-left: -15px;" icon="attach_money"></ng-md-icon>&nbsp;
+                                                    <span ng-hide="showRLow">  Fare  Details</span>
+                                                </md-tab-label>
+                                                <md-tab-body>
+                                                    <div flex>
+                                                        <md-divider></md-divider>
+                                                        <div layout="column" layout-align="center center" layout-gt-xs="row" class="FClr-Prim-1">
+                                                            <div flex="30" layout="column" layout-align="center center"><b>Passenger Type</b></div>
+                                                            <div flex="20" layout="column" layout-align="center center"><b>Base Fare</b></div>
+                                                            <div flex="20" layout="column" layout-align="center center"><b>Taxes and Fees</b></div>
+                                                            <div flex="30" layout="column" layout-align="center center"><b>Gross Fare</b></div>
+                                                        </div>
+                                                        <div layout="column" layout-gt-xs="row">
+                                                            <md-divider flex></md-divider>
+                                                        </div>
+                                                        <div layout="column" layout-gt-xs="row">
+                                                            <div flex="30" layout="column" layout-align="center center">Adult</div>
+                                                            <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.BasicAmount * Search.Adult}} ({{Search.Adult}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.BasicAmount}})</div>
+                                                            <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.TotalTaxAmount * Search.Adult}} ({{Search.Adult}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.TotalTaxAmount}})</div>
+                                                            <div flex="30" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.GrossAmount * Search.Adult}} ({{Search.Adult}} x  {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.GrossAmount}})</div>
+                                                        </div>
+
+                                                        <div ng-if="Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.BasicAmount" layout="column" layout-gt-xs="row">
+                                                            <md-divider flex></md-divider>
+                                                        </div>
+                                                        <div ng-if="Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.BasicAmount" layout="column" layout-gt-xs="row">
+                                                            <div flex="30" layout="column" layout-align="center center">Child</div>
+                                                            <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.BasicAmount * Search.Child}} ({{Search.Child}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.BasicAmount}})</div>
+                                                            <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.TotalTaxAmount * Search.Child}} ({{Search.Child}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.TotalTaxAmount}})</div>
+                                                            <div flex="30" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.GrossAmount * Search.Child}} ({{Search.Child}} x  {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.GrossAmount}})</div>
+                                                        </div>
+                                                        <div ng-if="Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.BasicAmount" layout="column" layout-gt-xs="row">
+                                                            <md-divider flex></md-divider>
+                                                        </div>
+                                                        <div ng-if="Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.BasicAmount" layout="column" layout-gt-xs="row">
+                                                            <div flex="30" layout="column" layout-align="center center">Infant</div>
+                                                            <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.BasicAmount * Search.Infant}} ({{Search.Infant}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.BasicAmount}})</div>
+                                                            <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.TotalTaxAmount * Search.Infant}} ({{Search.Infant}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.TotalTaxAmount}})</div>
+                                                            <div flex="30" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.GrossAmount * Search.Infant}} ({{Search.Infant}} x  {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.GrossAmount}})</div>
+                                                        </div>
+                                                    </div>
+                                                </md-tab-body>
+                                            </md-tab>
+                                        </md-tabs>
+
+                                    </div>
+                                </div>
+                            </div>
+                            <div layout layout-align="center center" ng-show="Ongoing" class="Airline-Rslt-Row" hide-md hide-gt-md ng-click="SetRoundTripTax(Flight.BaseDetail.FlightsCount,$event,'O',true,Flight.BaseDetail.ThreadCount);">
+                                <div flex ng-init="SetFiterDate(Flight.BaseDetail.BaseDepartureDateTime,Flight.BaseDetail.BaseArrivalDateTime);">
+                                    <div layout="column" layout-align="center center">
+                                        <div ng-bind-html="fnSetAirLogo(Flight.AvailSegments[0].AirlineCode)"></div>
+                                        <small>{{Flight.BaseDetail.BaseAirlineName}}</small>
+                                        <small class="txt-primary" ng-if="Flight.AvailSegments.length >1">
+                                            <span ng-repeat="item in Flight.AvailSegments ">
+                                                {{item.AirlineCode}}-{{item.FlightNumber}},
+                                            </span>
+                                        </small>
+                                        <small class="txt-primary" ng-if="Flight.AvailSegments.length ==1">
+                                            {{Flight.AvailSegments[0].AirlineCode}}-{{Flight.AvailSegments[0].FlightNumber}}
+                                        </small>
+
+                                    </div>
+                                </div>
+                                <div flex>
+                                    <div layout="column" layout-align="center center">
+                                        <div>
+                                            <b>{{ Flight.BaseDetail.BaseDepartureDateTime | date:'HH:mm'}}</b>
+                                            <br />
+                                            <small> {{ Flight.AvailSegments.length == 1 ?'Non Stop': (Flight.AvailSegments.length - 1) +' Stop'}}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div flex>
+                                    <div layout="column" layout-align="center center">
+                                        <div>
+                                            <b>{{ Flight.BaseDetail.BaseArrivalDateTime | date:'HH:mm'}}</b>
+                                            <br />
+                                            <small>  {{Flight.BaseDetail.BaseDuration}}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div flex>
+                                    <div layout="column" layout-align="center center">
+                                        <div ng-show="!Flight.BaseDetail.ReturnBaseOrigin">
+                                            <div class="md-ink-ripple">
+                                                <span class="Cur">
+                                                    &#8369;
+                                                </span>
+
+                                                <span class="Fare"> {{Flight.BaseDetail.GrossAmount}}</span>
+                                            </div>
+                                        </div>
+                                        <div ng-hide="true">
+                                            <div flex layout layout-align="right right" ng-if="Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.toLowerCase().indexOf('non') !=-1">
+
+                                                <ng-md-icon class="History-Icon-Box" size="12" icon="cancel" style="fill: #ff0000"></ng-md-icon>
+                                                NonRefundable
+                                            </div>
+                                            <div flex layout layout-align="right right" ng-if="Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.toLowerCase().indexOf('non') ==-1">
+
+                                                <ng-md-icon class="History-Icon-Box" size="12" icon="check_box" style="fill:#93ba29"></ng-md-icon>
+                                                Refundable
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="width:2%" ng-if="RtnFlights[0] || (TripType == 'R') "></div>
+                <div ng-class="((TripType == 'R') && (!RtnFlights[0])) ? 'flex' : 'flex'" ng-if="RtnFlights[0] || (TripType == 'R') ">
+
+                    <div ng-if="RtnFlights[0]">
+                        <md-card ng-if="(RtnFlights | filter:AirlineRtnFilter | orderBy:predicateRt:reverseRt).length == 0 || ((TripType=='R') && (!RtnFlights[0]))" class="MH100 result pad5 themes-Font">
+                            <div flex layout layout-align="center center">NO FLIGHTS AVAILABLE</div>
+                        </md-card>
+                    </div>
+
+                    <div layout="column" layout-gt-xs="row" flex="" ng-if="ShwRtnFligth" ng-repeat="Flight in RtnFlights| filter:AirlineRtnFilter | orderBy:predicateRt:reverseRt" ng-click="SelectFlight(Flight.BaseDetail.FlightsCount)">
+                        <div flex>
+
+                            <div hide-xs hide-sm show-gt-sm class="Airline-Rslt-Row">
+                                <div ng-if="SelectAirlinrRt[Flight.BaseDetail.FlightsCount]" class="testlay" style="">
+                                    <div style="margin: 0px auto; width: 10px; position: relative; transform: rotate(43deg); top: 23px; border-bottom: 1px solid rgb(255, 255, 255); border-right: 1px solid rgb(255, 255, 255); height: 20px;"></div>
+                                </div>
+                                <div layout="row" ng-init="SelectAirlinrRt[Flight.BaseDetail.FlightsCount]=false;" ng-model="SelectAirlinrRt[Flight.BaseDetail.FlightsCount]" ng-click="SetRoundTripTax(Flight.BaseDetail.FlightsCount,$event,'R',false,Flight.BaseDetail.ThreadCount)">
+                                    <div flex="25" flex-xs="15" flex-sm="25" layout="column" layout-align="center center" ng-init="SetFiterDate(Flight.BaseDetail.ReturnBaseDepartureDateTime,Flight.BaseDetail.ReturnBaseArrivalDateTime);">
+
+                                        <div ng-bind-html="fnSetAirLogo(Flight.AvailSegments[0].AirlineCode)"></div>
+                                        <small>{{Flight.BaseDetail.ReturnBaseAirlineName}}</small>
+                                        <div class="FClr-Prim-4" ng-if="Flight.AvailSegments.length >1">
+                                            <span ng-repeat="item in Flight.AvailSegments ">
+                                                {{item.AirlineCode}}-{{item.FlightNumber}},
+                                            </span>
+                                        </div>
+                                        <div class="FClr-Prim-4" ng-if="Flight.AvailSegments.length ==1">
+                                            {{Flight.AvailSegments[0].AirlineCode}}-{{Flight.AvailSegments[0].FlightNumber}}
+                                        </div>
+                                        <small style="color: rgb(119, 119, 119);">{{Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis}}</small>
+                                    </div>
+                                    <div flex="15" flex-xs="25" flex-sm="25" layout="column" layout-align="center center">
+                                        <div>
+                                            <div class="Airline-Seg"><span ng-hide="TripType == 'R'">  {{Flight.BaseDetail.ReturnBaseOrigin}}</span>  {{ Flight.BaseDetail.ReturnBaseDepartureDateTime | date:'HH:mm ' }}    </div>
+                                            <div class=" FClr-Prim-4">{{City.code}}     {{ Flight.BaseDetail.ReturnBaseDepartureDateTime | date:'dd MMM yyyy' }}     </div>
+                                            @*<small> {{ Flight.AvailSegments.length == 1 ?'Non Stop': (Flight.AvailSegments.length - 1) +' Stop'}}</small>*@
+                                        </div>
+                                    </div>
+
+                                    <div flex="20" flex-xs="20" flex-sm="20" layout="column" layout-align="center center">
+                                        <div>
+
+                                            <div class="FClr-Prim-5">    {{Flight.BaseDetail.ReturnBaseDuration}}   </div>
+                                            <div class="FClr-Prim-4">  Stops : {{ Flight.AvailSegments.length == 1 ?'0': (Flight.AvailSegments.length - 1) +' Stop'}}</div>
+
+                                        </div>
+                                    </div>
+
+
+                                    <div flex="15" flex-xs="25" flex-sm="25" layout layout-align="center center">
+                                        <div>
+                                            <div class="Airline-Seg">
+                                                <span ng-hide="TripType == 'R'">{{Flight.BaseDetail.ReturnBaseDestination }}</span>  {{ Flight.BaseDetail.ReturnBaseArrivalDateTime | date:'HH:mm '}}
+                                            </div>
+                                            <div class=" FClr-Prim-4">{{ Flight.BaseDetail.ReturnBaseArrivalDateTime | date:'dd MMM yyyy' }}</div>
+                                        </div>
+                                    </div>
+                                    <div flex="15" flex-xs="30" flex-sm="25" layout layout-align="center center">
+                                        <div>
+                                            <div>
+                                                <div class="md-ink-ripple">
+
+                                                    <div class="FClr-Prim-5" style="padding: 12px 0px;font-size: 20px;">
+                                                        <span class="Cur"> ₱</span>
+                                                        <span> {{Flight.BaseDetail.GrossAmount}}</span>
+
+                                                        @*{{Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis}}*@
+                                                    </div>
+
+                                                </div>
+
+                                            </div>
+                                            <div flex="10" layout layout-align="right right">
+                                                @*<div>
+                                                    <div flex layout layout-align="right right" ng-if="Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.toLowerCase().indexOf('non') !=-1">
+
+                                                    <ng-md-icon class="History-Icon-Box" size="12" icon="cancel" style="fill: #ff0000"></ng-md-icon>
+                                                    NonRefundable
+                                                    </div>
+                                                    <div flex layout layout-align="right right" ng-if="Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.toLowerCase().indexOf('non') ==-1">
+
+                                                    <ng-md-icon class="History-Icon-Box" size="12" icon="check_box" style="fill:#93ba29"></ng-md-icon>
+                                                    Refundable
+                                                    </div>
+                                                    </div>*@
+                                            </div>
+
+                                        </div>
+                                    </div>
+
+                                    <div flex="10" layout-xs="row" flex-xs="100" layout layout-align="center center" ng-hide="TripType == 'R'">
+                                        @*<div>
+
+                                            <md-button style="width: 8px; background-color: #F57C00;border: 1px solid #000; color: #fff;min-width:64px; "> <b>book</b></md-button>
+
+                                            </div>*@
+
+                                        <div flex layout="column" layout-align="center center">
+                                            <md-button class="md-warn md-raised md-mini" style="background-color: #F57C00;border: 1px solid #000; color: #fff;min-width:64px;" ng-click=" bookflight(Flight.BaseDetail.FlightsCount,$event,Flight.BaseDetail.ThreadCount)">
+                                                BOOK
+                                            </md-button>
+                                        </div>
+                                    </div>
+
+                                    <div flex="5" class="Airline-Chk" hide-xs layout layout-align="center center">
+                                        <md-checkbox ng-checked="returnexist(Flight.BaseDetail.FlightsCount);" aria-label="EmailPrintCheckbox" ng-click="returnIsChecked(Flight.BaseDetail.FlightsCount)" style="left:10px"></md-checkbox>
+                                    </div>
+
+                                </div>
+
+
+                                <md-divider class="N-M" flex></md-divider>
+                                <div flex layout="row" layout-align="space-between center" class="pad5 Airline-Rslt-Row-2 FClr-Prim-4" hide-xs hide-sm>
+                                    <div class="flex-20">
+                                        <ng-md-icon icon="business_center" size="20" style="color:#2FCCD9"></ng-md-icon><span ng-hide="RtnFlights[0] || (TripType == 'R') "> HandBaggage :</span>7kg
+                                    </div>
+                                    <div class="flex-20">
+                                        <div ng-show="Flight.AvailSegments[0].AvailableSeats> 0">
+                                            <ng-md-icon icon="airline_seat_recline_normal" size="20" style="color:#2FCCD9"></ng-md-icon><span ng-hide="RtnFlights[0] || (TripType == 'R') ">Available Seat(s) :</span>{{Flight.AvailSegments[0].AvailableSeats}}
+                                        </div>
+                                    </div>
+                                    <div class="flex">
+
+
+                                        @*<ng-md-icon icon="attach_money" style="color:#2FCCD9" ng-click="GetFareRule(Flight)"></ng-md-icon>*@
+                                        <small class="btn-link" ng-click="fnGetFareRules(Flight.AvailSegments[0].FlightId,Flight.AvailSegments[0].AirlinesId,Flight.AvailSegments[0].AirlinesId,Flight.AvailSegments[0].ClassCode,$event,'R')"><ng-md-icon icon="attach_money" style="color:#2FCCD9;width:16px;" size="20"></ng-md-icon>Fare Rule !</small>
+
+                                    </div>
+                                    <div class="flex" ng-hide="RtnFlights[0] || (TripType == 'R') ">
+                                        <ng-md-icon icon="restaurant" style="color:#2FCCD9" size="20"></ng-md-icon>Not Available
+                                    </div>
+
+                                    <div class="flex">
+                                        Class :{{Flight.AvailSegments[0].AvailPaxFareDetails.ClassCode}}
+                                    </div>
+                                    <div class="FClr-Prim-1" flex layout-align="space-between center" style="cursor:pointer" ng-init="Flight.true=false">
+                                        <span ng-hide="RtnFlights[0] || (TripType == 'R') "> More Details</span>  <ng-md-icon icon="{{Flight.true == false  ? 'keyboard_arrow_down' : 'keyboard_arrow_up'}}" ng-click="Flight.true=!Flight.true"></ng-md-icon>
+                                    </div>
+                                </div>
+                                <div flex class="padTB12" layout="column" ng-show="Flight.true">
+                                    <md-tabs md-selected="0" md-dynamic-height md-stretch-tabs="always" md-autoselect style="font-size:11px;">
+                                        <md-tab>
+                                            <md-tab-label>
+                                                <ng-md-icon size="18" icon="flight" style="fill: rgb(33, 150, 243); position: absolute; margin-top: 3px; margin-left: -15px; "></ng-md-icon>&nbsp;<span ng-hide="showRLow"> Airline Details</span>
+                                            </md-tab-label>
+                                            <md-tab-body>
+                                                <div layout="column" layout-gt-xs="row">
+                                                    <md-divider flex></md-divider>
+                                                </div>
+                                                <div layout="column" layout-gt-xs="row" class="FClr-Prim-1">
+                                                    <div flex="25" layout="column" layout-align="center center"><b>Airline</b></div>
+                                                    <div flex="25" layout="column" layout-align="center center"><b>Departure</b></div>
+                                                    <div flex="25" layout="column" layout-align="center center"><b>Duration</b></div>
+                                                    <div flex="25" layout="column" layout-align="center center"><b>Arrival</b></div>
+                                                </div>
+
+                                                <div layout="column" layout-gt-xs="row" ng-repeat="item in Flight.AvailSegments track by $index" style="font-size: 11px; font-weight: bolder;">
+
+                                                    <div flex>
+                                                        <div layout="column" layout-gt-xs="row">
+                                                            <md-divider flex></md-divider>
+                                                        </div>
+                                                        <div layout="column" layout-gt-xs="row">
+                                                            <div flex="25" layout="column" layout-align="center center" class="txt-C">
+                                                                <div ng-bind-html="fnSetAirLogo(item.AirlineCode)"></div>
+
+                                                                <span>{{item.AirlineName}}</span><br /> <span>{{item.AirlineCode}} - {{item.FlightNumber}}</span>
+                                                                @*<small>{{(Segment.AvailPaxFareDetails.Adult.FareType == 'NR'? "NON REFUNDABLE":"REFUNDABLE")}}</small>*@
+                                                                <small>class:{{Segment.AvailPaxFareDetails.ClassCode}}</small>
+                                                                @*<small class="btn-link"   ng-click="GetFareRule(Segment.FlightId,$index)" ng-if="seglist.length > 1">Fare Rule</small>-{{Segment.AvailPaxFareDetails.Adult.FareBasis}}*@
+                                                            </div>
+                                                            <div flex="25" layout="column" layout-align="center center" class="txt-C">
+                                                                <div>
+                                                                    {{ICL[item.Origin] }} ({{item.Origin}})<span ng-if="item.OriginAirportTerminal">({{item.OriginAirportTerminal}})</span>
+                                                                </div>
+                                                                <div>
+                                                                    {{item.DepartureDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                                                </div>
+                                                            </div>
+                                                            <div flex="25" layout="column" layout-align="center center" class="txt-C">
+                                                                <div>
+                                                                    {{ item.NumberofStops =='0' ?'Non Stop': item.NumberofStops +' Stop'}}
+                                                                </div>
+                                                                <div>
+                                                                    {{item.Duration}}
+                                                                </div>
+                                                            </div>
+                                                            <div flex="25" layout="column" layout-align="center center" class="txt-C">
+                                                                <div>
+                                                                    {{ICL[item.Destination]}} ({{item.Destination}})<span ng-if="item.DestinationAirportTerminal">({{item.DestinationAirportTerminal}})</span>
+                                                                </div>
+                                                                <div>
+                                                                    {{ item.ArrivalDateTime | date:'MMM dd yyyy HH:mm:ss'}}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                            </md-tab-body>
+                                        </md-tab>
+                                        <md-tab>
+                                            <md-tab-label>
+                                                <ng-md-icon size="18" style="fill: rgb(33, 150, 243); position: absolute; margin-top: 3px; margin-left: -15px;" icon="card_travel"></ng-md-icon>&nbsp;
+                                                <span ng-hide="showRLow">  Baggage Details</span>
+                                            </md-tab-label>
+                                            <md-tab-body>
+                                                <div layout="column" layout-gt-xs="row">
+                                                    <md-divider flex></md-divider>
+                                                </div>
+                                                <div layout="column" layout-align="center center" layout-gt-xs="row" class="FClr-Prim-1">
+                                                    <div flex="30" layout="column" layout-align="center center"><b>Segment</b></div>
+                                                    @*<div flex layout="column" layout-align="center center"><b>Date and Time</b></div>*@
+                                                    <div flex="40" layout="column" layout-align="center center"><b>Checkin Baggage</b></div>
+                                                    <div flex="30" layout="column" layout-align="center center"><b>HandBaggage</b></div>
+                                                </div>
+                                                <div layout="column" layout-gt-xs="row" ng-repeat="item in Flight.AvailSegments track by $index">
+                                                    <div flex>
+                                                        <div layout="column" layout-gt-xs="row">
+                                                            <md-divider flex></md-divider>
+                                                        </div>
+                                                        <div layout="column" layout-align="center center" layout-gt-xs="row">
+                                                            <div flex="30" layout="column" layout-align="center center" class="txt-C"><span>{{item.AirlineName}}</span><br /> <span>{{item.AirlineCode}} - {{item.FlightNumber}}</span></div>
+                                                            @*<div flex layout="column" layout-align="center center">{{Segment.DepartureDateTime | date:'MMM dd yyyy HH:mm:ss'}}-{{Segment.ArrivalDateTime | date:'MMM dd yyyy HH:mm:ss'}}</div>*@
+                                                            <div flex="40" layout="column" layout-align="center center" class="txt-C" ng-show="item.AirlineCode =='PR'">Upto 15 kg </div>
+                                                            <div flex="40" layout="column" layout-align="center center" class="txt-C" ng-show="item.AirlineCode !='PR'">N/A </div>
+                                                            <div flex="30" layout="column" layout-align="center center" class="txt-C">Upto 7 kg</div>
+                                                        </div>
+                                                        <div>
+                                                            <span md-padding class="FClr-Prim-5">* Baggage not available for infant</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </md-tab-body>
+                                        </md-tab>
+                                        <md-tab ng-hide="true">
+                                            <md-tab-label>
+                                                <ng-md-icon size="18" style="fill: rgb(33, 150, 243); position: absolute; margin-top: 3px; margin-left: -15px;" icon="attach_money"></ng-md-icon>&nbsp;
+                                                <span ng-hide="showRLow">  Fare  Details</span>
+                                            </md-tab-label>
+                                            <md-tab-body>
+                                                <div flex>
+                                                    <md-divider></md-divider>
+                                                    <div layout="column" layout-align="center center" layout-gt-xs="row" class="FClr-Prim-1">
+                                                        <div flex="30" layout="column" layout-align="center center"><b>Passenger Type</b></div>
+                                                        <div flex="20" layout="column" layout-align="center center"><b>Base Fare</b></div>
+                                                        <div flex="20" layout="column" layout-align="center center"><b>Taxes and Fees</b></div>
+                                                        <div flex="30" layout="column" layout-align="center center"><b>Gross Fare</b></div>
+                                                    </div>
+                                                    <div layout="column" layout-gt-xs="row">
+                                                        <md-divider flex></md-divider>
+                                                    </div>
+                                                    <div layout="column" layout-gt-xs="row">
+                                                        <div flex="30" layout="column" layout-align="center center">Adult</div>
+                                                        <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.BasicAmount * Search.Adult}} ({{Search.Adult}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.BasicAmount}})</div>
+                                                        <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.TotalTaxAmount * Search.Adult}} ({{Search.Adult}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.TotalTaxAmount}})</div>
+                                                        <div flex="30" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.GrossAmount * Search.Adult}} ({{Search.Adult}} x  {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Adult.GrossAmount}})</div>
+                                                    </div>
+
+                                                    <div ng-if="Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.BasicAmount" layout="column" layout-gt-xs="row">
+                                                        <md-divider flex></md-divider>
+                                                    </div>
+                                                    <div ng-if="Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.BasicAmount" layout="column" layout-gt-xs="row">
+                                                        <div flex="30" layout="column" layout-align="center center">Child</div>
+                                                        <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.BasicAmount * Search.Child}} ({{Search.Child}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.BasicAmount}})</div>
+                                                        <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.TotalTaxAmount * Search.Child}} ({{Search.Child}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.TotalTaxAmount}})</div>
+                                                        <div flex="30" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.GrossAmount * Search.Child}} ({{Search.Child}} x  {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Child.GrossAmount}})</div>
+                                                    </div>
+                                                    <div ng-if="Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.BasicAmount" layout="column" layout-gt-xs="row">
+                                                        <md-divider flex></md-divider>
+                                                    </div>
+                                                    <div ng-if="Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.BasicAmount" layout="column" layout-gt-xs="row">
+                                                        <div flex="30" layout="column" layout-align="center center">Infant</div>
+                                                        <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.BasicAmount * Search.Infant}} ({{Search.Infant}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.BasicAmount}})</div>
+                                                        <div flex="20" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.TotalTaxAmount * Search.Infant}} ({{Search.Infant}} x {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.TotalTaxAmount}})</div>
+                                                        <div flex="30" layout="column" layout-align="center center">{{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.GrossAmount * Search.Infant}} ({{Search.Infant}} x  {{Flight.AvailSegments[Flight.AvailSegments.length-1].AvailPaxFareDetails.Infant.GrossAmount}})</div>
+                                                    </div>
+                                                </div>
+                                            </md-tab-body>
+                                        </md-tab>
+                                    </md-tabs>
+
+                                </div>
+                            </div>
+
+
+                            <div layout layout-align="center center" class="Airline-Rslt-Row" hide-md hide-gt-md ng-if="!Ongoing" ng-click="SetRoundTripTax(Flight.BaseDetail.FlightsCount,$event,'R',true,Flight.BaseDetail.ThreadCount)">
+                                <div flex ng-init="SetFiterDate(Flight.BaseDetail.BaseDepartureDateTime,Flight.BaseDetail.BaseArrivalDateTime);">
+                                    <div layout="column" layout-align="center center">
+                                        <div ng-bind-html="fnSetAirLogo(Flight.AvailSegments[0].AirlineCode)"></div>
+                                        <small>{{Flight.BaseDetail.ReturnBaseAirlineName}}</small>
+                                        <small class="txt-primary" ng-if="Flight.AvailSegments.length >1">
+                                            <span ng-repeat="item in Flight.AvailSegments ">
+                                                {{item.AirlineCode}}-{{item.FlightNumber}},
+                                            </span>
+                                        </small>
+                                        <small class="txt-primary" ng-if="Flight.AvailSegments.length ==1">
+                                            {{Flight.AvailSegments[0].AirlineCode}}-{{Flight.AvailSegments[0].FlightNumber}}
+                                        </small>
+                                    </div>
+                                </div>
+                                <div flex>
+                                    <div layout="column" layout-align="center center">
+                                        <div>
+                                            <b>{{ Flight.BaseDetail.ReturnBaseDepartureDateTime | date:'HH:mm'}}</b>
+                                            <br />
+                                            <small> {{ Flight.AvailSegments.length == 1 ?'Non Stop': (Flight.AvailSegments.length - 1) +' Stop'}}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div flex>
+                                    <div layout="column" layout-align="center center">
+                                        <div>
+                                            <b>{{ Flight.BaseDetail.ReturnBaseArrivalDateTime | date:'HH:mm'}}</b>
+                                            <br />
+                                            <small>  {{Flight.BaseDetail.ReturnBaseDuration}}</small>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div flex>
+                                    <div layout="column" layout-align="center center">
+                                        <div>
+                                            <div class="md-ink-ripple">
+                                                <span class="Cur">
+                                                    &#8369;
+                                                </span>
+
+                                                <span class="Fare"> {{Flight.BaseDetail.GrossAmount}}</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div flex layout layout-align="right right" ng-if="Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.toLowerCase().indexOf('non') !=-1">
+
+                                                <ng-md-icon class="History-Icon-Box" size="12" icon="cancel" style="fill: #ff0000"></ng-md-icon>
+                                                NonRefundable
+                                            </div>
+                                            <div flex layout layout-align="right right" ng-if="Flight.AvailSegments[0].AvailPaxFareDetails.Adult.FareBasis.toLowerCase().indexOf('non') ==-1">
+
+                                                <ng-md-icon class="History-Icon-Box" size="12" icon="check_box" style="fill:#93ba29"></ng-md-icon>
+                                                Refundable
+                                            </div>
+                                        </div>
+
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+<md-toolbar class="sticky_bottom md-hue-2 bg-Color-2" ng-if="TripType == 'M'" style="z-index: 3;position:fixed;left:0" hide-xs>
+    <div layout="column" layout-gt-xs="row" layout-nowrap>
+        <div ng-class="segCount== 3 ?'flex':'flex-50'" ng-repeat="segment in segListM track by $index">
+            <div layout="column" layout-gt-xs="row">
+                <div layout="column" layout-align="center center" style="min-width:100px">
+                    <div ng-bind-html="fnSetAirLogo(segment.AvailSegments[0].AirlineCode)"></div>
+
+                    <small style="margin-top:10px;">{{segment.AirlineName}}</small>
+
+                    <small class="txt-primary" ng-if="segment.AvailSegments.length >1">
+                        <span ng-repeat="item in segment.AvailSegments ">
+                            {{item.AirlineCode}}-{{item.FlightNumber}},
+                        </span>
+                    </small>
+                    <small class="txt-primary" ng-if="segment.AvailSegments.length ==1">
+                        {{segment.AvailSegments[0].AirlineCode}}-{{segment.AvailSegments[0].FlightNumber}}
+                    </small>
+                </div>
+                <div flex layout="column" layout-align="center center">
+                    <div>
+                        <b>{{segment.BaseDetail.BaseDepartureDateTime | date:'HH:mm'}}</b>
+                    </div>
+                    <div>
+                        {{segment.BaseDetail.BaseOrigin}}
+                    </div>
+                </div>
+                <div flex layout="column" layout-align="center center">
+                    <div>
+                        @*<ng-md-icon size="12" icon="access_time" style="fill:#ff0000"></ng-md-icon>*@
+                        <small>  {{segment.BaseDetail.BaseDuration}}</small>
+                    </div>
+                    <div style="width:80%;">
+                        <hr style="margin: 10px; color: rgb(147, 186, 41); border-color: rgb(147, 186, 41); background-color: rgb(147, 186, 41); border-style: none; height: 2px;"></hr>
+                    </div>
+                    <div>
+                        {{ segment.BaseDetail.NoOfStops == 0 ?'Non Stop':  (segment.BaseDetail.NoOfStops - 1) +' Stop'}}
+                    </div>
+                </div>
+                <div flex layout="column" layout-align="center center">
+                    <div>
+                        <b>{{segment.BaseDetail.BaseArrivalDateTime | date:'HH:mm'}}</b>
+                    </div>
+                    <div>
+                        {{segment.BaseDetail.BaseDestination}}
+                    </div>
+                </div>
+                <div flex layout="column" layout-align="center center" style="min-width:100px;">
+                    <div>
+                        <span class="Cur"> ₱</span>
+                        @*<span class="Fare"> {{SelFlightRt.BaseDetail.GrossAmount |number :2}}</span>*@
+                        <span class="Fare"> {{segment.BaseDetail.GrossAmount |number :2}}</span>
+
+                        @*- SelFlightRt.AvailSegments[SelFlightRt.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission | number:2*@
+                    </div>
+
+                </div>
+            </div>
+
+        </div>
+    </div>
+</md-toolbar>
+
+<md-toolbar class="sticky_bottom md-hue-2 bg-Color-2" ng-if="RtnFlights[0] &&  (SelFlight || SelFlightRt)" style="z-index: 3;position:fixed;left:0" hide-xs>
+    <div layout="column" layout-gt-xs="row">
+        <div flex>
+            <div ng-if="!SelFlight" layout="column" layout-align="center center" layout-gt-xs="row" style="padding:20px 0">Select Your Ongoing Flight</div>
+            <div ng-if="SelFlight" layout="column" layout-gt-xs="row">
+                <div layout="column" layout-align="center center" style="min-width:100px">
+                    @*<img style="width:auto;height:auto;" ng-src="http://202.54.157.187/DISCLAIMER/AlternativeLogo/A{{SelFlight.AvailSegments[0].AirlinesId}}.png" />*@
+                    <div ng-bind-html="fnSetAirLogo(SelFlight.AvailSegments[0].AirlineCode)"></div>
+                    <small style="margin-top:10px;">{{SelFlight.BaseDetail.BaseAirlineName}}</small>
+                    <small class="txt-primary" ng-if="SelFlight.AvailSegments.length >1">
+                        <span ng-repeat="item in SelFlight.AvailSegments ">
+                            {{item.AirlineCode}}-{{item.FlightNumber}},
+                        </span>
+                    </small>
+                    <small class="txt-primary" ng-if="SelFlight.AvailSegments.length ==1">
+                        {{SelFlight.AvailSegments[0].AirlineCode}}-{{SelFlight.AvailSegments[0].FlightNumber}}
+                    </small>
+
+                </div>
+                <div flex layout="column" layout-align="center center">
+                    <div>
+                        <b>{{ SelFlight.BaseDetail.BaseDepartureDateTime | date:'HH:mm'}}</b>
+                    </div>
+                    <div>
+                        {{SelFlight.BaseDetail.BaseOrigin}}
+                    </div>
+                </div>
+                <div flex layout="column" layout-align="center center">
+                    <div>
+                        @*<ng-md-icon size="12" icon="access_time" style="fill:#ff0000"></ng-md-icon>*@
+                        <small>  {{SelFlight.BaseDetail.BaseDuration}}</small>
+                    </div>
+                    <div style="width:80%;">
+                        <hr style="margin: 10px; color: rgb(147, 186, 41); border-color: rgb(147, 186, 41); background-color: rgb(147, 186, 41); border-style: none; height: 2px;" />
+                    </div>
+                    <div>
+                        {{ SelFlight.AvailSegments.length == 1 ?'Non Stop': (SelFlight.AvailSegments.length - 1) +' Stop'}}
+                    </div>
+                </div>
+                <div flex layout="column" layout-align="center center">
+                    <div>
+                        <b>  {{  SelFlight.BaseDetail.BaseArrivalDateTime | date:'HH:mm'}}</b>
+                    </div>
+                    <div>
+                        {{SelFlight.BaseDetail.BaseDestination}}
+                    </div>
+                </div>
+                <div flex layout="column" layout-align="center center" style="min-width:100px;">
+                    <div>
+
+
+                        <span class="Cur"> ₱</span>
+                        @*<span class="Fare"> {{SelFlight.BaseDetail.GrossAmount | number :2 }}</span>*@
+                        <span class="Fare"> {{SelFlight.GrossAmount | number :2 }}</span>
+
+                        @*- SelFlight.AvailSegments[SelFlight.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission*@
+                    </div>
+                    <div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+        <div flex style="max-width:20px">
+            <div layout="column" layout-gt-xs="row" layout-align="center center">
+                <div flex>
+                    <div style="border-right:1px solid #fff;height:50px; width: 1px; position: relative; left: 50%;top: 10px;"></div>
+                </div>
+            </div>
+        </div>
+        <div flex>
+            <div ng-if="!SelFlightRt" layout="column" layout-align="center center" layout-gt-xs="row" style="padding:20px 0">Select Your Return Flight</div>
+            <div ng-if="SelFlightRt" layout="column" layout-gt-xs="row">
+                <div layout="column" layout-align="center center" style="min-width:100px">
+                    <div ng-bind-html="fnSetAirLogo(SelFlightRt.AvailSegments[0].AirlineCode)"></div>
+                    @*<img style="width:auto;height:auto;" ng-src="http://202.54.157.187/DISCLAIMER/AlternativeLogo/A{{SelFlightRt.AvailSegments[SelFlightRt.AvailSegments.length-1].AirlinesId}}.png" />*@
+                    <small style="margin-top:10px;">{{SelFlightRt.BaseDetail.ReturnBaseAirlineName}}</small>
+
+                    <small class="txt-primary" ng-if="SelFlightRt.AvailSegments.length >1">
+                        <span ng-repeat="item in SelFlightRt.AvailSegments ">
+                            {{item.AirlineCode}}-{{item.FlightNumber}},
+                        </span>
+                    </small>
+                    <small class="txt-primary" ng-if="SelFlightRt.AvailSegments.length ==1">
+                        {{SelFlightRt.AvailSegments[0].AirlineCode}}-{{SelFlightRt.AvailSegments[0].FlightNumber}}
+                    </small>
+                </div>
+                <div flex layout="column" layout-align="center center">
+                    <div>
+                        <b>{{SelFlightRt.BaseDetail.ReturnBaseDepartureDateTime | date:'HH:mm'}}</b>
+                    </div>
+                    <div>
+                        {{SelFlightRt.BaseDetail.ReturnBaseOrigin}}
+                    </div>
+                </div>
+                <div flex layout="column" layout-align="center center">
+                    <div>
+                        @*<ng-md-icon size="12" icon="access_time" style="fill:#ff0000"></ng-md-icon>*@
+                        <small>  {{SelFlightRt.BaseDetail.ReturnBaseDuration}}</small>
+                    </div>
+                    <div style="width:80%;">
+                        <hr style="margin: 10px; color: rgb(147, 186, 41); border-color: rgb(147, 186, 41); background-color: rgb(147, 186, 41); border-style: none; height: 2px;"></hr>
+                    </div>
+                    <div>
+                        {{ SelFlightRt.BaseDetail.ReturnNoOfStops == 0 ?'Non Stop':  (SelFlightRt.BaseDetail.ReturnNoOfStops - 1) +' Stop'}}
+                    </div>
+                </div>
+                <div flex layout="column" layout-align="center center">
+                    <div>
+                        <b>{{SelFlightRt.BaseDetail.ReturnBaseArrivalDateTime | date:'HH:mm'}}</b>
+                    </div>
+                    <div>
+                        {{SelFlightRt.BaseDetail.ReturnBaseDestination}}
+                    </div>
+                </div>
+                <div flex layout="column" layout-align="center center" style="min-width:100px;">
+                    <div>
+                        <span class="Cur"> ₱</span>
+                        @*<span class="Fare"> {{SelFlightRt.BaseDetail.GrossAmount |number :2}}</span>*@
+                        <span class="Fare"> {{SelFlightRt.GrossAmount |number :2}}</span>
+
+                        @*- SelFlightRt.AvailSegments[SelFlightRt.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission | number:2*@
+                    </div>
+                    <div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div flex style="max-width:20px">
+            <div layout="column" layout-gt-xs="row" layout-align="center center">
+                <div flex>
+                    <div style="border-right: 1px solid #fff; height: 50px; width: 1px; position: relative; top: 10px;"></div>
+                </div>
+            </div>
+        </div>
+        <div flex layout-align="center center" layout="row">
+            <div layout="row" layout-gt-xs="row" flex ng-if="(SelFlight) && (SelFlightRt)">
+                <div flex>
+                    <span>Total Amount:</span>
+                    <br />
+                    <span class="Cur"> ₱</span>
+                    @*<span style="font-size:40px;" class="Cur">{{((SelFlightRt.BaseDetail.GrossAmount) + (SelFlight.BaseDetail.GrossAmount)) | number : 2}}</span>*@
+
+                    <span class="Fare" style="font-size:25px">
+                        {{((SelFlightRt.GrossAmount * 1) + (SelFlight.GrossAmount * 1))| number : 2}}
+                    </span>
+                    @*- SelFlightRt.AvailSegments[SelFlightRt.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission)+((SelFlight.BaseDetail.GrossAmount) - SelFlight.AvailSegments[SelFlight.AvailSegments.length - 1].AvailPaxFareDetails.Adult.Commission) | number:2*@
+                </div>
+                <div flex>
+                    <md-button class="md-raised" style="background-color:#F57C00; color:#fff;border-radius:1px;" ng-click="goToBookRT($event)" flex="40">
+                        BOOK
+                    </md-button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</md-toolbar>
+
+<script type="text/ng-template" id="SeniorCitizen.tmpl.html">
+    <md-dialog aria-label="Task" style="width:50%;">
+
+        <div class="md-toolbar-tools Dialog-head">
+            <h2>Important Reminders</h2>
+            <span flex></span>
+            <md-button class="md-icon-button" ng-click="dgcancel()">
+                <ng-md-icon icon="close" title="DURATION" size="20"></ng-md-icon>
+            </md-button>
+        </div>
+        <md-dialog-content>
+            <div layout="column" flex class="layout-padding">
+                <p>
+                    Passenger/s who will avail Senior Citizen Discount must present any valid ID indicating date of birth upon ticket purchase. Applicable to all Filipino residents only. Kindly scan and send it to airsupport@gicorpphil.com
+                </p>
+                <br />
+                <p>
+                    *Office of the Senior Citizens Affairs (OSCA) ID issued by their municipality<br />
+                    *This are reference in our end and to our supplier.
+                </p>
+                <br />
+                <p>
+                    <label style="color:red;"> Note : Please check your ID proof details, before uploading. Invalid senior citizen ID proof tickets, will be voided </label>
+
+                </p>
+                <br />
+                <p>
+                    Airlines : Cebu pacific , Philippine Airlines
+
+                </p>
+                <br />
+                <h3 style="color:red;">
+                    For Air Asia Senior Citizen booking kindly use (AK SNR CTZ OFFILNE) option under AIRLINE
+                </h3>
+            </div>
+        </md-dialog-content>
+        <md-dialog-actions>
+            <div layout="row" layout-align="end center">
+
+                <md-button ng-click="dgcancel()" class="md-raised md-warn">Close</md-button>
+            </div>
+        </md-dialog-actions>
+    </md-dialog>
+</script>
+
+
+
