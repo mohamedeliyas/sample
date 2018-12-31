@@ -1,0 +1,660 @@
+<div class="mdl-grid mdl-grid--no-spacing">
+    <div class="mdl-cell mdl-cell--3-col Bg-Prim-3">
+        <div style="float: left; padding: 12px 15px; width: 91%; position: relative;">           
+            <div class="mdl-cell mdl-cell--12-col">
+                <br/>
+                <div class="Fliter-Head">JOURNEY DETAILS</div>  
+                              
+                <div *ngFor="let fligth of OnwardFligth.AvailSegments">
+                    <div *ngIf="fligth != null">
+                    <div class="mdl-grid mdl-grid--no-spacing" style="font-size:11px">
+                        <div class="mdl-cell mdl-cell--12-col">
+                            <div class="mdl-grid mdl-grid--no-spacing pad-TB-5">
+                                <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">FLIGHT</div>
+                                <div class="mdl-cell mdl-cell--6-col F-White">
+                                    <div class="AirLogo" [ngClass]="['Al'+fligth.AirlinesId]"></div>
+                                    <div>{{fligth.AirlineCode}} - {{fligth.FlightNumber}}</div>
+                                </div>
+                            </div>
+                            <div class="mdl-grid mdl-grid--no-spacing pad-TB-5">
+                                <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">CLASS</div>
+                                <div class="mdl-cell mdl-cell--6-col F-White">
+                                    <div>{{fligth.AvailPaxFareDetails.ClassCode}} - {{fligth.AvailPaxFareDetails.ClassCodeDesc}}</div>
+                                </div>
+                            </div>
+                            <div class="mdl-grid mdl-grid--no-spacing pad-TB-5">
+                                <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">DEPATURE</div>
+                                <div class="mdl-cell mdl-cell--6-col F-White">
+                                    <div>{{fligth.Origin}}</div>
+                                    <div>{{fligth.DepartureDateTime |date: 'dd MMM yy HH:mm'}}</div>
+                                </div>
+                            </div>
+                            <div class="mdl-grid mdl-grid--no-spacing pad-TB-5">
+                                <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">ARRIVAL</div>
+                                <div class="mdl-cell mdl-cell--6-col F-White">
+                                     <div>{{fligth.Destination}}</div>
+                                    <div>{{fligth.ArrivalDateTime |date: 'dd MMM yy HH:mm'}}</div>
+                                </div>
+                            </div>
+                        </div>                         
+                    </div>
+                    </div>
+                </div>
+                <br/>
+            </div>
+            <div class="mdl-cell mdl-cell--12-col" *ngIf="DomSearch.TripType == 'R'">
+                <br/>
+                <div class="Fliter-Head">RETURN DETAILS</div>  
+                              
+                <div *ngFor="let fligth of ReturnFligth.AvailSegments">
+                    <div *ngIf="fligth != null">
+                    <div class="mdl-grid mdl-grid--no-spacing" style="font-size:11px">
+                        <div class="mdl-cell mdl-cell--12-col">
+                            <div class="mdl-grid mdl-grid--no-spacing pad-TB-5">
+                                <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">FLIGHT</div>
+                                <div class="mdl-cell mdl-cell--6-col F-White">
+                                    <div class="AirLogo" [ngClass]="['Al'+fligth.AirlinesId]"></div>
+                                    <div>{{fligth.AirlineCode}} - {{fligth.FlightNumber}}</div>
+                                </div>
+                            </div>
+                            <div class="mdl-grid mdl-grid--no-spacing pad-TB-5">
+                                <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">CLASS</div>
+                                <div class="mdl-cell mdl-cell--6-col F-White">
+                                    <div>{{fligth.AvailPaxFareDetails.ClassCode}} - {{fligth.AvailPaxFareDetails.ClassCodeDesc}}</div>
+                                </div>
+                            </div>
+                            <div class="mdl-grid mdl-grid--no-spacing pad-TB-5">
+                                <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">DEPATURE</div>
+                                <div class="mdl-cell mdl-cell--6-col F-White">
+                                    <div>{{fligth.Origin}}</div>
+                                    <div>{{fligth.DepartureDateTime |date: 'dd MMM yy HH:mm'}}</div>
+                                </div>
+                            </div>
+                            <div class="mdl-grid mdl-grid--no-spacing pad-TB-5">
+                                <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">ARRIVAL</div>
+                                <div class="mdl-cell mdl-cell--6-col F-White">
+                                     <div>{{fligth.Destination}}</div>
+                                    <div>{{fligth.ArrivalDateTime |date: 'dd MMM yy HH:mm'}}</div>
+                                </div>
+                            </div>
+                        </div>                         
+                    </div>
+                    </div>
+                </div>
+                <br/>
+            </div>
+            <div class="mdl-cell mdl-cell--12-col">              
+                <div class="Fliter-Head">FARE DETAILS</div>   
+                <div id="DomTaxLoader" [hidden]="isTaxReqSuc" class="txt-C F-White">
+                    <div class="FareLoader"></div>
+                    Checking Fare form host Server
+                </div>   
+                <div class="mdl-grid mdl-grid--no-spacing" style="font-size:11px" [hidden]="!isTaxReqSuc">
+                    <div class="mdl-cell mdl-cell--12-col">
+                        <div class="mdl-grid mdl-grid--no-spacing">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">{{DomSearch.AdultCount}}ADULTS</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R">
+                                   {{((AGross) * (DomSearch.AdultCount * 1)) | number :'1.2-2'}}
+                            </div>
+                        </div>
+                        <div class="mdl-grid mdl-grid--no-spacing" [hidden]="DomSearch.ChildCount == 0">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">{{DomSearch.ChildCount}}Child</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R">
+                                   {{((CGross) * (DomSearch.ChildCount * 1))| number :'1.2-2'}}
+                            </div>
+                        </div>
+                         <div class="mdl-grid mdl-grid--no-spacing" [hidden]="DomSearch.InfantCount == 0">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">{{DomSearch.InfantCount}}INFANT</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R">
+                                   {{((IGross) * (DomSearch.InfantCount * 1))| number :'1.2-2'}}
+                            </div>
+                        </div>
+                        <div class="mdl-grid mdl-grid--no-spacing">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">TAXES & FEES</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R txt-R">
+                                 {{(ATax+CTax+ITax) * ((DomSearch.AdultCount * 1) + (DomSearch.ChildCount * 1) + (DomSearch.InfantCount * 1))| number :'1.2-2'}}  
+                            </div>
+                        </div>
+                        <div class="mdl-grid mdl-grid--no-spacing">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1 ">TRANSCTION FEE</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R">
+                                   {{(ATranFee+CTranFee+ITranFee) * ((DomSearch.AdultCount * 1) + (DomSearch.ChildCount * 1) + (DomSearch.InfantCount * 1))| number :'1.2-2'}} 
+                            </div>
+                        </div>                           
+                    </div>                         
+                </div>              
+            </div>
+            <div class="mdl-cell mdl-cell--12-col" *ngIf="DomSearch.TripType == 'R'" [hidden]="!isTaxReqSuc">              
+                <div class="Fliter-Head">RETURN FARE DETAILS</div>   
+                <div id="DomTaxLoader" [hidden]="isTaxReqSuc" class="txt-C F-White">
+                    <div class="FareLoader"></div>
+                    Checking Fare form host Server
+                </div>   
+                <div class="mdl-grid mdl-grid--no-spacing" style="font-size:11px" [hidden]="!isTaxReqSuc">
+                    <div class="mdl-cell mdl-cell--12-col">
+                        <div class="mdl-grid mdl-grid--no-spacing">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">{{DomSearch.AdultCount}}ADULTS</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R">
+                                   {{((ARtnGross) * (DomSearch.AdultCount * 1)) | number :'1.2-2'}}
+                            </div>
+                        </div>
+                        <div class="mdl-grid mdl-grid--no-spacing" [hidden]="DomSearch.ChildCount == 0">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">{{DomSearch.ChildCount}}Child</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R">
+                                   {{((CRtnGross) * (DomSearch.ChildCount * 1))| number :'1.2-2'}}
+                            </div>
+                        </div>
+                         <div class="mdl-grid mdl-grid--no-spacing" [hidden]="DomSearch.InfantCount == 0">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">{{DomSearch.InfantCount}}INFANT</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R">
+                                   {{((IRtnGross) * (DomSearch.InfantCount * 1))| number :'1.2-2'}}
+                            </div>
+                        </div>
+                        <div class="mdl-grid mdl-grid--no-spacing">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">TAXES & FEES</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R txt-R">
+                                 {{(ARtnTax+CRtnTax+IRtnTax) * ((DomSearch.AdultCount * 1) + (DomSearch.ChildCount * 1) + (DomSearch.InfantCount * 1))| number :'1.2-2'}}  
+                            </div>
+                        </div>
+                        <div class="mdl-grid mdl-grid--no-spacing">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1 ">TRANSCTION FEE</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R">
+                                   {{(ARtnTranFee+CRtnTranFee+IRtnTranFee) * ((DomSearch.AdultCount * 1) + (DomSearch.ChildCount * 1) + (DomSearch.InfantCount * 1))| number :'1.2-2'}} 
+                            </div>
+                        </div>   
+                                            
+                    </div>                         
+                </div>              
+            </div>
+
+              <div class="mdl-cell mdl-cell--12-col" [hidden]="!isTaxReqSuc">              
+                <div class="Fliter-Head">SSR FARE DETAILS</div> 
+                  
+                  <div class="mdl-grid mdl-grid--no-spacing" style="font-size:11px">
+                    <div class="mdl-cell mdl-cell--12-col">
+                        <div class="mdl-grid mdl-grid--no-spacing">
+                            <div class="mdl-cell mdl-cell--6-col FClr-Prim-1">SSR FEES</div>
+                            <div class="mdl-cell mdl-cell--6-col F-White txt-R">
+                                  {{(SSRData.TotalSSRAmount) | number :'1.2-2'}}
+                            </div>
+                        </div>
+                        </div>
+                        </div>
+
+                  </div>
+                
+                
+
+            <div class="mdl-cell mdl-cell--12-col" [hidden]="!isTaxReqSuc">  <div class="Fliter-Head"></div></div>
+            <div class="mdl-cell mdl-cell--12-col" [hidden]="!isTaxReqSuc">
+                <div class="mdl-grid mdl-grid--no-spacing F-White">
+                    <div class="mdl-cell mdl-cell--6-col" style="font-size: 18px; text-align: center; padding-top: 12px;">Total Cost</div>
+                    <div class="mdl-cell mdl-cell--6-col" style="font-size: 25px; text-align: center; padding: 12px 0px 0px;">
+                        <div  >
+                                {{((AGross + ATax) + (CGross + CTax) + (IGross + ITax) + (ARtnGross + ARtnTax) + (CRtnGross + CRtnTax) + (IRtnGross + IRtnTax)) * ((DomSearch.AdultCount * 1) + (DomSearch.ChildCount * 1) + (DomSearch.InfantCount * 1)) + (SSRData.TotalSSRAmount) | number :'1.2-2'}} 
+                        </div> 
+                       
+                    </div>
+                </div>
+            </div>
+            
+        </div>
+    </div>
+    <div class="mdl-cell mdl-cell--9-col">
+        <div style="float: left; padding: 12px 15px; width: 98%; position: relative;" >
+            <div class="mdl-grid mdl-grid--no-spacing">
+                <div class="mdl-cell mdl-cell--12-col " >
+                    <div class="mdl-grid mdl-grid--no-spacing Bg-Prim-1" style="color:#fff;padding:8px 25px">
+                        <div class="mdl-cell mdl-cell--6-col" style="font-size:14px">PASSENGER INFORMATION</div>
+                        <div class="mdl-cell mdl-cell--6-col txt-R" style="font-size:11px">Note : Field marked * are Mandatory</div>
+                    </div>
+                    <div class="mdl-grid mdl-grid--no-spacing booking-input-container">
+                        <div class="mdl-cell mdl-cell--2-col vert-Middle">
+                            <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" >
+                                <input type="checkbox" (change)="loadAgentData()" [checked]="loadAgentDtls"  [(ngModel)]="loadAgentDtls" class="mdl-checkbox__input" >
+                                <span class="mdl-checkbox__label">Agent Details</span>
+                            </label>
+                        </div>
+                        <div class="mdl-cell mdl-cell--2-col vert-Middle">
+                            <div class="mdl-textfield mdl-js-textfield Booking-TxtBox">
+                                <input class="mdl-textfield__input" type="text" [custkeypress]="'numeric'" id="mobileNumber" space [(ngModel)]= "BookingDtls.CustomerDetails.PhoneNumber" pattern="-?[0-9]*(\.[0-9]+)?" maxlength="12" >
+                                <label class="mdl-textfield__label" for="mobileNumber">Mobile Number</label>
+                            </div>
+                        </div>
+                        <div class="mdl-cell mdl-cell--2-col vert-Middle">
+                             <div class="mdl-textfield mdl-js-textfield Booking-TxtBox">
+                                <input class="mdl-textfield__input" type="text" id="name" [(ngModel)]="BookingDtls.CustomerDetails.BookedByCusomter" pattern="^[a-zA-Z]+$" >
+                                <label class="mdl-textfield__label" for="name">Name</label>
+                            </div>
+                        </div>
+                        <div class="mdl-cell mdl-cell--2-col vert-Middle">
+                             <div class="mdl-textfield mdl-js-textfield Booking-TxtBox">
+                                <input class="mdl-textfield__input" type="text" id="email" [(ngModel)]="BookingDtls.CustomerDetails.CustomerEmail" >
+                                <label class="mdl-textfield__label" for="email">Email ID</label>
+                            </div>
+                        </div>
+                        <div class="mdl-cell mdl-cell--2-col vert-Middle">
+                            <div class="mdl-grid mdl-grid--no-spacing">
+                                <div class="mdl-cell mdl-cell--6-col ">
+                                     <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" >
+                                        <input type="checkbox" [(ngModel)]="BookingDtls.SendSMSFlag" class="mdl-checkbox__input">
+                                        <span class="mdl-checkbox__label">SMS</span>
+                                    </label>
+                                </div>
+                                <div class="mdl-cell mdl-cell--6-col vert-Middle">
+                                     <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" >
+                                        <input type="checkbox" [(ngModel)]="BookingDtls.SendMailFlag" class="mdl-checkbox__input">
+                                        <span class="mdl-checkbox__label">EMAIL</span>
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <br>
+            <div class="mdl-grid mdl-grid--no-spacing">
+                <div class="mdl-cell mdl-cell--12-col " >
+                    <div class="mdl-grid mdl-grid--no-spacing Bg-Prim-1" style="color:#fff;padding:8px 25px">
+                        <div class="mdl-cell mdl-cell--6-col" style="font-size:14px">PASSENGER CONTACT</div>
+                        <div class="mdl-cell mdl-cell--6-col txt-R" style="font-size:11px">Note : Field marked * are Mandatory</div>
+                    </div>                     
+                    <div class="mdl-grid mdl-grid--no-spacing booking-input-container" style="padding:0 15px">
+                        <br/>
+                        <div   *ngFor="let adult of createPaxList((DomSearch.AdultCount* 1));let AdultIndex = index">
+                            <div >ADULT {{AdultIndex + 1}}</div>          
+                            <div class="mdl-grid ">
+                                <div class="mdl-cell mdl-cell--2-col ">
+                                    <div class="">
+                                        <label class="" >Title</label>
+                                        <select [(ngModel)]="BookingDtls.Adults[AdultIndex].Title"   class="form-control" >
+                                            <option selected="selected" value="Mr">Mr</option>
+                                            <option value="Ms">Ms</option>                                     
+                                        </select>
+                                        
+                                    </div>
+                                </div>
+                                <div class="mdl-cell mdl-cell--2-col  ">
+                                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label Booking-TxtBox">
+                                        <input [(ngModel)]="BookingDtls.Adults[AdultIndex].FirstName" class="mdl-textfield__input" type="text" pattern="^[a-zA-Z]+$" >
+                                        <label class="mdl-textfield__label" >Frist Name</label>
+                                    </div>
+                                </div>
+                                <div class="mdl-cell mdl-cell--2-col ">
+                                     <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label Booking-TxtBox">
+                                        <input [(ngModel)]="BookingDtls.Adults[AdultIndex].LastName" class="mdl-textfield__input" type="text" pattern="^[a-zA-Z]+$"  >
+                                        <label class="mdl-textfield__label" for="sample2">Last Name</label>
+                                    </div>
+                                </div>
+                                <div class="mdl-cell mdl-cell--3-col ">
+                                    
+                                    <div *ngIf="onwardTaxData">
+                                        <label *ngIf="onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB == '1'">DOB</label>
+                                        <material-datepicker *ngIf="onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB == '1'" [(date)]="BookingDtls.Adults[AdultIndex].DOB"  dateFormat="DD MMM YYYY" class="Booking-Calender" placeholder="DOB" 
+                                                              [rangeStart]="adultDobStart"
+                                                 [rangeEnd]="adultDobEnd"
+                                                             ></material-datepicker>
+                                    </div>
+                                </div>
+                                <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber == '1'">
+                                     <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label Booking-TxtBox" >
+                                        <input [(ngModel)]="BookingDtls.Adults[AdultIndex].PassPortNo" class="mdl-textfield__input" type="text" >
+                                        <label class="mdl-textfield__label" for="sample2">Passport No</label>
+                                    </div>
+                                </div>
+
+
+
+                                 <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry == '1'">
+                                    <div  class="">
+                                         <label class=""  >Passport Issued by</label>
+                                        <select [(ngModel)]="BookingDtls.Adults[AdultIndex].PassPortIssuse"   class="form-control">
+                                            <option *ngFor="let country of IntCountyList"  [value]="country.name" [selected]="country.code == 'PH'">{{country.name}}</option>
+                                        </select>
+                                       
+
+                                    </div>
+                                </div>
+                                <div class="mdl-cell mdl-cell--3-col " *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate == '1'" >
+                                    <label>Passport Expiry</label>
+                                   <material-datepicker [(date)]="BookingDtls.Adults[AdultIndex].PassPortExpiry"  dateFormat="DD MMM YYYY" class="Booking-Calender" placeholder="Passport Expiry"
+                                                          [rangeStart]="adultPPStart"
+                                                 [rangeEnd]="adultPPEnd" ></material-datepicker>
+                                </div>
+                                
+                                <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality == '1'">
+                                     <div  class="">
+                                         <label class="" for="">Nationality</label>
+                                        <select [(ngModel)]="BookingDtls.Adults[AdultIndex].Nationality" class="form-control">
+                                              
+                                              <option *ngFor="let country of IntCountyList" [selected]="country.code == 'PH'" [ngValue]="country.name" >{{country.name}}</option>                            
+                                        </select>
+                                        <!--<label class="mdl-selectfield__label" for="myselect">Nationality</label>-->
+                                    </div>
+                                </div>        
+                                <div class="mdl-cell mdl-cell--2-col " *ngIf="onwardTaxData && (onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo != null)">
+                                     <div  class="">
+                                         <label >Meals</label>
+                                        <select [(ngModel)]="BookingDtls.Adults[AdultIndex].Meal"  *ngIf="onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo" class="form-control" (ngModelChange)="calcSSRFare()">
+                                            <option value="0">Select</option>
+                                            <option [ngValue]="item" *ngFor="let item of onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo">{{item.MealDescription}} - {{item.MealAmount}}</option>                                     
+                                        </select>
+                                        
+                                    </div>
+                                </div>
+                                 <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && (onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo != null)">
+                                     <div  class="">
+                                         <label >Baggage</label>
+                                        <select [(ngModel)]="BookingDtls.Adults[AdultIndex].Baggage" *ngIf="onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo"  class="form-control" (ngModelChange)="calcSSRFare()">
+                                            <option value="0">Select</option>
+                                            <option [ngValue]="item" *ngFor="let item of onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo">{{item.BaggageDescription}} - {{item.BaggageAmount}}</option>                                     
+                                        </select>
+                                        
+                                    </div>
+                                </div>
+
+                                 <div class="mdl-cell mdl-cell--2-col " *ngIf="returnTaxData && (returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo != null)">
+                                     <div  class="">
+                                         <label >Return Meals</label>
+                                        <select [(ngModel)]="BookingDtls.Adults[AdultIndex].RtnMeal" id="myselect" *ngIf="returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo"  class="form-control" (ngModelChange)="calcSSRFare()">
+
+                                            <option value="0">Select</option>
+                                            <option [ngValue]="item" *ngFor="let item of returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo">{{item.MealDescription}} - {{item.MealAmount}}</option>                                     
+                                        </select>
+                                        
+                                    </div>
+                                </div>
+                                 <div class="mdl-cell mdl-cell--2-col vert-Middle" *ngIf="returnTaxData && (returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo != null)">
+                                     <div  class="">
+                                         <label >Return Baggage</label>
+                                        <select [(ngModel)]="BookingDtls.Adults[AdultIndex].RtnBaggage" *ngIf="returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo"  class="form-control" (ngModelChange)="calcSSRFare()">
+                                            <option value="0">Select</option>
+                                            <option [ngValue]="item" *ngFor="let item of returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo">{{item.BaggageDescription}} - {{item.BaggageAmount}}</option>                                     
+                                        </select>
+                                        
+                                    </div>
+                                </div>
+
+                            </div>   
+                                      
+                        </div>
+                        <br/>
+                        <div *ngIf="((DomSearch.ChildCount * 1) > 0)">
+                            <div  *ngFor="let adult of createPaxList((DomSearch.ChildCount* 1));let ChildIndex = index">
+                                <div >CHILD {{ChildIndex + 1}}</div>          
+                                <div class="mdl-grid">
+                                    <div class="mdl-cell mdl-cell--2-col ">
+                                        <div class="">
+                                            <label >Title</label>
+                                            <select [(ngModel)]="BookingDtls.Childs[ChildIndex].Title"  class="form-control" >
+                                                <option selected="selected" [ngValue]="Mr">Mr</option>
+                                                <option [ngValue]="Ms">Ms</option>                                     
+                                            </select>
+                                            
+                                        </div>
+                                    </div>
+                                    <div class="mdl-cell mdl-cell--2-col">
+                                        <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label Booking-TxtBox">
+                                            <input [(ngModel)]="BookingDtls.Childs[ChildIndex].FirstName" class="mdl-textfield__input" type="text" >
+                                            <label class="mdl-textfield__label" >Frist Name</label>
+                                        </div>
+                                    </div>
+                                    <div class="mdl-cell mdl-cell--2-col">
+                                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label Booking-TxtBox">
+                                            <input [(ngModel)]="BookingDtls.Childs[ChildIndex].LastName" class="mdl-textfield__input" type="text"  >
+                                            <label class="mdl-textfield__label" for="sample2">Last Name</label>
+                                        </div>
+                                    </div>
+                                    <div class="mdl-cell mdl-cell--3-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB == '1'">
+                                        <div *ngIf="onwardTaxData">
+                                            <label>DOB</label>
+                                            <material-datepicker  [(date)]="BookingDtls.Childs[ChildIndex].DOB"  dateFormat="DD MMM YYYY" class="Booking-Calender" placeholder="DOB" 
+                                                                  [rangeStart]="childDobStart"
+                                                 [rangeEnd]="childDobEnd"
+                                                                 ></material-datepicker>
+                                        </div>
+                                    </div>
+                                    <div class="mdl-cell mdl-cell--2-col " *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber == '1'">
+                                         <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label Booking-TxtBox" >
+                                            <input [(ngModel)]="BookingDtls.Childs[ChildIndex].PassPortNo" class="mdl-textfield__input" type="text" >
+                                            <label class="mdl-textfield__label" for="sample2">Passport No</label>
+                                        </div>
+                                    </div>
+
+                                     
+                                    <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry == '1'" >
+                                        
+
+                                          <div >
+                                              <label >Passport Issued by</label>
+                                        <select [(ngModel)]="BookingDtls.Childs[ChildIndex].PassPortIssuse"   class="form-control">
+                                            <option *ngFor="let country of IntCountyList"  [value]="country.name" [selected]="country.code == 'PH'">{{country.name}}</option>
+                                        </select>
+                                        
+
+                                    </div>
+
+                                    </div>
+                                    <div class="mdl-cell mdl-cell--3-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate == '1'">
+                                        <label>Passport Expiry</label>
+                                       <material-datepicker [(date)]="BookingDtls.Childs[ChildIndex].PassPortExpiry"   dateFormat="DD MMM YYYY" class="Booking-Calender" placeholder="Passport Expiry" 
+                                                             [rangeStart]="childPPStart"
+                                                 [rangeEnd]="childPPEnd"></material-datepicker>
+                                    </div>
+                                
+                                    <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality == '1'">
+                                         <div  class="">
+                                              <label class="" for="myselect">Nationality</label>
+                                            <select [(ngModel)]="BookingDtls.Childs[ChildIndex].Nationality"  class="form-control">
+                                                <option *ngFor="let country of IntCountyList" [selected]="country.code == 'PH'" [ngValue]="country.name" >{{country.name}}</option>                                                             
+                                            </select>
+                                        </div>
+                                    </div>    
+
+                                      <div class="mdl-cell mdl-cell--2-col " *ngIf="onwardTaxData && (onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo != null)">
+                                         <div  class="">
+                                             <label >Meals</label>
+                                            <select [(ngModel)]="BookingDtls.Childs[ChildIndex].Meal" *ngIf="onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo" class="form-control">
+                                                <option value="0">Select</option>
+                                                <option [ngValue]="item" *ngFor="let item of onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo">{{item.MealDescription}} - {{item.MealAmount}}</option>                                     
+                                            </select>
+                                            
+                                        </div>
+                                    </div>
+                                     <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && (onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo != null)">
+                                         <div  class="">
+                                             <label >Baggage</label>
+                                            <select [(ngModel)]="BookingDtls.Childs[ChildIndex].Baggage" *ngIf="onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo" class="form-control">
+                                                <option value="0">Select</option>
+                                                <option [ngValue]="item" *ngFor="let item of onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo">{{item.BaggageDescription}} - {{item.BaggageAmount}}</option>                                     
+                                            </select>
+                                            
+                                        </div>
+                                    </div>
+
+                                     <div class="mdl-cell mdl-cell--2-col " *ngIf="returnTaxData && (returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo != null)">
+                                     <div  class="">
+                                         <label >Return Meals</label>
+                                        <select [(ngModel)]="BookingDtls.Childs[ChildIndex].RtnMeal" *ngIf="returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo" class="form-control" (ngModelChange)="calcSSRFare()">
+                                            <option value="0">Select</option>
+                                            <option [ngValue]="item" *ngFor="let item of returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo">{{item.MealDescription}} - {{item.MealAmount}}</option>                                     
+                                        </select>
+                                        
+                                    </div>
+                                </div>
+                                 <div class="mdl-cell mdl-cell--2-col" *ngIf="returnTaxData && (returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo != null)">
+                                     <div  class="">
+                                         <label >Return Baggage</label>
+                                        <select [(ngModel)]="BookingDtls.Childs[ChildIndex].RtnBaggage" id="myselect" *ngIf="returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo" class="form-control" (ngModelChange)="calcSSRFare()">
+                                            <option value="0">Select</option>
+                                            <option [ngValue]="item" *ngFor="let item of returnTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo">{{item.BaggageDescription}} - {{item.BaggageAmount}}</option>                                     
+                                        </select>
+                                        
+                                    </div>
+                                </div>
+
+
+                                </div>   
+                                          
+                        </div>
+                        </div>
+                        <br/>
+                        <div *ngIf="((DomSearch.InfantCount * 1) > 0)">
+                            <div   *ngFor="let adult of createPaxList((DomSearch.InfantCount* 1));let InfantIndex = index">
+                            <div >Infant {{InfantIndex + 1}}</div>          
+                            <div class="mdl-grid">
+                                <div class="mdl-cell mdl-cell--2-col ">
+                                    <div >
+                                        <label >Title</label>
+                                        <select [(ngModel)]="BookingDtls.Infants[InfantIndex].Title"  class="form-control" >
+                                            <option selected="selected" [ngValue]="Mr">Mr</option>
+                                            <option [ngValue]="Ms">Ms</option>                                     
+                                        </select>
+                                        
+                                    </div>
+                                </div>
+                                <div class="mdl-cell mdl-cell--2-col">
+                                    <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label Booking-TxtBox">
+                                        <input [(ngModel)]="BookingDtls.Infants[InfantIndex].FirstName" class="mdl-textfield__input" type="text" >
+                                        <label class="mdl-textfield__label" >Frist Name</label>
+                                    </div>
+                                </div>
+                                <div class="mdl-cell mdl-cell--2-col">
+                                     <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label Booking-TxtBox">
+                                        <input [(ngModel)]="BookingDtls.Infants[InfantIndex].LastName" class="mdl-textfield__input" type="text"  >
+                                        <label class="mdl-textfield__label" for="sample2">Last Name</label>
+                                    </div>
+                                </div>
+                                <div class="mdl-cell mdl-cell--3-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.DOB == '1'">
+                                    <div *ngIf="onwardTaxData">
+                                        <label>DOB</label>
+                                        <material-datepicker  [(date)]="BookingDtls.Infants[InfantIndex].DOB"  dateFormat="DD MMM YYYY" class="Booking-Calender" placeholder="DOB"
+                                                                [rangeStart]="infantDobStart"
+                                                 [rangeEnd]="infantDobEnd"
+                                                              ></material-datepicker>
+                                    </div>
+                                </div>
+                                <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportNumber == '1'">
+                                     <div class="mdl-textfield mdl-js-textfield mdl-textfield--floating-label Booking-TxtBox" >
+                                        <input [(ngModel)]="BookingDtls.Infants[InfantIndex].PassPortNo" class="mdl-textfield__input" type="text" >
+                                        <label class="mdl-textfield__label" for="sample2">Passport No</label>
+                                    </div>
+                                </div>
+
+                                 <!--<div class="mdl-cell mdl-cell--2-col "  *ngIf="onwardTaxData && (onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo != null)">
+                                     <div class="mdl-selectfield mdl-js-selectfield mdl-selectfield--floating-label Themes-SelectBox Booking-SelectBox">
+                                        <select [(ngModel)]="BookingDtls.Infants[InfantIndex].Meal" id="myselect" *ngIf="onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo" name="myselect" class="mdl-selectfield__select">
+                                            <option value="0">Select</option>
+                                            <option [ngValue]="item" *ngFor="let item of onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.MealsInfo">{{item.MealDescription}} - {{item.MealAmount}}</option>                                     
+                                        </select>
+                                        <label class="mdl-selectfield__label" for="myselect">Meals</label>
+                                    </div>
+                                </div>
+                                 <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && (onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo != null)" >
+                                     <div class="mdl-selectfield mdl-js-selectfield mdl-selectfield--floating-label Themes-SelectBox Booking-SelectBox">
+                                        <select [(ngModel)]="BookingDtls.Infants[InfantIndex].Baggage" id="myselect" *ngIf="onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo" name="myselect" class="mdl-selectfield__select">
+                                            <option value="0">Select</option>
+                                            <option [ngValue]="item" *ngFor="let item of onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.BaggageInfo">{{item.BaggageDescription}} - {{item.BaggageAmount}}</option>                                     
+                                        </select>
+                                        <label class="mdl-selectfield__label" for="myselect">Baggage</label>
+                                    </div>
+                                </div>-->
+                                <div class="mdl-cell mdl-cell--2-col" *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportIssuingCountry == '1'">
+                                    
+
+                                        <div>
+                                            <label >Passport Issued by</label>
+                                        <select [(ngModel)]="BookingDtls.Infants[InfantIndex].PassPortIssuse"   class="form-control">
+                                            <option *ngFor="let country of IntCountyList"  [value]="country.name" [selected]="country.code == 'PH'">{{country.name}}</option>
+                                        </select>
+                                        
+
+                                    </div>
+
+                                </div>
+                                <div class="mdl-cell mdl-cell--3-col " *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.PassportExpDate == '1'"  >
+                                    <label>Passport Expiry</label>
+                                   <material-datepicker [(date)]="BookingDtls.Infants[InfantIndex].PassPortExpiry" dateFormat="DD MMM YYYY" class="Booking-Calender" placeholder="Passport Expiry" 
+                                                          [rangeStart]="infantPPStart"
+                                                 [rangeEnd]="infantPPEnd"
+                                                        ></material-datepicker>
+                                </div>
+                                
+                                <div class="mdl-cell mdl-cell--2-col">
+                                     <div *ngIf="onwardTaxData && onwardTaxData.Taxes.AvailTaxSegements[0].SSRInfo.SpecialRequestInfo.PaxInfoEnableFlag.Nationality == '1'" class="">
+                                         <label >Nationality</label>
+                                        <select [(ngModel)]="BookingDtls.Infants[InfantIndex].Nationality"  class="form-control">
+                                             <option *ngFor="let country of IntCountyList"  [value]="country.name" [selected]="country.code == 'PH'">{{country.name}}</option>                                     
+                                        </select>
+                                        
+                                    </div>
+                                </div>   
+
+                            </div>   
+                                        
+                        </div>
+                        </div>
+                      </div> 
+                  </div>
+            </div>
+            <br>
+            <div class="mdl-grid mdl-grid--no-spacing">
+                <div class="mdl-cell mdl-cell--12-col " >
+                    <div class="mdl-grid mdl-grid--no-spacing Bg-Prim-1" style="color:#fff;padding:8px 25px">
+                        <div class="mdl-cell mdl-cell--6-col" style="font-size:14px">CONFIRM YOUR REQUEST</div>
+                        <div class="mdl-cell mdl-cell--6-col txt-R" style="font-size:11px">Note : Field marked * are Mandatory</div>
+                    </div>                     
+                    <div class="mdl-grid mdl-grid--no-spacing booking-input-container" style="padding:0 15px">
+                        <div class="mdl-cell mdl-cell--12-col">
+                        <div class="mdl-grid mdl-grid--no-spacing" style="padding: 20px 10px;">
+                            <div class="mdl-cell mdl-cell--6-col">
+                                <div style="color:red">Note:</div>
+                                <div class="FClr-Prim-4">Kindly check the pax name(s) before you proceed </div>
+                                <div class="FClr-Prim-4">ticket name changes are not permmitted once issued</div>
+                            </div>
+                            <div class="mdl-cell mdl-cell--6-col vert-Middle txt-R FClr-Prim-3">
+                                <span [hidden]="!isTaxReqSuc">YOU ARE PAYING PHP</span>
+                                <div class="FareLoader" [hidden]="isTaxReqSuc" style="float: right; margin: 12px; width: 7%;"></div>
+                                <span style="font-size:35px" [hidden]="!isTaxReqSuc">
+                                    {{((AGross + ATax) + (CGross + CTax) + (IGross + ITax) + (ARtnGross + ARtnTax) + (CRtnGross + CRtnTax) + (IRtnGross + IRtnTax)) * ((DomSearch.AdultCount * 1) + (DomSearch.ChildCount * 1) + (DomSearch.InfantCount * 1)) + (SSRData.TotalSSRAmount) | number :'1.2-2'}} 
+                                </span>
+                            </div>
+                        </div>
+                        </div>
+                        <div class="mdl-cell mdl-cell--12-col">
+                            <div class="mdl-grid mdl-grid--no-spacing" style="padding: 10px 10px;">
+                                <div class="mdl-cell mdl-cell--6-col FClr-Prim-4">
+                                    <label class="mdl-checkbox mdl-js-checkbox mdl-js-ripple-effect" >
+                                        <input type="checkbox" [(ngModel)]="loadAgentDtls" class="mdl-checkbox__input">
+                                        <span class="mdl-checkbox__label"> I have read and agree the </span><span style="color:red;text-decoration:underline" (click)="showTermsAndCondition()">TERMES & CONDITIONS</span>
+                                    </label>
+                                </div>
+                                <div class="mdl-cell mdl-cell--6-col">
+                                    <div class="mdl-grid mdl-grid--no-spacing">
+                                        <div class="mdl-cell mdl-cell--4-col">
+                                            <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent mdl-cell--12-col Themes-SelectBox Btn-Prim-1" (click)="Replan()">
+                                               Replan
+                                            </button>
+                                        </div>
+                                        <div class="mdl-cell mdl-cell--4-col">
+                                            <button class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent mdl-cell--12-col Themes-SelectBox Btn-Prim-1" (click)="Back()">
+                                                Back
+                                            </button>
+                                        </div>
+                                        <div class="mdl-cell mdl-cell--4-col">
+                                            <button [hidden]="!isTaxReqSuc" class="mdl-button mdl-js-button mdl-button--raised mdl-js-ripple-effect mdl-button--accent mdl-cell--12-col Themes-SelectBox Btn-Prim-2" (click)="Booking()">
+                                                Book
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                 </div>
+            </div>
+        </div>
+    </div>
+    <br>
+</div>
+<div #container></div> 
