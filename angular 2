@@ -1183,3 +1183,226 @@ interface IAirlineDtls
 
 interface ICarouselOptn
 { nav: boolean; navText: string[]; rewindNav: boolean; pagination: boolean; slideBy: number; stagePadding: number; margin: number; items: number }
+
+
+
+
+
+
+
+
+
+
+
+
+
+var Alertdialog = null;
+var FareRuledialog = null;
+var Bookingdialog = null;
+var Ameitiesdialog = null;
+var Confirmbokingdialog = null;
+var callback = function () {
+    Alertdialog = document.querySelector('.Msg-dialog');
+    if (!Alertdialog.showModal) {
+        dialogPolyfill.registerDialog(Alertdialog);
+    }
+    Alertdialog.querySelector('.close').addEventListener('click', function () {
+        Alertdialog.close();
+    });
+
+    FareRuledialog = document.querySelector('.FareRule-dialog');
+    if (FareRuledialog !== undefined && FareRuledialog !== null) {
+        if (!FareRuledialog.showModal) {
+            dialogPolyfill.registerDialog(FareRuledialog);
+        }
+        FareRuledialog.querySelector('.close').addEventListener('click', function () {
+            var HTMLTag = document.getElementsByTagName('html')[0];
+            HTMLTag.removeAttribute('class');
+            FareRuledialog.close();
+        });
+    }
+
+    Bookingdialog = document.querySelector(".Booking-dialog");
+    if (Bookingdialog !== undefined && Bookingdialog !== null) {
+        if (!Bookingdialog.showModal) {
+            dialogPolyfill.registerDialog(Bookingdialog);
+        }
+        Bookingdialog.querySelector(".close").addEventListener("click", function () {
+            Bookingdialog.close();
+        });
+    }
+
+
+    Ameitiesdialog = document.querySelector(".Amenities-dialog");
+    console.log('ame', Ameitiesdialog)
+    if (Ameitiesdialog !== undefined && Ameitiesdialog !== null) {
+        if (!Ameitiesdialog.showModal) {
+            dialogPolyfill.registerDialog(Ameitiesdialog);
+        }
+        Ameitiesdialog.querySelector(".close").addEventListener("click", function () {
+            Ameitiesdialog.close();
+        });
+    }
+
+    Confirmbokingdialog = document.querySelector(".Confirmbooking-dialog");
+    if (Confirmbokingdialog !== undefined && Confirmbokingdialog !== null) {
+        if (!Confirmbokingdialog.showModal) {
+            dialogPolyfill.registerDialog(Confirmbokingdialog);
+        }
+        Confirmbokingdialog.querySelector(".close").addEventListener("click", function () {
+            Confirmbokingdialog.close();
+        });
+    }
+
+};
+
+if (document.readyState === "complete" || (document.readyState !== "loading" && !document.documentElement.doScroll)) {
+    setTimeout(function () { callback(); }, 1000);
+}
+else {
+    document.addEventListener("DOMContentLoaded", callback());
+}
+
+var ShowMSG = function (title, Message) {
+    if (title) {
+        document.getElementById("mdlAlertTitle").innerHTML = title;
+    }
+    document.getElementById("mdlAlertContent").innerHTML = Message;
+    Alertdialog.showModal();
+}
+
+var ShowFareRule = function (Message) {
+    document.documentElement.scrollTop = 0;
+    document.getElementById("FareContent").innerHTML = Message;
+    document.getElementsByClassName("FareContent-Container")[0].style.maxHeight = (document.documentElement.clientHeight - 200) + "px";
+    document.getElementsByClassName("FareContent-Container")[0].style.overflow = "scroll";
+    var HTMLTag = document.getElementsByTagName('html')[0];
+    HTMLTag.setAttribute('class', 'No-Overflow');
+    FareRuledialog.showModal();
+}
+
+
+var ShowAmenties = function (Message) {
+    console.log("Message", Message)
+    document.getElementById("AmenitiesContent").innerHTML = Message;
+    Ameitiesdialog.showModal();
+}
+
+
+var ShowTermsandCondition = function () {
+    // document.getElementById("FareContent").innerHTML = Message;
+    Bookingdialog.showModal();
+}
+
+var ShowBooking = function (Message) {
+    console.log("mes", Message)
+    document.getElementById("ConfirmbookingContent").innerHTML = Message;
+    Confirmbokingdialog.showModal();
+}
+
+
+var getpath = function () {
+    try {
+        var pathArray = window.location.href.split('/');
+        var protocol = pathArray[0];
+        var host = pathArray[2];
+        var path = protocol + '//' + host + "/";
+        // path += pathArray[3] + "/";
+        return path;
+    }
+    catch (e) {
+    }
+}
+
+var ShaEngrypt = function (pwd) {
+    try {
+        console.log('pwd', pwd)
+        var lstr1 = $.sha1(pwd);
+
+        console.log('ShaNewpass', lstr1)
+        return lstr1;
+    }
+    catch (e) {
+    }
+}
+var TravelTimeDiff = function (FromDate, ToDate, Compare) {
+    var dtFrom = new Date(FromDate);
+
+    var dtTo = new Date(FromDate);
+    var Time = ["0:00", "0:30", "1", "1:30", "2", "2:30", "3", "3:30", "4", "4:30", "5", "5:30", "6", "6:30", "7", "7:30", "8", "8:30", "9", "9:30", "10", "10:30", "11", "11:30", "12", "12:30", "13", "13:30", "14", "14:30", "15", "15:30", "16", "16:30", "17", "17:30", "18", "18:30", "19", "19:30", "20", "20:30", "21", "21:30", "22", "22:30", "23", "23:30", "23:59"];
+    ToDate = Time[ToDate];
+    if (ToDate.indexOf(":") > -1) {
+        dtTo.setHours(ToDate.split(":")[0], ToDate.split(":")[1], 0, 0);
+    }
+    else { dtTo.setHours(ToDate, 0, 0, 0); }
+
+    if (Compare == "L") {
+        if (dtFrom.getTime() < dtTo.getTime()) {
+            return "T";
+        }
+        else { return "F"; }
+    }
+    else if (Compare == "G") {
+        if (dtFrom.getTime() > dtTo.getTime()) {
+            return "T";
+        }
+        else { return "F"; }
+    }
+
+}
+
+var ShowProcBar = function () {
+    var ProcessBarElm = document.getElementById("loader");
+    var OverylayElm = document.getElementById("pageOverlay");
+    if (hasClass(ProcessBarElm, "hide")) { addClass(ProcessBarElm, "show"); removeClass(ProcessBarElm, "hide") }
+    if (hasClass(OverylayElm, "hide")) { addClass(OverylayElm, "show"); removeClass(OverylayElm, "hide") }
+    var HTMLTag = document.getElementsByTagName('html')[0];
+    HTMLTag.setAttribute('class', 'No-Overflow');
+}
+
+var HideProcBar = function () {
+    var ProcessBarElm = document.getElementById("loader");
+    var OverylayElm = document.getElementById("pageOverlay");
+    if (hasClass(ProcessBarElm, "show")) { addClass(ProcessBarElm, "hide"); removeClass(ProcessBarElm, "show") }
+    if (hasClass(OverylayElm, "show")) { addClass(OverylayElm, "hide"); removeClass(OverylayElm, "show") }
+    var HTMLTag = document.getElementsByTagName('html')[0];
+    HTMLTag.removeAttribute('class');
+
+}
+
+var ShowHideDynamicModal = function (Hide) {
+    if (Hide) {
+        document.getElementsByClassName("dynmaic-modal")[0].style.display = "none";
+        document.getElementsByClassName("dynamic-overlay-page")[0].style.display = "none";
+        var HTMLTag = document.getElementsByTagName('html')[0];
+        HTMLTag.removeAttribute('class');
+    }
+    else {
+        document.getElementsByClassName("dynmaic-modal")[0].style.display = "block";
+        document.getElementsByClassName("dynamic-overlay-page")[0].style.display = "block";
+        var HTMLTag = document.getElementsByTagName('html')[0];
+        HTMLTag.setAttribute('class', 'No-Overflow');
+    }
+}
+
+var hasClass = function (el, className) {
+    if (el.classList)
+        return el.classList.contains(className);
+    return !!el.className.match(new RegExp('(\\s|^)' + className + '(\\s|$)'));
+}
+
+var addClass = function (el, className) {
+    if (el.classList)
+        el.classList.add(className)
+    else if (!hasClass(el, className))
+        el.className += " " + className;
+}
+
+var removeClass = function (el, className) {
+    if (el.classList)
+        el.classList.remove(className)
+    else if (hasClass(el, className)) {
+        var reg = new RegExp('(\\s|^)' + className + '(\\s|$)');
+        el.className = el.className.replace(reg, ' ');
+    }
+}
